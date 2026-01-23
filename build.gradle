@@ -36,8 +36,14 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-webflux' 
 
+    // Redis 전용 의존성 (REDIS_ONLY 모드)
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
-    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    
+    // PostgreSQL & MyBatis 의존성
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.3'
+    implementation 'org.postgresql:postgresql:42.7.1'
+    
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'com.fasterxml.jackson.core:jackson-databind'
     implementation 'org.projectlombok:lombok'

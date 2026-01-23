@@ -4,7 +4,10 @@ import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
+import aicc.chat.domain.persistence.ChatHistory;
+import aicc.chat.service.ChatHistoryService;
 import aicc.chat.service.ChatRoutingStrategy;
+import aicc.chat.service.ChatSessionService;
 import aicc.chat.service.RoomRepository;
 import aicc.chat.service.TokenService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +17,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +32,8 @@ public class AgentChatController {
     private final TokenService tokenService;
     private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
     private final aicc.chat.service.MessageBroker messageBroker;
+    private final ChatSessionService chatSessionService;
+    private final ChatHistoryService chatHistoryService;
 
     @GetMapping("/rooms")
     public ResponseEntity<List<ChatRoom>> findAllRooms() {
@@ -81,6 +87,23 @@ public class AgentChatController {
             try {
                 messageBroker.publish(notice);
                 roomUpdateBroadcaster.broadcastRoomList();
+                
+                // PostgreSQL에 상담원 배정 정보 저장
+                chatSessionService.updateSessionStatus(roomId, "AGENT");
+                chatSessionService.assignAgent(roomId, userInfo.getUserName());
+                
+                // 시스템 메시지도 이력에 저장
+                ChatHistory chatHistory = ChatHistory.builder()
+                        .roomId(roomId)
+                        .senderId("SYSTEM")
+                        .senderName("System")
+                        .senderRole("SYSTEM")
+                        .message(notice.getMessage())
+                        .messageType("TALK")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                chatHistoryService.saveChatHistory(chatHistory);
+                
             } catch (Exception e) {
                 log.error("Failed to post-assign actions", e);
             }
@@ -132,6 +155,22 @@ public class AgentChatController {
                 messageBroker.publish(notice);
                 // 방 상태를 CLOSED로 변경
                 roomRepository.setRoutingMode(roomId, "CLOSED");
+                
+                // PostgreSQL에 종료 정보 저장
+                chatSessionService.updateSessionStatus(roomId, "CLOSED");
+                chatSessionService.endSession(roomId);
+                
+                // 종료 메시지도 이력에 저장
+                ChatHistory chatHistory = ChatHistory.builder()
+                        .roomId(roomId)
+                        .senderId("SYSTEM")
+                        .senderName("System")
+                        .senderRole("SYSTEM")
+                        .message(notice.getMessage())
+                        .messageType("LEAVE")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+                chatHistoryService.saveChatHistory(chatHistory);
             }
             
             roomUpdateBroadcaster.broadcastRoomList();
@@ -145,9 +184,12 @@ public class AgentChatController {
     @MessageMapping("/agent/chat")
     public void onAgentMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+        String userId = null;
+        
         if (sessionAttributes != null) {
             String userName = (String) sessionAttributes.get("userName");
             String companyId = (String) sessionAttributes.get("companyId");
+            userId = (String) sessionAttributes.get("userId");
             
             // 상담원 전용 로직: 클라이언트가 보낸 roomId 유지 (여러 방 관리 가능)
             // 이름과 역할만 세션 정보로 강제
@@ -157,6 +199,28 @@ public class AgentChatController {
         }
         
         log.debug("Agent message received for room: {}", message.getRoomId());
+        
+        // PostgreSQL에 채팅 이력 저장
+        try {
+            ChatHistory chatHistory = ChatHistory.builder()
+                    .roomId(message.getRoomId())
+                    .senderId(userId != null ? userId : message.getSender())
+                    .senderName(message.getSender())
+                    .senderRole(message.getSenderRole().name())
+                    .message(message.getMessage())
+                    .messageType(message.getType().name())
+                    .companyId(message.getCompanyId())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            chatHistoryService.saveChatHistory(chatHistory);
+            
+            // 세션의 마지막 활동 시간 업데이트
+            chatSessionService.updateLastActivity(message.getRoomId());
+        } catch (Exception e) {
+            log.error("Failed to save chat history to DB: roomId={}", message.getRoomId(), e);
+            // DB 저장 실패해도 채팅은 계속 진행
+        }
+        
         roomRepository.updateLastActivity(message.getRoomId());
         routingStrategy.handleMessage(message.getRoomId(), message);
     }

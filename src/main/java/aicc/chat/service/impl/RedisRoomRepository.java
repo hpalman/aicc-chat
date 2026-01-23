@@ -1,7 +1,7 @@
 package aicc.chat.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
 
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
-@ConditionalOnExpression("'${app.system-mode}'.equals('REDIS_ONLY') || '${app.system-mode}'.equals('REDIS_RABBIT')")
+@ConditionalOnProperty(name = "app.system-mode", havingValue = "REDIS_ONLY")
 public class RedisRoomRepository implements RoomRepository {
 
     private final StringRedisTemplate redisTemplate;

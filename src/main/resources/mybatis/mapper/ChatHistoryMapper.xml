@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="aicc.chat.mapper.ChatHistoryMapper">
+
+    <!-- ResultMap 정의 -->
+    <resultMap id="ChatHistoryResultMap" type="aicc.chat.domain.persistence.ChatHistory">
+        <id property="id" column="id"/>
+        <result property="roomId" column="room_id"/>
+        <result property="senderId" column="sender_id"/>
+        <result property="senderName" column="sender_name"/>
+        <result property="senderRole" column="sender_role"/>
+        <result property="message" column="message"/>
+        <result property="messageType" column="message_type"/>
+        <result property="companyId" column="company_id"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 채팅 메시지 저장 -->
+    <insert id="insertChatHistory" parameterType="aicc.chat.domain.persistence.ChatHistory"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO chat_history (
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{roomId},
+            #{senderId},
+            #{senderName},
+            #{senderRole},
+            #{message},
+            #{messageType},
+            #{companyId},
+            COALESCE(#{createdAt}, NOW()),
+            COALESCE(#{updatedAt}, NOW())
+        )
+    </insert>
+
+    <!-- 채팅 메시지 일괄 저장 -->
+    <insert id="insertChatHistoryBatch" parameterType="java.util.List">
+        INSERT INTO chat_history (
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.roomId},
+                #{item.senderId},
+                #{item.senderName},
+                #{item.senderRole},
+                #{item.message},
+                #{item.messageType},
+                #{item.companyId},
+                COALESCE(#{item.createdAt}, NOW()),
+                COALESCE(#{item.updatedAt}, NOW())
+            )
+        </foreach>
+    </insert>
+
+    <!-- ID로 채팅 이력 조회 -->
+    <select id="selectChatHistoryById" parameterType="long" resultMap="ChatHistoryResultMap">
+        SELECT
+            id,
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        FROM chat_history
+        WHERE id = #{id}
+    </select>
+
+    <!-- 채팅방 ID로 채팅 이력 조회 (시간순 정렬) -->
+    <select id="selectChatHistoryByRoomId" parameterType="string" resultMap="ChatHistoryResultMap">
+        SELECT
+            id,
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        FROM chat_history
+        WHERE room_id = #{roomId}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <!-- 채팅방 ID와 시간 범위로 채팅 이력 조회 -->
+    <select id="selectChatHistoryByRoomIdAndTimeRange" resultMap="ChatHistoryResultMap">
+        SELECT
+            id,
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        FROM chat_history
+        WHERE room_id = #{roomId}
+          AND created_at BETWEEN #{startTime} AND #{endTime}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <!-- 고객 ID로 채팅 이력 조회 -->
+    <select id="selectChatHistoryBySenderId" resultMap="ChatHistoryResultMap">
+        SELECT
+            id,
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        FROM chat_history
+        WHERE sender_id = #{senderId}
+          AND sender_role = #{senderRole}
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <!-- 회사 ID와 시간 범위로 채팅 이력 조회 -->
+    <select id="selectChatHistoryByCompanyIdAndTimeRange" resultMap="ChatHistoryResultMap">
+        SELECT
+            id,
+            room_id,
+            sender_id,
+            sender_name,
+            sender_role,
+            message,
+            message_type,
+            company_id,
+            created_at,
+            updated_at
+        FROM chat_history
+        WHERE company_id = #{companyId}
+          AND created_at BETWEEN #{startTime} AND #{endTime}
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <!-- 채팅 이력 수정 -->
+    <update id="updateChatHistory" parameterType="aicc.chat.domain.persistence.ChatHistory">
+        UPDATE chat_history
+        SET
+            message = #{message},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 채팅 이력 삭제 -->
+    <delete id="deleteChatHistoryById" parameterType="long">
+        DELETE FROM chat_history
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 채팅방 ID로 모든 이력 삭제 -->
+    <delete id="deleteChatHistoryByRoomId" parameterType="string">
+        DELETE FROM chat_history
+        WHERE room_id = #{roomId}
+    </delete>
+
+    <!-- 특정 날짜 이전의 오래된 이력 삭제 -->
+    <delete id="deleteOldChatHistory" parameterType="java.time.LocalDateTime">
+        DELETE FROM chat_history
+        WHERE created_at &lt; #{beforeDate}
+    </delete>
+
+</mapper>

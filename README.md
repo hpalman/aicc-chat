@@ -1,49 +1,62 @@
-# AICC Chat System
+# AICC Chat System (REDIS_ONLY Mode)
 
-실시간 채팅 및 AI 챗봇 통합 시스템
+Redis 기반 실시간 채팅 및 AI 챗봇 통합 시스템
 
 ## 📋 목차
 - [프로젝트 개요](#프로젝트-개요)
 - [주요 기능](#주요-기능)
 - [시스템 아키텍처](#시스템-아키텍처)
 - [설치 가이드](#설치-가이드)
-- [Botpress 통합](#botpress-통합)
 - [사용 방법](#사용-방법)
+- [Redis 채널 구조](#redis-채널-구조)
 
 ---
 
 ## 프로젝트 개요
 
-AICC Chat은 Spring Boot 기반의 실시간 채팅 시스템으로, WebSocket을 통한 양방향 통신과 Botpress를 활용한 AI 챗봇 기능을 제공합니다.
+AICC Chat은 Spring Boot 기반의 실시간 채팅 시스템으로, WebSocket과 Redis Pub/Sub을 통한 양방향 통신과 MiChat AI 엔진을 활용한 챗봇 기능을 제공합니다.
 
 ### 기술 스택
-- **Backend**: Spring Boot 3.x, Java 17
+- **Backend**: Spring Boot 3.4.1, Java 17
 - **Real-time**: WebSocket (STOMP)
-- **Message Broker**: RabbitMQ
+- **Message Broker**: Redis Pub/Sub
 - **Cache/Session**: Redis
-- **AI Chatbot**: Botpress v12
-- **Database**: PostgreSQL (Botpress용)
+- **Database**: PostgreSQL 14+ (MyBatis)
+- **AI Chatbot**: MiChat (자체 AI 엔진)
 
 ---
 
 ## 주요 기능
 
 ### 1. 실시간 채팅
-- WebSocket 기반 양방향 통신
+- WebSocket (STOMP) 기반 양방향 통신
+- Redis Pub/Sub을 통한 메시지 브로드캐스팅
 - 다중 채팅방 지원
 - 사용자 입장/퇴장 알림
-- 메시지 브로드캐스팅
+- roomId 기반 메시지 라우팅
 
-### 2. AI 챗봇 통합
-- Botpress v12 통합
-- 자연어 이해 (NLU)
-- 워크플로우 기반 대화 관리
-- 다중 채널 지원
+### 2. AI 챗봇 통합 (MiChat)
+- MiChat AI 엔진 통합
+- 자연어 이해 및 응답
+- 세션 기반 대화 맥락 유지
+- 스트리밍 응답 지원
 
-### 3. 확장 가능한 아키텍처
-- Redis를 통한 세션 관리
-- RabbitMQ를 통한 메시지 큐잉
-- 마이크로서비스 지향 설계
+### 3. 하이브리드 상담 모드
+- BOT 모드: AI 자동 응답
+- WAITING 모드: 상담원 연결 대기
+- AGENT 모드: 상담원 1:1 상담
+- CLOSED 모드: 상담 종료
+
+### 4. 상담 이력 저장
+- PostgreSQL + MyBatis를 통한 영구 저장
+- 채팅 세션 정보 저장 (고객, 상담원, 상태 등)
+- 모든 메시지 이력 저장 (고객, 상담원, BOT, 시스템)
+- 시간 기반 조회 및 분석 지원
+
+### 5. Redis 기반 확장 가능한 아키텍처
+- Redis Pub/Sub을 통한 다중 서버 인스턴스 지원
+- Redis를 통한 채팅방 상태 관리
+- 세션 기반 인증 및 권한 관리
 
 ---
 
@@ -52,15 +65,32 @@ AICC Chat은 Spring Boot 기반의 실시간 채팅 시스템으로, WebSocket�
 ```
 ┌─────────────┐     WebSocket      ┌──────────────────┐
 │   Client    │ ←─────────────────→ │  Spring Boot     │
-│  (Browser)  │                     │  Application     │
+│  (Browser)  │     (STOMP)         │  Application     │
 └─────────────┘                     └──────────────────┘
                                             │
-                    ┌───────────────────────┼───────────────────────┐
-                    │                       │                       │
-              ┌─────▼─────┐          ┌─────▼─────┐          ┌─────▼─────┐
-              │   Redis   │          │ RabbitMQ  │          │ Botpress  │
-              │  (Cache)  │          │  (Queue)  │          │   (AI)    │
-              └───────────┘          └───────────┘          └───────────┘
+                                    ┌───────┴────────┐
+                                    │                │
+                              ┌─────▼─────┐   ┌─────▼─────┐
+                              │   Redis   │   │  MiChat   │
+                              │ (Pub/Sub) │   │   (AI)    │
+                              └───────────┘   └───────────┘
+```
+
+### Redis 채널 구조
+
+#### Pub/Sub 채널
+- **채널명**: `chat.topic`
+- **용도**: 모든 채팅 메시지 브로드캐스트
+
+#### Redis 데이터 키 구조
+```
+chat:rooms                           # SET: 활성 방 ID 목록
+chat:room:{roomId}                   # SET: 방의 멤버 목록
+chat:room:{roomId}:name              # STRING: 방 이름
+chat:room:{roomId}:mode              # STRING: 방 상태 (BOT/WAITING/AGENT/CLOSED)
+chat:room:{roomId}:assignedAgent     # STRING: 배정된 상담원
+chat:room:{roomId}:createdAt         # STRING: 방 생성 시간
+chat:room:{roomId}:lastActivity      # STRING: 마지막 활동 시간
 ```
 
 ---
@@ -70,9 +100,9 @@ AICC Chat은 Spring Boot 기반의 실시간 채팅 시스템으로, WebSocket�
 ### 사전 요구사항
 - Java 17+
 - Gradle 7.x+
-- Docker & Docker Compose
-- Redis
-- RabbitMQ
+- Redis 6.x+
+- PostgreSQL 14+
+- MiChat AI 엔진 (선택)
 
 ### 1. 저장소 클론
 ```bash
@@ -80,106 +110,190 @@ git clone <repository-url>
 cd aicc-chat
 ```
 
-### 2. 의존성 설치 및 빌드
+### 2. PostgreSQL 데이터베이스 설정
+```bash
+# PostgreSQL 접속
+psql -U postgres
+
+# 데이터베이스 및 사용자 생성
+CREATE DATABASE aicc_chat;
+CREATE USER aicc WITH PASSWORD 'aicc123!';
+GRANT ALL PRIVILEGES ON DATABASE aicc_chat TO aicc;
+
+# 테이블 생성
+\c aicc_chat
+\i src/main/resources/db/schema.sql
+```
+
+또는 Docker로 PostgreSQL 실행:
+```bash
+docker run -d \
+  --name aicc-postgres \
+  -e POSTGRES_DB=aicc_chat \
+  -e POSTGRES_USER=aicc \
+  -e POSTGRES_PASSWORD=aicc123! \
+  -p 5432:5432 \
+  postgres:14-alpine
+
+# 스키마 생성
+docker exec -i aicc-postgres psql -U aicc -d aicc_chat < src/main/resources/db/schema.sql
+```
+
+### 3. 의존성 설치 및 빌드
 ```bash
 ./gradlew clean build
 ```
 
-### 3. Docker Compose로 인프라 시작
+### 3. Redis 시작
 ```bash
-# Redis & RabbitMQ 시작
-docker-compose up -d redis rabbitmq
+# Docker로 Redis 시작
+docker run -d -p 16379:6379 --name aicc-redis redis:7-alpine
+
+# 또는 로컬 Redis 사용
+redis-server --port 16379
 ```
 
-### 4. 애플리케이션 실행
+### 5. 애플리케이션 실행
 ```bash
 ./gradlew bootRun
 ```
 
 ### 5. 접속 확인
-- 웹 클라이언트: `http://localhost:8080/websocket-client.html`
-- 관리자 클라이언트: `http://localhost:8080/admin-client.html`
+- 웹 클라이언트: `http://localhost:28070/websocket-client.html`
+- 관리자 클라이언트: `http://localhost:28070/admin-client.html`
 
 ---
 
-## Botpress 통합
+## 환경 설정
 
-### 빠른 시작
-Botpress v12를 192.168.133.132 서버 (Rocky Linux 9.6)에 설치하려면:
-
-```bash
-# Rocky Linux 서버 (자동 설치)
-chmod +x setup-botpress.sh
-./setup-botpress.sh
-
-# Windows PowerShell (원격 설치)
-.\setup-botpress.ps1
-```
-
-### 상세 가이드
-- 🐧 **Rocky Linux 전용 가이드**: [ROCKY_LINUX_SETUP.md](./ROCKY_LINUX_SETUP.md) ⭐ 추천
-- 📚 **전체 설치 가이드**: [BOTPRESS_INSTALLATION_GUIDE.md](./BOTPRESS_INSTALLATION_GUIDE.md)
-- 🚀 **빠른 시작**: [BOTPRESS_QUICK_START.md](./BOTPRESS_QUICK_START.md)
-- 🔧 **문제 해결**: [BOTPRESS_TROUBLESHOOTING.md](./BOTPRESS_TROUBLESHOOTING.md)
-- 🐳 **Docker Compose**: [docker-compose.botpress.yml](./docker-compose.botpress.yml)
-
-### Botpress 접속 정보
-```
-URL: http://192.168.133.132:3000
-초기 이메일: admin@botpress.local
-초기 비밀번호: Admin@2024!
-```
-
-### 통합 설정
-`application.yml`에서 Botpress 설정:
+### application.yml
 ```yaml
-botpress:
-  server-url: http://192.168.133.132:3000
-  bot-id: your-bot-id
-  timeout: 5000
+server:
+  port: 28070
+
+app:
+  system-mode: REDIS_ONLY  # Redis 전용 모드 (고정)
+  
+  ai-bot:
+    use-bot: true
+    name: "aicess.michat"
+    ai-end-point: "http://127.0.0.1:8040"
+    
+  chat:
+    mode: HYBRID      # MiChat -> Agent 전환 모드 (기본값)
+    # mode: MICHAT    # MiChat 전용 모드
+    # mode: AGENT     # 상담원 전용 모드
+
+spring:
+  # Redis 설정 (Spring Data Redis)
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 16379
+      timeout: 3000
+      
+  # PostgreSQL 데이터베이스 설정
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://127.0.0.1:5432/aicc_chat
+    username: aicc
+    password: aicc123!
+
+# MyBatis 설정
+mybatis:
+  mapper-locations: classpath:mybatis/mapper/**/*.xml
+  type-aliases-package: aicc.chat.domain.persistence
+  configuration:
+    map-underscore-to-camel-case: true
 ```
+
+### 채팅 모드
+- **HYBRID**: AI 봇 자동 응답 + 상담원 전환 지원 (기본값)
+- **MICHAT**: AI 봇만 사용
+- **AGENT**: 상담원만 사용 (봇 없음)
 
 ---
 
 ## 사용 방법
 
-### 채팅방 생성
+### 고객 채팅방 생성
 ```bash
-curl -X POST http://localhost:8080/api/chat/rooms \
-  -H "Content-Type: application/json" \
-  -d '{"name": "General Chat"}'
+curl -X POST http://localhost:28070/api/customer/chatbot \
+  -H "Authorization: Bearer {token}"
 ```
 
 ### WebSocket 연결
 ```javascript
-const socket = new SockJS('http://localhost:8080/ws');
+const socket = new SockJS('http://localhost:28070/ws-chat?token={token}&roomId={roomId}');
 const stompClient = Stomp.over(socket);
 
 stompClient.connect({}, function(frame) {
-    console.log('Connected: ' + frame);
-    
     // 채팅방 구독
-    stompClient.subscribe('/topic/room/room-id', function(message) {
-        console.log('Received: ' + message.body);
+    stompClient.subscribe('/topic/room/' + roomId, function(message) {
+        const chatMessage = JSON.parse(message.body);
+        console.log('Received:', chatMessage);
     });
     
-    // 메시지 전송
-    stompClient.send('/app/chat.send/room-id', {}, JSON.stringify({
-        sender: 'user1',
-        content: 'Hello!',
-        type: 'CHAT'
+    // 메시지 전송 (고객)
+    stompClient.send('/app/customer/chat', {}, JSON.stringify({
+        roomId: roomId,
+        message: 'Hello!',
+        type: 'TALK'
     }));
 });
 ```
 
-### 봇과 대화
+### Redis-CLI로 메시지 전송
 ```bash
-curl -X POST http://localhost:8080/api/bot/message \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": "user123",
-    "message": "안녕하세요"
-  }'
+# Redis 연결
+redis-cli -h 127.0.0.1 -p 16379
+
+# 특정 방으로 메시지 전송
+PUBLISH chat.topic '{"roomId":"room-12345678","sender":"System","senderRole":"SYSTEM","message":"공지사항입니다.","type":"TALK","companyId":"apt001"}'
+
+# 활성 방 목록 확인
+SMEMBERS chat:rooms
+
+# 특정 방 정보 확인
+GET chat:room:room-12345678:mode
+SMEMBERS chat:room:room-12345678
+```
+
+---
+
+## Redis 채널 구조
+
+### 메시지 흐름
+```
+[발신자] → WebSocket → [Controller] → [RoutingStrategy]
+    ↓
+[MessageBroker] → Redis PUBLISH → "chat.topic"
+    ↓
+[RedisMessageListener] → 모든 서버 인스턴스가 구독
+    ↓
+[SimpMessagingTemplate] → "/topic/room/{roomId}"
+    ↓
+[WebSocket 구독자] → 해당 roomId를 구독한 클라이언트만 수신
+```
+
+### 메시지 타입
+- **ENTER**: 사용자 입장
+- **TALK**: 일반 대화
+- **LEAVE**: 사용자 퇴장
+- **JOIN**: 상담원 참여
+- **HANDOFF**: 상담원 연결 요청
+- **CANCEL_HANDOFF**: 연결 요청 취소
+
+### ChatMessage 구조
+```json
+{
+  "roomId": "room-12345678",
+  "sender": "홍길동",
+  "senderRole": "CUSTOMER",  // CUSTOMER, AGENT, BOT, SYSTEM
+  "message": "안녕하세요",
+  "type": "TALK",
+  "companyId": "apt001"
+}
 ```
 
 ---
@@ -190,66 +304,42 @@ curl -X POST http://localhost:8080/api/bot/message \
 aicc-chat/
 ├── src/main/java/aicc/
 │   ├── bot/                    # 챗봇 통합
-│   │   ├── botpress/          # Botpress 서비스
 │   │   ├── michat/            # MiChat 구현
+│   │   ├── service/           # AI 분석 서비스
 │   │   └── web/               # Bot API 컨트롤러
 │   └── chat/                   # 채팅 기능
 │       ├── config/            # 설정
+│       │   ├── mode/          # RedisOnlyConfig
+│       │   └── WebSocketConfig.java
 │       ├── controller/        # REST & WebSocket 컨트롤러
 │       ├── domain/            # 도메인 모델
 │       ├── service/           # 비즈니스 로직
+│       │   └── impl/          # 구현체 (Redis, Routing)
 │       └── websocket/         # WebSocket 이벤트
 ├── frontend/                   # 프론트엔드 클라이언트
 │   ├── websocket-client.html # 일반 사용자 클라이언트
 │   └── admin-client.html      # 관리자 클라이언트
-├── docker-compose.yml         # 인프라 구성
-├── docker-compose.botpress.yml # Botpress 전용
-├── setup-botpress.sh          # Botpress 설치 스크립트 (Linux)
-├── setup-botpress.ps1         # Botpress 설치 스크립트 (Windows)
-├── BOTPRESS_INSTALLATION_GUIDE.md  # Botpress 상세 가이드
-├── BOTPRESS_QUICK_START.md    # Botpress 빠른 시작
 └── build.gradle               # Gradle 빌드 설정
 ```
 
 ---
 
-## 환경 설정
+## API 엔드포인트
 
-### application.yml
-```yaml
-spring:
-  redis:
-    host: localhost
-    port: 6379
-  rabbitmq:
-    host: localhost
-    port: 5672
+### 고객 API
+- `POST /api/customer/chatbot` - 채팅방 생성
+- `WebSocket /app/customer/chat` - 고객 메시지 전송
 
-app:
-  system:
-    mode: REDIS_ONLY  # IN_MEMORY, REDIS_ONLY, REDIS_RABBIT
+### 상담원 API
+- `GET /api/agent/rooms` - 전체 채팅방 목록
+- `GET /api/agent/rooms/{roomId}` - 특정 방 정보
+- `POST /api/agent/rooms/{roomId}/assign` - 상담원 배정
+- `DELETE /api/agent/rooms/{roomId}` - 상담 종료
+- `WebSocket /app/agent/chat` - 상담원 메시지 전송
 
-botpress:
-  server-url: http://192.168.133.132:3000
-  bot-id: customer-service-bot
-```
-
-### 시스템 모드
-- **IN_MEMORY**: 메모리 기반 (개발용)
-- **REDIS_ONLY**: Redis만 사용
-- **REDIS_RABBIT**: Redis + RabbitMQ (프로덕션)
-
----
-
-## API 문서
-
-상세한 API 명세는 [API_SPEC.md](./API_SPEC.md)를 참조하세요.
-
-### 주요 엔드포인트
-- `GET /api/chat/rooms` - 채팅방 목록
-- `POST /api/chat/rooms` - 채팅방 생성
-- `POST /api/bot/message` - 봇에게 메시지 전송
-- `WebSocket /ws` - WebSocket 연결
+### WebSocket
+- **연결**: `ws://localhost:28070/ws-chat?token={token}&roomId={roomId}`
+- **구독**: `/topic/room/{roomId}`
 
 ---
 
@@ -257,39 +347,30 @@ botpress:
 
 ### 로컬 개발 환경 설정
 ```bash
-# 1. Redis & RabbitMQ 시작
-docker-compose up -d redis rabbitmq
+# 1. Redis 시작
+docker run -d -p 16379:6379 redis:7-alpine
 
 # 2. 애플리케이션 실행 (개발 모드)
-./gradlew bootRun --args='--spring.profiles.active=dev'
+./gradlew bootRun
 
-# 3. 핫 리로드 활성화
-./gradlew bootRun --continuous
+# 3. Redis 모니터링
+redis-cli -h 127.0.0.1 -p 16379 MONITOR
 ```
 
-### 테스트 실행
+### Redis 디버깅
 ```bash
-# 전체 테스트
-./gradlew test
+# Redis 메시지 구독 (모니터링)
+redis-cli -h 127.0.0.1 -p 16379
+SUBSCRIBE chat.topic
 
-# 특정 테스트
-./gradlew test --tests ChatControllerTest
-```
+# 활성 방 목록
+SMEMBERS chat:rooms
 
----
-
-## 배포
-
-### JAR 빌드
-```bash
-./gradlew bootJar
-java -jar build/libs/aicc-chat-0.0.1-SNAPSHOT.jar
-```
-
-### Docker 이미지 빌드
-```bash
-docker build -t aicc-chat:latest .
-docker run -p 8080:8080 aicc-chat:latest
+# 방 상세 정보
+GET chat:room:room-abc123:name
+GET chat:room:room-abc123:mode
+GET chat:room:room-abc123:assignedAgent
+SMEMBERS chat:room:room-abc123
 ```
 
 ---
@@ -299,39 +380,30 @@ docker run -p 8080:8080 aicc-chat:latest
 ### Redis 연결 오류
 ```bash
 # Redis 상태 확인
-docker-compose ps redis
-docker-compose logs redis
+redis-cli -h 127.0.0.1 -p 16379 PING
 
 # Redis 재시작
-docker-compose restart redis
+docker restart aicc-redis
 ```
 
-### RabbitMQ 연결 오류
+### 메시지가 전달되지 않을 때
 ```bash
-# RabbitMQ 관리 콘솔
-http://localhost:15672
-# 기본 계정: guest/guest
+# Redis Pub/Sub 모니터링
+redis-cli -h 127.0.0.1 -p 16379
+SUBSCRIBE chat.topic
+
+# 방 정보 확인
+SMEMBERS chat:rooms
+GET chat:room:{roomId}:mode
 ```
 
-### Botpress 연결 오류
+### MiChat AI 연결 오류
 ```bash
-# Botpress 상태 확인
-curl http://192.168.133.132:3000/status
+# MiChat 엔드포인트 확인
+curl http://127.0.0.1:8040/health
 
-# Botpress 로그 확인
-cd /opt/botpress
-docker-compose logs -f botpress
+# application.yml에서 ai-end-point 확인
 ```
-
----
-
-## 기여 가이드
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ---
 
@@ -341,17 +413,8 @@ docker-compose logs -f botpress
 
 ---
 
-## 연락처
-
-- 프로젝트 관리자: [이름]
-- 이메일: [이메일]
-- 프로젝트 링크: [GitHub URL]
-
----
-
 ## 감사의 말
 
-- [Botpress](https://botpress.com/) - AI 챗봇 플랫폼
 - [Spring Boot](https://spring.io/projects/spring-boot) - 애플리케이션 프레임워크
-- [RabbitMQ](https://www.rabbitmq.com/) - 메시지 브로커
-- [Redis](https://redis.io/) - 인메모리 데이터 저장소
+- [Redis](https://redis.io/) - 인메모리 데이터 저장소 및 Pub/Sub
+- [STOMP](https://stomp.github.io/) - WebSocket 메시징 프로토콜

@@ -6,11 +6,16 @@ import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
+import aicc.chat.domain.persistence.ChatHistory;
+import aicc.chat.service.ChatHistoryService;
 import aicc.chat.service.ChatRoutingStrategy;
+import aicc.chat.service.ChatSessionService;
 import aicc.chat.service.MessageBroker;
 import aicc.chat.service.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.time.LocalDateTime;
 
 /**
  * MiChat(자체 AI 엔진)을 통해 대화를 처리하는 전략 구현체
@@ -23,6 +28,8 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     private final ChatBot chatBot;
     private final RoomRepository roomRepository;
     private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
+    private final ChatHistoryService chatHistoryService;
+    private final ChatSessionService chatSessionService;
 
     @Override
     public void handleMessage(String roomId, ChatMessage message) {
@@ -84,6 +91,27 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                             .type(MessageType.TALK)
                             .build();
                     messageBroker.publish(botMessage);
+                    
+                    // PostgreSQL에 BOT 응답 저장
+                    try {
+                        ChatHistory chatHistory = ChatHistory.builder()
+                                .roomId(roomId)
+                                .senderId("BOT")
+                                .senderName("Bot")
+                                .senderRole("BOT")
+                                .message(responseText)
+                                .messageType("TALK")
+                                .companyId(message.getCompanyId())
+                                .createdAt(LocalDateTime.now())
+                                .build();
+                        chatHistoryService.saveChatHistory(chatHistory);
+                        
+                        // 세션 마지막 활동 시간 업데이트
+                        chatSessionService.updateLastActivity(roomId);
+                    } catch (Exception e) {
+                        log.error("Failed to save bot message to DB: roomId={}", roomId, e);
+                        // DB 저장 실패해도 채팅은 계속 진행
+                    }
                 }
             }
         );
@@ -101,6 +129,23 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .type(MessageType.TALK)
                 .build();
         messageBroker.publish(welcome);
+        
+        // PostgreSQL에 환영 메시지 저장
+        try {
+            ChatHistory chatHistory = ChatHistory.builder()
+                    .roomId(room.getRoomId())
+                    .senderId("BOT")
+                    .senderName("Bot")
+                    .senderRole("BOT")
+                    .message(welcome.getMessage())
+                    .messageType("TALK")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            chatHistoryService.saveChatHistory(chatHistory);
+        } catch (Exception e) {
+            log.error("Failed to save welcome message to DB: roomId={}", room.getRoomId(), e);
+            // DB 저장 실패해도 채팅은 계속 진행
+        }
     }
 
     private void switchToAgentMode(String roomId) {
@@ -117,6 +162,24 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .type(MessageType.TALK)
                 .build();
         messageBroker.publish(notice);
+        
+        // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
+        try {
+            chatSessionService.updateSessionStatus(roomId, "WAITING");
+            
+            ChatHistory chatHistory = ChatHistory.builder()
+                    .roomId(roomId)
+                    .senderId("SYSTEM")
+                    .senderName("System")
+                    .senderRole("SYSTEM")
+                    .message(notice.getMessage())
+                    .messageType("TALK")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            chatHistoryService.saveChatHistory(chatHistory);
+        } catch (Exception e) {
+            log.error("Failed to save handoff message to DB: roomId={}", roomId, e);
+        }
     }
 
     private void cancelAgentMode(String roomId) {
@@ -132,6 +195,24 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .type(MessageType.TALK)
                 .build();
         messageBroker.publish(notice);
+        
+        // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
+        try {
+            chatSessionService.updateSessionStatus(roomId, "BOT");
+            
+            ChatHistory chatHistory = ChatHistory.builder()
+                    .roomId(roomId)
+                    .senderId("SYSTEM")
+                    .senderName("System")
+                    .senderRole("SYSTEM")
+                    .message(notice.getMessage())
+                    .messageType("TALK")
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            chatHistoryService.saveChatHistory(chatHistory);
+        } catch (Exception e) {
+            log.error("Failed to save cancel handoff message to DB: roomId={}", roomId, e);
+        }
     }
 }
 

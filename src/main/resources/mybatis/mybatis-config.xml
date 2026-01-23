@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+    <settings>
+        <!-- 카멜케이스 자동 변환 -->
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+        
+        <!-- NULL 값 처리 -->
+        <setting name="jdbcTypeForNull" value="NULL"/>
+        
+        <!-- 캐시 설정 -->
+        <setting name="cacheEnabled" value="true"/>
+        
+        <!-- 지연 로딩 설정 -->
+        <setting name="lazyLoadingEnabled" value="false"/>
+        <setting name="aggressiveLazyLoading" value="false"/>
+        
+        <!-- 쿼리 타임아웃 (초) -->
+        <setting name="defaultStatementTimeout" value="30"/>
+        
+        <!-- 로그 설정 -->
+        <setting name="logImpl" value="SLF4J"/>
+    </settings>
+
+    <typeAliases>
+        <package name="aicc.chat.domain.persistence"/>
+    </typeAliases>
+</configuration>

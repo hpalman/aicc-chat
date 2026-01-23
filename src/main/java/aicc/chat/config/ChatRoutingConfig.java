@@ -1,15 +1,14 @@
 package aicc.chat.config;
 
 import aicc.bot.ChatBot;
-import aicc.bot.botpress.BotpressService;
+import aicc.chat.service.ChatHistoryService;
 import aicc.chat.service.ChatRoutingStrategy;
+import aicc.chat.service.ChatSessionService;
 import aicc.chat.service.MessageBroker;
 import aicc.chat.service.RoomRepository;
 import aicc.chat.service.impl.AgentRoutingStrategy;
-import aicc.chat.service.impl.BotpressRoutingStrategy;
 import aicc.chat.service.impl.DynamicRoutingStrategy;
 import aicc.chat.service.impl.MiChatRoutingStrategy;
-import aicc.chat.service.impl.SimpleBotRoutingStrategy;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,16 +18,21 @@ public class ChatRoutingConfig {
 
     /**
      * app.chat.mode 가 'HYBRID'일 때 활성화 (Bot -> Agent 전환 지원)
+     * REDIS_ONLY 모드에서는 HYBRID 모드를 사용
      */
     @Bean
-    @ConditionalOnProperty(name = "app.chat.mode", havingValue = "HYBRID")
+    @ConditionalOnProperty(name = "app.chat.mode", havingValue = "HYBRID", matchIfMissing = true)
     public ChatRoutingStrategy dynamicRoutingStrategy(
             MessageBroker messageBroker, 
             ChatBot chatBot, 
             RoomRepository roomRepository,
-            aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster) {
+            aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster,
+            ChatHistoryService chatHistoryService,
+            ChatSessionService chatSessionService) {
         
-        MiChatRoutingStrategy miChat = new MiChatRoutingStrategy(messageBroker, chatBot, roomRepository, roomUpdateBroadcaster);
+        MiChatRoutingStrategy miChat = new MiChatRoutingStrategy(
+                messageBroker, chatBot, roomRepository, roomUpdateBroadcaster, 
+                chatHistoryService, chatSessionService);
         AgentRoutingStrategy agent = new AgentRoutingStrategy(messageBroker);
         
         return new DynamicRoutingStrategy(roomRepository, miChat, agent, roomUpdateBroadcaster);
@@ -43,26 +47,12 @@ public class ChatRoutingConfig {
             MessageBroker messageBroker, 
             ChatBot chatBot, 
             RoomRepository roomRepository,
-            aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster) {
-        return new MiChatRoutingStrategy(messageBroker, chatBot, roomRepository, roomUpdateBroadcaster);
-    }
-
-    /**
-     * app.chat.mode 가 'BOTPRESS'일 때 활성화 (기본값)
-     */
-    @Bean
-    @ConditionalOnProperty(name = "app.chat.mode", havingValue = "BOTPRESS", matchIfMissing = true)
-    public ChatRoutingStrategy botpressRoutingStrategy(MessageBroker messageBroker, BotpressService botpressService) {
-        return new BotpressRoutingStrategy(messageBroker, botpressService);
-    }
-
-    /**
-     * app.chat.mode 가 'SIMPLE_BOT'일 때 활성화
-     */
-    @Bean
-    @ConditionalOnProperty(name = "app.chat.mode", havingValue = "SIMPLE_BOT")
-    public ChatRoutingStrategy simpleBotRoutingStrategy(MessageBroker messageBroker) {
-        return new SimpleBotRoutingStrategy(messageBroker);
+            aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster,
+            ChatHistoryService chatHistoryService,
+            ChatSessionService chatSessionService) {
+        return new MiChatRoutingStrategy(
+                messageBroker, chatBot, roomRepository, roomUpdateBroadcaster,
+                chatHistoryService, chatSessionService);
     }
 
     /**
