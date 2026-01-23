@@ -1,0 +1,48 @@
+echo "# aicc-chat" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com:hpalman/aicc-chat.git
+git push -u origin main
+
+
+
+git config --global user.email "hpalman@gmail.com"
+git config --global user.name "H.PALMAN"
+
+
+
+["SEND\ndestination:/app/customer/chat\ncontent-length:82\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"message\":\"안녕\",\"type\":\"TALK\"}\u0000"]
+
+
+["CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n\u0000"]
+a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]
+["SUBSCRIBE\nid:sub-0\ndestination:/topic/room/room-6b7e1dda\n\n\u0000"]
+["SEND\ndestination:/app/customer/chat\ncontent-length:116\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"type\":\"JOIN\",\"message\":\"고객-a5ef님이 입장하셨습니다.\"}\u0000"]
+a["MESSAGE\ndestination:/topic/room/room-6b7e1dda\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:glxulubw-2\ncontent-length:161\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"senderRole\":\"CUSTOMER\",\"message\":\"고객-a5ef님이 입장하셨습니다.\",\"type\":\"JOIN\",\"companyId\":\"apt001\"}\u0000"]
+
+
+a["MESSAGE\ndestination:/topic/room/room-6b7e1dda\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:glxulubw-3\ncontent-length:127\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"senderRole\":\"CUSTOMER\",\"message\":\"안녕\",\"type\":\"TALK\",\"companyId\":\"apt001\"}\u0000"]
+a["MESSAGE\ndestination:/topic/room/room-6b7e1dda\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:glxulubw-3\ncontent-length:127\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"senderRole\":\"CUSTOMER\",\"message\":\"안녕\",\"type\":\"TALK\",\"companyId\":\"apt001\"}\u0000"]
+a["MESSAGE\ndestination:/topic/room/room-6b7e1dda\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:glxulubw-2\ncontent-length:161\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"senderRole\":\"CUSTOMER\",\"message\":\"고객-a5ef님이 입장하셨습니다.\",\"type\":\"JOIN\",\"companyId\":\"apt001\"}\u0000"]
+
+상담원 연결 요청
+ ["SEND\n   destination:/app/customer/chat\ncontent-length:115\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"message\":\"상담원 연결을 요청합니다.\",\"type\":\"HANDOFF\"}\u0000"]
+a["MESSAGE\ndestination:/topic/room/room-6b7e1dda\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:glxulubw-6\ncontent-length:160\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"고객-a5ef\",\"senderRole\":\"CUSTOMER\",\"message\":\"상담원 연결을 요청합니다.\",\"type\":\"HANDOFF\",\"companyId\":\"apt001\"}\u0000"]
+a["MESSAGE\ndestination:/topic/room/room-6b7e1dda\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:glxulubw-8\ncontent-length:213\n\n{\"roomId\":\"room-6b7e1dda\",\"sender\":\"System\",\"senderRole\":\"BOT\",\"message\":\"상담원 연결을 요청하였습니다. 상담원이 연결될 때까지 잠시만 기다려 주세요.\",\"type\":\"TALK\",\"companyId\":null}\u0000"]
+
+http://192.168.171.1:28070/api/customer/apt001/login?id=hong2&password=1234
+
+1.메시지 전송
+ ["SEND
+
+로그인
+  ID:
+  PW:
+  
+  ["CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n\u0000"]
+  a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]
+  ["SUBSCRIBE\nid:sub-0\ndestination:/topic/room/room-52d2b5b6\n\n\u0000"]
+  ["SEND\ndestination:/app/customer/chat\ncontent-length:116\n\n{\"roomId\":\"room-52d2b5b6\",\"sender\":\"고객-275b\",\"type\":\"JOIN\",\"message\":\"고객-275b님이 입장하셨습니다.\"}\u0000"]
+  a["MESSAGE\ndestination:/topic/room/room-52d2b5b6\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:3blfexwv-14\ncontent-length:161\n\n{\"roomId\":\"room-52d2b5b6\",\"sender\":\"고객-275b\",\"senderRole\":\"CUSTOMER\",\"message\":\"고객-275b님이 입장하셨습니다.\",\"type\":\"JOIN\",\"companyId\":\"apt001\"}\u0000"]

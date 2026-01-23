@@ -207,7 +207,7 @@ public class MiChatBotImpl implements ChatBot {
                 log.warn("에러 응답 파싱 실패: {}", errorBody);
             }
         }
-        log.error("ChatBot Stream 처리 중 예외 발생", error);
+        log.error("ChatBot Stream 처리 중 예외 발생", error.getMessage());
         onChunk.accept("서비스 연결에 실패했습니다.");
     }
 

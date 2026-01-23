@@ -1,0 +1,14 @@
+STS5 설정
+
+2.
+Markdown Text Editor설치 하면 아래 문제 나타나지 않음.
+> WikiText Markup Problem 문제
+
+1.
+Boot Dashboard는 Gradle 빌드 설정을 무시하고 IDE 자체 실행 설정을 사용할 때가 있습니다.
+따라서 STS5 → Preferences → Java Compiler → Additional command line parameters에 -parameters를 추가하세요.
+=>
+Preferences > Java > Compiler > [v]Store information about method parameters
+
+이게 바로 -parameters 옵션을 켜는 설정입니다.
+체크하면 컴파일 시 자동으로 -parameters 플래그가 적용됩니다.

@@ -1,0 +1,19 @@
+redis-cli 사용법
+
+ㅁ 구독하기
+aicc-chat에서 사용하는 chat.topic 채널 SUBSCRIBE 하기
+redis-cli -p 16379
+127.0.0.1:16379> PSUBSCRIBE chat.*   # 패턴으로 구독
+
+127.0.0.1:16379> SUBSCRIBE chat.topic   # 채널명으로 구독
+
+ㅁ 발행하기
+PUBLISH chat.topic "Hello World"
+
+
+redis-cli PUBLISH chat.topic '{"roomId":"room-9d15bd53","sender":"고객-358d","senderRole":"CUSTOMER","message":"ㅎㅎㅎㅎㅎ","type":"TALK","companyId":"apt001"}'
+예) 127.0.0.1:16379> PUBLISH chat.topic '{"roomId":"room-9d15bd53","sender":"고객-358d","senderRole":"CUSTOMER","message":"ㅎㅎㅎㅎㅎ","type":"TALK","companyId":"apt001"}'
+
+
+redis-cli -p 16379 PUBLISH chat.topic '{"roomId":"room-76df670b","sender":"고객-2100","senderRole":"CUSTOMER","message":"고객-2100님이 입장하셨습니다.","type":"JOIN","companyId":"apt001"}'
+화면에 보이는 것 > 고객-2100님이 입장하셨습니다.

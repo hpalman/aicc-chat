@@ -1,0 +1,311 @@
+"", "장", "기", "수", "선", "계", "획", "서", ",", " 전기", " 안전", "관리", "자", " 선", "임",
+" 필", "증", ",", " 승", "강", "기", " 완성", "검", "사", " 필", "증", ",", " 간", "이", " 무",
+"선", "국", " 허", "가", "증", ",", " 소", "방", "시설", " 완", "공", "검", "사", " 필", "증",
+",", " 도시", "가", "스", " 완성", "검", "사", " 필", "증", ",", " 전기", " 설", "비", " 공",
+"사", "계", "획", " 신고", "필", "증", ",", " 전기", "사용", " 계약", "서", ",", " 전", "력",
+"공", "급", " 동", "의", "서", ",", " 접", "지", " 절", "연", "저", "항", " 측정", "표", ",",
+" 항공", "장", "애", "등", " ", "옥", "상", "헬", "리", "포", "트", " 검", "사", "필", "증",
+",", " F", ".", "M", ".", "S", " 시설", "물", " 초기", " 아이", "디", "와", " 비", "번", ",",
+" 하자", "보", "수", "(", "이", "행", ")", " 증", "권", ",", " 검", "사", "대상", "기", "기",
+" 설치", " 허", "가", "증", ",", " 오", "수", "처리", "시설", " 준", "공", "검", "사", " 신고",
+" 필", "증", ",", " 압", "력", "용", "기", " 구조", "용", "접", " 검", "사", "증", ",", " 건축",
+" 사용", "검", "사", " 승", "인", "서", ",", " 건축", " 안전", "점", "검", " 종합", " 보고", "서",
+",", " 어린이", "놀", "이터", " 최초", " 설치", "검", "사", " 필", "증", " 등이", " 있습니다", ".",
+ "\n", ""
+ , "isComplete": true}, data: [DONE], 
+ 
+ 
+ 
+> a["MESSAGE\ndestination:/topic/room/room-f66617e4\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:e4gy2r55-2\ncontent-length:798\n\n{\"roomId\":\"room-f66617e4\",\"sender\":\"Bot\",\"senderRole\":\"BOT\",\"message\":\"장기수선계획서, 건축 사용검사 필증, 전기 안전관리자 선임 필증, 승강기 완성검사 필증, 간이 무선국 허가증, 소방시설 완공검사 필증, 도시가스 완성검사 필증, 전기 설비 공사계획 신고필증, 전기사용 계약서, 전력공급 동의서, 접지 절연저항 측정표, 항공장애등 옥상헬리포트 검사필증, F.M.S 시설물 초기 ID/PW, 하자보수 증권, 검사대상기기 설치 허가증, 오수처리시설 준공검사 신고 필증, 압력용기 구조용접 검사증, 건축 사용검사 승인서, 건축 안전점검 종합 보고서, 어린이놀이터 최초 설치검사 필증 등이 있습니다.\\n\",\"type\":\"TALK\",\"companyId\":null}\u0000"]
+
+Data
+▽  1 > o
+▲  C->S 69 < ["CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n\u0000"]
+▽  S->C 53 a["CONNECTED\nversion:1.1\nheart-beat:0,0\n\n\u0000"]
+▲  C->S 72 ["SUBSCRIBE\nid:sub-0\ndestination:/topic/room/room-f66617e4\n\n\u0000"]
+▲ 176 ["SEND\ndestination:/app/customer/chat\ncontent-length:116\n\n{\"roomId\":\"room-f66617e4\",\"sender\":\"고객-253f\",\"type\":\"JOIN\",\"message\":\"고객-253f님이 입장하셨습니다.\"}\u0000"]
+▽ 314 a["MESSAGE\ndestination:/topic/room/room-f66617e4\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:e4gy2r55-0\ncontent-length:161\n\n{\"roomId\":\"room-f66617e4\",\"sender\":\"고객-253f\",\"senderRole\":\"CUSTOMER\",\"message\":\"고객-253f님이 입장하셨습니다.\",\"type\":\"JOIN\",\"companyId\":\"apt001\"}\u0000"]
+▲ 162 ["SEND\ndestination:/app/customer/chat\ncontent-length:81\n\n{\"roomId\":\"room-f66617e4\",\"sender\":\"고객-253f\",\"message\":\"Msg#1\",\"type\":\"TALK\"}\u0000"]
+▽ S->C 301 a["MESSAGE\ndestination:/topic/room/room-f66617e4\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:e4gy2r55-1\ncontent-length:126\n\n{\"roomId\":\"room-f66617e4\",\"sender\":\"고객-253f\",\"senderRole\":\"CUSTOMER\",\"message\":\"Msg#1\",\"type\":\"TALK\",\"companyId\":\"apt001\"}\u0000"]
+▽ 576 a["MESSAGE\ndestination:/topic/room/room-f66617e4\ncontent-type:application/json\nsubscription:sub-0\nmessage-id:e4gy2r55-2\ncontent-length:798\n\n{\"roomId\":\"room-f66617e4\",\"sender\":\"Bot\",\"senderRole\":\"BOT\",\"message\":\"장기수선계획서, 건축 사용검사 필증, 전기 안전관리자 선임 필증, 승강기 완성검사 필증, 간이 무선국 허가증, 소방시설 완공검사 필증, 도시가스 완성검사 필증, 전기 설비 공사계획 신고필증, 전기사용 계약서, 전력공급 동의서, 접지 절연저항 측정표, 항공장애등 옥상헬리포트 검사필증, F.M.S 시설물 초기 ID/PW, 하자보수 증권, 검사대상기기 설치 허가증, 오수처리시설 준공검사 신고 필증, 압력용기 구조용접 검사증, 건축 사용검사 승인서, 건축 안전점검 종합 보고서, 어린이놀이터 최초 설치검사 필증 등이 있습니다.\\n\",\"type\":\"TALK\",\"companyId\":null}\u0000"]
+▽   1 h
+▽   1 h
+▽   1 h
+▽   1 h
+▽   1 h
+▽   1 h
+
+PUBLISH chatroom '{"userId":"testuser","message":"관리자 메시지","timestamp":1640995200000}'
+
+
+a["
+MESSAGE
+destination:/topic/room/room-ab270eb4
+content-type:application/json
+subscription:sub-0
+message-id:syn23tw1-9
+content-length:127
+
+{ "roomId":"room-ab270eb4",
+  "sender":"怨좉컼-4449",
+  "senderRole":"CUSTOMER",
+  "message":"Hi!",
+  "type":"TALK",
+  "companyId":"apt001"
+}
+\u0000"]
+
+
+a["MESSAGE
+destination:/topic/room/room-ab270eb4
+content-type:application/json\nsubscription:sub-0
+message-id:syn23tw1-10
+content-length:226
+
+{\"roomId\":\"room-ab270eb4\",\"sender\":\"Bot\",\"senderRole\":\"BOT\",\"message\":\"장기수선계획서, 전기 안전관리자 선임, 어린이놀이터 최초 설치검사 필증 등이 있습니다.\\n\",\"type\":\"TALK\",\"companyId\":null}\u0000"]
+
+
+1. STOMP 주요 명령(Frame) 구성
+STOMP는 클라이언트와 서버가 서로 주고받는 '프레임' 단위로 동작합니다. 크게 세 종류로 나뉩니다.
+
+클라이언트가 보내는 명령
+    CONNECT: 서버와 STOMP 연결을 시작합니다.
+    SUBSCRIBE: 특정 경로(topic)를 구독하여 메시지를 받겠다고 알립니다. (예: /topic/chat)
+    SEND: 특정 경로로 메시지를 보냅니다.
+    UNSUBSCRIBE: 구독을 해지합니다.
+    DISCONNECT: 연결을 종료합니다.
+    BEGIN / COMMIT / ABORT: 트랜잭션 처리가 필요할 때 사용합니다.
+
+서버가 보내는 명령
+    CONNECTED: 연결 승인 응답입니다.
+    MESSAGE: 구독 중인 경로로 새 메시지가 도착했음을 알립니다. (실제 데이터가 담김)
+    RECEIPT: 클라이언트 요청이 성공적으로 처리되었음을 확인해 줍니다.
+    ERROR: 문제 발생 시 에러 정보를 담아 보냅니다.
+
+SockJS 하트비트
+    웹소켓 모니터링 중 보이는 o, a, h 등은 STOMP 자체 명령어가 아니라, STOMP 하단에서 동작하는 SockJS라는 라이브러리의 제어 문자입니다.
+    웹소켓은 연결이 끊겨도 즉시 알기 어려울 때가 많아, SockJS는 연결 상태를 유지하고 확인하기 위해 다음 문자들을 사용합니다.
+    문자    이름  의미
+    o       Open frame          연결이 처음 맺어졌을 때 전송됩니다.
+                                "이제 시작이야!"라는 신호입니다.
+    h       Heartbeat frame     서버와 클라이언트가 살아있는지 확인하는 '박동'입니다. 일정 시간 데이터가 없으면 전송됩니다.
+    a       Array frame         실제 메시지(STOMP 프레임 등)가 담긴 배열입니다. 보통 a["STOMP 프레임 내용"] 형태로 전달됩니다.
+    c       Close frame         연결이 닫혔음을 알리는 세션 종료 프레임입니다.
+
+
+STOMP의 메시지징 프로토콜에 대해 자세히 규약을 알려줘. CONNECT, CONNECTED, SUBSCRIBE,SEND,MESSAGE등의 세부 내용에 대해 규약을 정리해줘
+
+STOMP(Simple Text Oriented Messaging Protocol)는 텍스트 기반의 프로토콜로, HTTP와 유사한 구조를 가지고 있습니다.
+모든 프레임은 커맨드(Command), 헤더(Header), **바디(Body)**로 구성되며, 각 프레임의 끝은 NULL( \u0000 ) 문자로 끝납니다.
+
+STOMP 규약의 핵심적인 5가지 프레임을 상세히 정리해 드립니다.
+
+1. CONNECT (클라이언트 -> 서버)
+연결을 시작하기 위한 첫 번째 프레임입니다.
+
+필수 헤더:
+accept-version: 클라이언트가 지원하는 STOMP 버전 (예: 1.1, 1.2)
+host: 접속하려는 가상 호스트 이름 (일반적으로 서버 도메인)
+
+선택 헤더:
+
+login, passcode: 인증이 필요한 경우 사용
+heart-beat: 클라이언트와 서버 간 상태 확인 주기 (예: 10000,10000은 10초마다 송수신)
+
+예시:
+
+CONNECT
+accept-version:1.2
+host:example.com
+heart-beat:10000,10000
+^@ (NULL 문자)
+
+2. CONNECTED (서버 -> 클라이언트)
+서버가 클라이언트의 CONNECT 요청을 수락했음을 알리는 응답입니다.
+
+주요 헤더:
+version: 서버가 최종적으로 선택한 STOMP 버전
+session: 해당 연결의 고유 세션 ID
+server: 서버 소프트웨어 정보 (선택사항)
+heart-beat: 서버가 결정한 최종 하트비트 설정 값
+
+3. SUBSCRIBE (클라이언트 -> 서버)
+특정 경로(Destination)를 구독하여 메시지를 받겠다는 선언입니다.
+
+필수 헤더:
+destination: 구독할 주소 (예: /topic/chat, /queue/orders)
+id: 구독을 식별하는 고유 ID (이후 구독 해지 시 사용)
+
+선택 헤더:
+ack: 메시지 확인 응답 모드 (auto, client, client-individual)
+
+예시:
+
+SUBSCRIBE
+id:sub-001
+destination:/topic/news
+ack:auto
+^@
+
+4. SEND (클라이언트 -> 서버)
+특정 경로로 메시지를 보낼 때 사용합니다.
+
+필수 헤더:
+destination: 메시지를 보낼 대상 주소
+
+선택 헤더:
+content-type: 바디 데이터의 형식 (예: application/json)
+content-length: 바디의 길이 (바이트 단위)
+바디: 실제 전송할 데이터 내용
+
+예시:
+
+SEND
+destination:/app/chat.sendMessage
+content-type:application/json
+{"sender":"user1", "message":"Hello!"} ^@
+
+5. MESSAGE (서버 -> 클라이언트)
+서버가 SUBSCRIBE한 클라이언트에게 실제 데이터를 전달할 때 사용하는 프레임입니다.
+
+필수 헤더:
+destination: 메시지가 전달된 경로
+message-id: 이 메시지의 고유 식별자
+subscription: 이 메시지를 받게 된 구독 ID (SUBSCRIBE 시 보냈던 ID)
+
+바디: 서버에서 보낸 실제 데이터
+
+6. 기타 중요한 규약 요소들
+ACK (Acknowledgment): 클라이언트가 서버로부터 받은 MESSAGE를 성공적으로 처리했음을 알릴 때 보냅니다. (ack 헤더가 client 모드일 때 필수)
+RECEIPT: 클라이언트가 어떤 프레임에 receipt 헤더를 포함해 보내면, 서버는 처리가 끝난 후 해당 ID를 담은 RECEIPT 프레임을 응답해야 합니다. (작업 완료 보장)
+NULL 문자(\u0000): 모든 STOMP 프레임의 끝을 알리는 핵심 구분자입니다. 이 문자가 있어야 상대방이 "프레임이 끝났다"는 것을 인지합니다.
+
+요약 테이블
+프레임	방향	목적
+CONNECT	C -> S	연결 요청 및 하트비트 협상
+CONNECTED	S -> C	연결 성공 및 세션 정보 전달
+SUBSCRIBE	C -> S	특정 채널 구독 (메시지 수신 대기)
+SEND	C -> S	메시지 발행 (데이터 송신)
+MESSAGE	S -> C	구독자에게 메시지 배달
+ERROR	S -> C	프로토콜 오류 발생 시 통보
+STOMP는 이처럼 단순한 텍스트 구조 덕분에 디버깅이 쉽고, Redis나 RabbitMQ 같은 메시지 브로커와 연동하여 사용하기 매우 강력한 도구입니다
+
+
+summary-uri: "/v1/consultation-summary/summarize"
+keyword-uri: "/v1/consultation-keywords/extract"
+category-uri: "/v1/consultation-classification/classify"
+
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "customer123",
+    "password": "pass123"
+  }' \
+  http://localhost:8080/api/auth/login
+
+curl -X POST 'http://10.50.1.43:8040/v1/chatbot/ask' \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "customer123",
+    "password": "pass123"
+  }' \
+  http://localhost:8080/api/auth/login
+
+curl 'http://10.50.1.43:8040/v1/chatbot/ask' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Accept-Encoding:gzip, deflate, br' \
+  -H 'user-agent:ReactorNetty/1.2.1' \
+  -H 'Content-Type:application/json' \
+  -H 'Accept:text/event-stream' \
+  -H 'Connection:keep-alive' \
+  -d ' 
+  {
+      "chat": {
+          "message": "ㅁㅁㅁ",
+          "stream": true,
+          "useHistory": true
+      },
+      "meta": {
+          "category1": "",
+          "category2": "",
+          "companyId": "apt001",
+          "sessionId": "room-3c15a834",
+          "userId": "怨좉컼-4449",
+          "ragSysInfo": "DEFAULT_RAG"
+      }
+  }' \
+
+"There was an error parsing the body"
+
+curl -X POST \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{ \
+    "chat": { 
+        "message": "한국", 
+        "stream": true, 
+        "useHistory": true 
+    }, 
+    "meta": { 
+        "category1": "", 
+        "category2": "", 
+        "companyId": "apt001", 
+        "sessionId": "room-3c15a834", 
+        "userId": "HPM-4449", 
+        "ragSysInfo": "DEFAULT_RAG" 
+    } 
+}' \
+  http://10.50.1.43:8040/v1/chatbot/ask
+
+curl -X POST \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{ "chat": "message" }' \
+  http://10.50.1.43:8040/v1/chatbot/ask
+
+
+curl -X POST \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"message":"안녕하세요","name":"홍길동"}' \
+  http://localhost:8080/api/chat
+
+curl -X POST \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{ \
+  "message":"안녕하세요",
+  "name":"홍길동"}' \
+  http://localhost:8080/api/chat
+
+curl -X POST \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d $'{"message":"안녕하세요","name":"홍길동"}' \
+  http://localhost:8080/api/chat
+
+
+curl -s 'http://localhost:10200/tlm/REAPP?NTM_TLM_O_1031' \
+-H 'chnlType: ntm' \
+-H 'Content-Length: 79' \
+-H 'Content-Type: application/json;charset=EUC-KR' \
+-H 'host: dev-iag.axacloud.co.kr' \
+-H 'interface_id: NTM_TLM_O_1031' \
+-H 'Reap-Function-Code: RA' \
+-H 'Reap-Guid: 97229f78-a700-4369-a541-ecec616f75e2' \
+-H 'Reap-Guid-Seq: 05' \
+-H 'Reap-Origin-Syscode: NTM' \
+-H 'Reap-Screen-Id: NTM23C01M01' \
+-H 'Reap-User-Id: 9000816' \
+-H 'service: SVCCIF006514' \
+-H 'service_type: ntm' \
+-H 'serviceMethod: ZQ' \
+-H 'X-Oidc-Api-Key: A7F3B1C5948DE2A163DC0B7FA8E4219E' \
+-d '{"biz_data":{"inoutData":{"TELNO":"01050287547"},"commData":{"next_FLAG":"N"}}}'
+
+
+room-ab270eb4
+
+# 기본 채팅 메시지 발행 (Spring에서 사용하는 토픽명 확인 필요)
+PUBLISH chatroom '{"userId":"testuser","message":"관리자 메시지","timestamp":1640995200000}'
+
+# 특정 방 토픽
+PUBLISH chat:room:room-ab270eb4 '{"roomId":"room-ab270eb4","message":"장기","sender":"Bot", "type":"TALK", "companyId":null }'
+
+{\"roomId\":\"room-ab270eb4\",\"sender\":\"Bot\",\"senderRole\":\"BOT\",\"message\":\"장기수선계획서, 전기 안전관리자 선임, 어린이놀이터 최초 설치검사 필증 등이 있습니다.\\n\",\"type\":\"TALK\",\"companyId\":null}\u0000"]

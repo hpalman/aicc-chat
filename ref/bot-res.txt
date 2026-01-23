@@ -1,0 +1,123 @@
+HTTP/1.1 200 OK
+date: Mon, 19 Jan 2026 03:45:59 GMT
+server: uvicorn
+cache-control: no-cache
+connection: keep-alive
+x-accel-buffering: no
+content-type: text/event-stream; charset=utf-8
+Content-Length: 4321
+
+data: {"sessionId": "room-d2dc543d", "delta": "", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "책", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 재", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "료", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 생산", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "과", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 관련된", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 자세", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "한", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 정보", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "는", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 현재", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 확인", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "이", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 어려운", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 점", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 양", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "해", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 부탁", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "드립니다", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": ".", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 보다", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 정확", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "한", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 안내", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "를", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 위해", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 고객", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "센터", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "([", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "고", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "객", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "센터", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 연락", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "처", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "])", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 또는", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 관련", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 부", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "서", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "([", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "담당", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 부", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "서", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 연락", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "처", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "])", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "로", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 문의", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "해주", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "시면", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": " 감사", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "하겠습니다", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": ".", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "\n", "isComplete": false}
+
+data: {"sessionId": "room-d2dc543d", "delta": "", "isComplete": true}
+
+data: [DONE]
+

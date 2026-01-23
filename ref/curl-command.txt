@@ -1,0 +1,67 @@
+curl 'http://10.50.1.43:8040/v1/chatbot/ask' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Accept-Encoding:gzip, deflate, br' \
+  -H 'user-agent:ReactorNetty/1.2.1' \
+  -H 'Accept:text/event-stream' \
+  -H 'Connection:keep-alive' \
+  -d $'{ \
+    "chat": {
+        "message": "한국",
+        "stream": true,
+        "useHistory": true
+    },
+    "meta": {
+        "category1": "",
+        "category2": "",
+        "companyId": "apt001",
+        "sessionId": "room-3c15a834",
+        "userId": "HPM-4449",
+        "ragSysInfo": "DEFAULT_RAG"
+    }
+}'\
+
+
+ok
+curl 'http://10.50.1.43:8040/v1/chatbot/ask' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Accept-Encoding:gzip, deflate, br' \
+  -H 'user-agent:ReactorNetty/1.2.1' \
+  -H 'Accept:text/event-stream' \
+  -H 'Connection:keep-alive' \
+  -d $'{ "chat": { "message": "LE", "stream": true, "useHistory": true }, "meta": { "category1": "", "category2": "", "companyId": "apt001", "sessionId": "room-3c15a834", "userId": "HPM-4449", "ragSysInfo": "DEFAULT_RAG" } }'
+  
+curl -v 'http://10.50.1.43:8040/v1/chatbot/ask' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Accept-Encoding:gzip, deflate, br' \
+  -H 'user-agent:ReactorNetty/1.2.1' \
+  -H 'Accept:text/event-stream' \
+  -H 'Connection:keep-alive' \
+  -d $'{ "chat": { "message": "한글", "stream": true, "useHistory": true }, "meta": { "companyId": "apt001", "sessionId": "room-3c15a834", "ragSysInfo": "DEFAULT_RAG" } }'
+  
+curl -v 'http://10.50.1.43:8040/v1/chatbot/ask' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Accept-Encoding:gzip, deflate, br' \
+  -H 'user-agent:ReactorNetty/1.2.1' \
+  -H 'Accept:text/event-stream' \
+  -H 'Connection:keep-alive' \
+  -d '{ "chat": { "message": "한글", "stream": true, "useHistory": true }, "meta": { "companyId": "apt001", "sessionId": "room-3c15a834", "ragSysInfo": "DEFAULT_RAG" } }'
+
+# Git Bash 시작 시 실행 (또는 ~/.bashrc에 추가)
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+  
+Options > Locale : ko_KR, Character set: UTF-8
+제대로 되지는 않는다. 일단 한글이 들어가면 골치 아프다.
+파일로 저장해야 할까?
+curl -v 'http://127.0.0.1:8040/v1/chatbot/ask' \
+  -H 'Content-Type: application/json; charset=UTF-8' \
+  -H 'Accept-Encoding:gzip, deflate, br' \
+  -H 'user-agent:ReactorNetty/1.2.1' \
+  -H 'Accept:text/event-stream' \
+  -H 'Connection:keep-alive' \
+  -d '{ "chat": { "message": "한글", "stream": true, "useHistory": true }, "meta": { "companyId": "apt001", "sessionId": "room-3c15a834", "ragSysInfo": "DEFAULT_RAG" } }'
+  
+curl --path-as-is -i -s -k -X $'POST' \
+    -H $'Accept-Encoding: gzip, deflate, br' -H $'user-agent: ReactorNetty/1.2.1' -H $'Content-Type: application/json' -H $'Accept: text/event-stream' -H $'Connection: keep-alive' -H $'Postman-Token: e9c36465-8c64-422f-9888-9cbd8e075df5' -H $'Host: 127.0.0.1:8040' -H $'Content-Length: 292' \
+    --data-binary $'{\x0d\x0a    \"chat\": {\x0d\x0a        \"message\": \"\xeb\xb3\xb4\xed\x97\x98\",\x0d\x0a        \"stream\": true,\x0d\x0a        \"useHistory\": true\x0d\x0a    },\x0d\x0a    \"meta\": {\x0d\x0a        \"category1\": \"\",\x0d\x0a        \"category2\": \"\",\x0d\x0a        \"companyId\": \"apt001\",\x0d\x0a        \"sessionId\": \"room-3c15a834\",\x0d\x0a        \"ragSysInfo\": \"DEFAULT_RAG\"\x0d\x0a    }\x0d\x0a}' \
+    $'http://10.50.1.43:8040/v1/chatbot/ask'  
