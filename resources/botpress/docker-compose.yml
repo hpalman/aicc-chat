@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: botpress-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: botpress
+      POSTGRES_USER: botpress
+      POSTGRES_PASSWORD: botpress_secure_password_2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - botpress-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botpress"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  botpress:
+    image: botpress/server:12.26.11
+    container_name: botpress-server
+    restart: unless-stopped
+    user: root
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # 1. 데이터베이스 설정
+      DATABASE_URL: postgres://botpress:botpress_secure_password_2024@postgres:5432/botpress
+      
+      # 2. HTTP 서버 및 접속 설정 (로그인 루프 해결 핵심)
+      EXTERNAL_URL: http://192.168.133.132:3000
+      BP_CONFIG_HTTPSERVER_HOST: 0.0.0.0
+      BP_CONFIG_HTTPSERVER_PORT: 3000
+      BP_CONFIG_HTTPSERVER_EXTERNALURL: http://192.168.133.132:3000
+      BP_CONFIG_HTTPSERVER_USECOOKIESTORAGE: "true"
+      BP_CONFIG_HTTPSERVER_CORS_ENABLED: "true"
+      BP_CONFIG_HTTPSERVER_CORS_ORIGIN: "http://192.168.133.132:3000"
+      BP_CONFIG_HTTPSERVER_CORS_CREDENTIALS: "true"
+      
+      # 3. 인증 및 보안 설정 (고정 Secret 사용으로 토큰 무효화 방지)
+      BP_CONFIG_APPSECRET: "fixed-permanent-secret-key-32-chars-long"
+      BP_CONFIG_JWTTOKEN_SECRET: "fixed-permanent-secret-key-32-chars-long"
+      BP_CONFIG_AUTHSTRATEGIES: '{"default":{"type":"basic","enabled":true,"config":{"allowSelfService":true}}}'
+      
+      # 4. 부팅 안정화 설정
+      BP_PRODUCTION: "true"
+      VERBOSITY_LEVEL: "info"
+      BP_CONFIG_PRO_ENABLED: "false"
+      
+      # 5. 모듈 설정 (에러 나는 QNA 제외)
+      BP_MODULE_NLU_DUCKLINGURL: http://duckling:8000
+      BP_MODULE_NLU_ENABLED: "true"
+      BP_MODULE_BUILTIN_ENABLED: "true"
+      BP_MODULE_CHANNEL_WEB_ENABLED: "true"
+      
+    ports:
+      - "3000:3000"
+    volumes:
+      - botpress_data:/botpress/data
+    networks:
+      - botpress-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  duckling:
+    image: rasa/duckling:latest
+    container_name: botpress-duckling
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - botpress-network
+
+networks:
+  botpress-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  botpress_data:

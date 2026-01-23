@@ -1,0 +1,94 @@
+server:
+  port: 28070
+
+app:
+  system-mode: REDIS_ONLY # IN_MEMORY # REDIS_RABBIT # IN_MEMORY | REDIS_ONLY | REDIS_RABBIT
+  ai-bot:
+    use-bot: true
+    name: "aicess.michat"
+    ai-end-point: "http://127.0.0.1:8040" # "http://10.50.1.43:8040"
+    bot-mode: "internal" # internal or external
+    analysis:
+      summary-uri: "/v1/consultation-summary/summarize"
+      keyword-uri: "/v1/consultation-keywords/extract"
+      category-uri: "/v1/consultation-classification/classify"
+      company-id: "apt001"
+      default-user-id: "manager"
+  chat:
+    mode: HYBRID      # MiChat -> Agent 전환 모드
+    # mode: MICHAT      # MiChat(자체 AI 엔진) 연동 모드
+    # mode: BOTPRESS   # Botpress 연동 모드
+    # mode: AGENT      # 상담원 전용 모드 (봇 없음)
+    # mode: SIMPLE_BOT # 내부 단순 봇 모드
+  auth:
+    login-api-url: "http://mock-auth-api.aicc/v1/login"
+    agent-login-api-url: "http://mock-auth-api.aicc/v1/agent/login"
+    mock-user:
+      id: "user123"
+      name: "홍길동"
+      email: "hong@aicc.com"
+    
+spring:
+  # Redis 설정 (Spring Data Redis)
+  data:
+    redis:
+      host: 127.0.0.1 # 10.50.1.58
+      port: 16379 # 36379
+      # password:  # 필요시 설정
+      timeout: 3000
+      connect-timeout: 3000
+
+  # RabbitMQ 설정
+  rabbitmq:
+    host: 192.168.133.132
+    port: 5672
+    username: aicc
+    password: aicc123!
+    virtual-host: / 
+    exchange: aicc-chat-topic-exchange
+    connection-timeout: 10000
+    requested-heartbeat: 60
+    #publisher-confirms: true
+    publisher-returns: true
+    template:
+      mandatory: true
+      retry:
+        enabled: true
+        initial-interval: 1000
+        max-attempts: 3
+    listener:
+      simple:
+        acknowledge-mode: auto
+        concurrency: 5
+        max-concurrency: 10
+        prefetch: 10
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+
+  # Elasticsearch 설정
+  elasticsearch:
+    uris: http://192.168.133.132:9200
+    connection-timeout: 5s
+    socket-timeout: 60s
+
+#################################
+# LOGGING
+#################################
+logging:
+  level:
+    root: info
+    org.springframework.amqp: debug
+    org.springframework.amqp.rabbit: debug
+    com.rabbitmq: debug
+    aicc.chat: debug
+    jdbc:
+      sqlonly: info
+    resultset: info
+
+# ===============================
+# 기본 디버그 설정
+# ===============================
+# 기본적으로 디버그 모드를 활성화하여 개발 편의성 제공
+debug: true  # Spring Boot 디버그 모드 활성화

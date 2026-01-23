@@ -1,0 +1,37 @@
+{
+    "$schema": "../../assets/config-schema.json",
+    "version": "12.26.11",
+    "appSecret": "change-this-appsecret-in-production-please-use-32+chars",
+    "httpServer": {
+      "host": "0.0.0.0",
+      "port": 3000,
+      "backlog": 511,
+      "bodyLimit": "100mb",
+      "externalUrl": "http://192.168.133.132:3000",
+      "useCookieStorage": true,
+      "cors": {
+        "enabled": true,
+        "origin": "http://192.168.133.132:3000",
+        "credentials": true
+      }
+    },
+    "authStrategies": {
+      "default": {
+        "enabled": true,
+        "allowSelfService": true
+      }
+    },
+    "database": {
+      "type": "postgres",
+      "url": "postgres://botpress:botpress_secure_password_2024@postgres:5432/botpress"
+    },
+    "modules": [
+      { "location": "MODULES_ROOT/analytics", "enabled": true },
+      { "location": "MODULES_ROOT/basic-skills", "enabled": true },
+      { "location": "MODULES_ROOT/builtin", "enabled": true },
+      { "location": "MODULES_ROOT/channel-web", "enabled": true },
+      { "location": "MODULES_ROOT/nlu", "enabled": true },
+      { "location": "MODULES_ROOT/qna", "enabled": false }
+    ],
+    "pro": { "enabled": false }
+  }

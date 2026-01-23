@@ -1,0 +1,136 @@
+# Botpress v12 Docker Compose - 최소 구성 (Redis 제외)
+# Redis 포트 충돌 시 이 파일 사용
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:13-alpine
+    container_name: botpress-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: botpress
+      POSTGRES_USER: botpress
+      POSTGRES_PASSWORD: botpress_secure_password_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - botpress-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botpress"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Botpress v12 서버
+  botpress:
+    image: botpress/server:12.26.11
+    container_name: botpress-server
+    restart: unless-stopped
+    user: root
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # 데이터베이스 설정
+      DATABASE_URL: postgres://botpress:botpress_secure_password_2024@postgres:5432/botpress
+      
+      # HTTP 서버 설정 (올바른 형식)
+      BP_CONFIG_HTTPSERVER_HOST: 0.0.0.0
+      BP_CONFIG_HTTPSERVER_PORT: 3000
+      BP_CONFIG_HTTPSERVER_BACKLOG: 511
+      BP_CONFIG_HTTPSERVER_BODYLIMIT: 100mb
+      BP_CONFIG_HTTPSERVER_CORS_ENABLED: "true"
+      BP_CONFIG_HTTPSERVER_CORS_ORIGIN: "http://192.168.133.132:3000"
+      BP_CONFIG_HTTPSERVER_CORS_CREDENTIALS: "true"
+      BP_CONFIG_HTTPSERVER_EXTERNALURL: "http://192.168.133.132:3000"
+      # 중요: UI 라우트(/admin/...)가 쿠키 기반 세션을 기대하는 경우가 있어 명시적으로 활성화
+      # (이 키는 httpServer.useCookieStorage에 매핑됨)
+      BP_CONFIG_HTTPSERVER_USECOOKIESTORAGE: "true"
+      
+      # 외부 URL 설정 (실제 서버 IP로 변경)
+      EXTERNAL_URL: http://192.168.133.132:3000
+      
+      # 프로덕션 모드
+      BP_PRODUCTION: "true"
+      
+      # 로그 레벨
+      VERBOSITY_LEVEL: "info"
+      
+      # 모듈 설정
+      BP_MODULE_NLU_DUCKLINGURL: http://duckling:8000
+      BP_MODULE_NLU_ENABLED: "true"
+      BP_MODULE_BUILTIN_ENABLED: "true"
+      BP_MODULE_CHANNEL_WEB_ENABLED: "true"
+      BP_MODULE_ANALYTICS_ENABLED: "false"
+      BP_MODULE_QNA_ENABLED: "false"
+      BP_MODULE_BASIC_SKILLS_ENABLED: "false"
+      
+      # 인증/서명 키 (필수, 고정값)
+      # 로그에 'JWT Secret isn't defined. Generating a random key...'가 뜨면 이 값이 적용되지 않은 것
+      BP_CONFIG_APPSECRET: "change-this-appsecret-in-production-please-use-32+chars"
+      BP_CONFIG_PRO_ENABLED: "false"
+      
+      # 대화 설정
+      BP_CONFIG_DIALOG_JANITORINTERVAL: "10s"
+      BP_CONFIG_DIALOG_TIMEOUTINTERVAL: "2m"
+      
+      # 클러스터링 설정
+      CLUSTER_ENABLED: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      # Botpress 데이터 영구 저장
+      - botpress_data:/botpress/data
+      # 권장: 로그인/라우팅(세션/쿠키/외부URL) 문제 방지를 위해 설정 파일을 명시적으로 마운트
+      - ./botpress.config.json:/botpress/data/global/botpress.config.json:ro
+    networks:
+      - botpress-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # Duckling (날짜/시간 등 엔티티 추출용)
+  duckling:
+    image: rasa/duckling:latest
+    container_name: botpress-duckling
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - botpress-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+networks:
+  botpress-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+volumes:
+  postgres_data:
+    driver: local
+  botpress_data:
+    driver: local
+

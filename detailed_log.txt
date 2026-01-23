@@ -1,0 +1,266 @@
+> Task :compileJava UP-TO-DATE
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+12월 09, 2025 5:31:25 오후 org.apache.catalina.core.AprLifecycleListener init
+미세: The Apache Tomcat Native library could not be found using names [tcnative-2, libtcnative-2, tcnative-1, libtcnative-1] on the java.library.path [C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;.]. The errors reported were [Can't load library: C:\work\workspace\aicc\aicc-chat\bin\tcnative-2.dll, Can't load library: C:\work\workspace\aicc\aicc-chat\bin\libtcnative-2.dll, Can't load library: C:\work\workspace\aicc\aicc-chat\bin\tcnative-1.dll, Can't load library: C:\work\workspace\aicc\aicc-chat\bin\libtcnative-1.dll, no tcnative-2 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;., no libtcnative-2 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;., no tcnative-1 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;., no libtcnative-1 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;.]
+org.apache.tomcat.jni.LibraryNotFoundError: Can't load library: C:\work\workspace\aicc\aicc-chat\bin\tcnative-2.dll, Can't load library: C:\work\workspace\aicc\aicc-chat\bin\libtcnative-2.dll, Can't load library: C:\work\workspace\aicc\aicc-chat\bin\tcnative-1.dll, Can't load library: C:\work\workspace\aicc\aicc-chat\bin\libtcnative-1.dll, no tcnative-2 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;., no libtcnative-2 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;., no tcnative-1 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;., no libtcnative-1 in java.library.path: C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\WINDOWS\Sun\Java\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\Program Files\PowerShell\7;C:\work\tools\python-3.11.8-embed-amd64;C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin;C:\Program Files (x86)\VMware\VMware Workstation\bin\;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Program Files\dotnet\;C:\Program Files\Bandizip\;C:\work\tools\java\openjdk-21+35_windows-x64_bin\jdk-21\bin\;C:\Program Files (x86)\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\work\tools\gradle-8.14.1-20250522010941+0000\bin\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\Git\cmd;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;c:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\work\project\aicc\dev-doc\1.design\html변환프로그램\Release-24.08.0-0\poppler-24.08.0\Library\bin;C:\ProgramData\chocolatey\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files\Git\usr\bin;C:\Program Files\PowerShell\7\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\ulina\AppData\Local\Programs\Python\Python313\;C:\Users\ulina\AppData\Local\Microsoft\WindowsApps;C:\Users\ulina\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\ulina\AppData\Local\Programs\Fiddler;C:\Users\ulina\AppData\Local\Programs\cursor\resources\app\bin;C:\Users\ulina\AppData\Local\nvm;C:\nvm4w\nodejs;C:\Users\ulina\.dotnet\tools;c:\Users\ulina\.cursor\extensions\vscjava.vscode-java-debug-0.58.3-universal\bundled\scripts\noConfigScripts;c:\Users\ulina\.cursor\extensions\ms-python.debugpy-2025.14.1-win32-x64\bundled\scripts\noConfigScripts;.
+	at org.apache.tomcat.jni.Library.<init>(Library.java:91)
+	at org.apache.tomcat.jni.Library.initialize(Library.java:147)
+	at org.apache.catalina.core.AprLifecycleListener.init(AprLifecycleListener.java:189)
+	at org.apache.catalina.core.AprLifecycleListener.isAprAvailable(AprLifecycleListener.java:106)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getDefaultServerLifecycleListeners(TomcatServletWebServerFactory.java:189)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.<init>(TomcatServletWebServerFactory.java:136)
+	at org.springframework.boot.autoconfigure.web.servlet.ServletWebServerFactoryConfiguration$EmbeddedTomcat.tomcatServletWebServerFactory(ServletWebServerFactoryConfiguration.java:73)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:140)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:647)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:639)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1335)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1165)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:562)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:522)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:325)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:234)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:323)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:204)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.getWebServerFactory(ServletWebServerApplicationContext.java:223)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:186)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:162)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:618)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:334)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1343)
+	at aicc.AiccChatApplication.main(AiccChatApplication.java:9)
+
+12월 09, 2025 5:31:25 오후 org.apache.tomcat.util.compat.Jre19Compat <clinit>
+미세: Class not found so assuming code is running on a pre-Java 19 JVM
+java.lang.ClassNotFoundException: java.lang.WrongThreadException
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at org.apache.tomcat.util.compat.Jre19Compat.<clinit>(Jre19Compat.java:37)
+	at org.apache.tomcat.util.compat.JreCompat.<clinit>(JreCompat.java:55)
+	at org.apache.catalina.startup.Tomcat.<clinit>(Tomcat.java:1193)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getWebServer(TomcatServletWebServerFactory.java:201)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:188)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:162)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:618)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:334)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1343)
+	at aicc.AiccChatApplication.main(AiccChatApplication.java:9)
+
+12월 09, 2025 5:31:25 오후 org.apache.tomcat.util.compat.Jre21Compat <clinit>
+미세: Class not found so assuming code is running on a pre-Java 21 JVM
+java.lang.ClassNotFoundException: java.lang.Thread$Builder
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at org.apache.tomcat.util.compat.Jre21Compat.<clinit>(Jre21Compat.java:43)
+	at org.apache.tomcat.util.compat.JreCompat.<clinit>(JreCompat.java:55)
+	at org.apache.catalina.startup.Tomcat.<clinit>(Tomcat.java:1193)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getWebServer(TomcatServletWebServerFactory.java:201)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:188)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:162)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:618)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:334)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1343)
+	at aicc.AiccChatApplication.main(AiccChatApplication.java:9)
+
+12월 09, 2025 5:31:25 오후 org.apache.tomcat.util.compat.Jre22Compat <clinit>
+미세: Class not found so assuming code is running on a pre-Java 22 JVM
+java.lang.ClassNotFoundException: java.lang.foreign.MemorySegment
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at org.apache.tomcat.util.compat.Jre22Compat.<clinit>(Jre22Compat.java:40)
+	at org.apache.tomcat.util.compat.JreCompat.<clinit>(JreCompat.java:55)
+	at org.apache.catalina.startup.Tomcat.<clinit>(Tomcat.java:1193)
+	at org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory.getWebServer(TomcatServletWebServerFactory.java:201)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.createWebServer(ServletWebServerApplicationContext.java:188)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.onRefresh(ServletWebServerApplicationContext.java:162)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:618)
+	at org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext.refresh(ServletWebServerApplicationContext.java:146)
+	at org.springframework.boot.SpringApplication.refresh(SpringApplication.java:754)
+	at org.springframework.boot.SpringApplication.refreshContext(SpringApplication.java:456)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:334)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354)
+	at org.springframework.boot.SpringApplication.run(SpringApplication.java:1343)
+	at aicc.AiccChatApplication.main(AiccChatApplication.java:9)
+
+12월 09, 2025 5:31:25 오후 org.apache.catalina.core.ContainerBase addChildInternal
+미세: Add container child [StandardHost[localhost]] to container [StandardEngine[Tomcat]]
+12월 09, 2025 5:31:25 오후 org.apache.catalina.core.ContainerBase addChildInternal
+미세: Add container child [TomcatEmbeddedContext[]] to container [StandardEngine[Tomcat].StandardHost[localhost]]
+12월 09, 2025 5:31:25 오후 org.apache.catalina.core.StandardService startInternal
+정보: Starting service [Tomcat]
+12월 09, 2025 5:31:25 오후 org.apache.catalina.core.StandardEngine startInternal
+정보: Starting Servlet engine: [Apache Tomcat/10.1.19]
+12월 09, 2025 5:31:25 오후 org.apache.catalina.loader.WebappLoader startInternal
+미세: Starting this Loader
+12월 09, 2025 5:31:26 오후 org.apache.catalina.core.StandardContext startInternal
+미세: No manager found. Checking if cluster manager should be used. Cluster configured: [false], Application distributable: [false]
+12월 09, 2025 5:31:26 오후 org.apache.catalina.core.StandardContext startInternal
+미세: Configured a manager of class [org.apache.catalina.session.StandardManager]
+12월 09, 2025 5:31:26 오후 org.apache.catalina.core.ApplicationContext log
+정보: Initializing Spring embedded WebApplicationContext
+12월 09, 2025 5:31:26 오후 org.apache.catalina.core.ContainerBase addChildInternal
+미세: Add container child [StandardWrapper[dispatcherServlet]] to container [StandardEngine[Tomcat].StandardHost[localhost].TomcatEmbeddedContext[]]
+12월 09, 2025 5:31:26 오후 org.apache.catalina.mapper.Mapper addHost
+미세: Registered host [localhost]
+12월 09, 2025 5:31:26 오후 org.apache.catalina.mapper.MapperListener registerContext
+미세: Register Wrapper [dispatcherServlet] in Context [] for service [StandardService[Tomcat]]
+12월 09, 2025 5:31:26 오후 org.apache.catalina.mapper.MapperListener registerContext
+미세: Register Context [] for service [StandardService[Tomcat]]
+12월 09, 2025 5:31:26 오후 org.apache.catalina.mapper.MapperListener registerHost
+미세: Register host [localhost] at domain [null] for service [StandardService[Tomcat]]
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.logging.InternalLoggerFactory useJdkLoggerFactory
+미세: Using java.util.logging as the default logging framework
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 explicitNoUnsafeCause0
+미세: -Dio.netty.noUnsafe: false
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 javaVersion0
+미세: Java version: 17
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: sun.misc.Unsafe.theUnsafe: available
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: sun.misc.Unsafe.copyMemory: available
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: sun.misc.Unsafe.storeFence: available
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: java.nio.Buffer.address: available
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: direct buffer constructor: unavailable: Reflective setAccessible(true) disabled
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: java.nio.Bits.unaligned: available, true
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: jdk.internal.misc.Unsafe.allocateUninitializedArray(int): unavailable: class io.netty.util.internal.PlatformDependent0$7 cannot access class jdk.internal.misc.Unsafe (in module java.base) because module java.base does not export jdk.internal.misc to unnamed module @46daef40
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent0 <clinit>
+미세: java.nio.DirectByteBuffer.<init>(long, {int,long}): unavailable
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent unsafeUnavailabilityCause0
+미세: sun.misc.Unsafe: available
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent tmpdir0
+미세: -Dio.netty.tmpdir: C:\Users\ulina\AppData\Local\Temp (java.io.tmpdir)
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent bitMode0
+미세: -Dio.netty.bitMode: 64 (sun.arch.data.model)
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent isWindows0
+미세: Platform: Windows
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent <clinit>
+미세: -Dio.netty.maxDirectMemory: -1 bytes
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent <clinit>
+미세: -Dio.netty.uninitializedArrayAllocationThreshold: -1
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.CleanerJava9 <clinit>
+미세: java.nio.ByteBuffer.cleaner(): available
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent <clinit>
+미세: -Dio.netty.noPreferDirect: false
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.InternalThreadLocalMap <clinit>
+미세: -Dio.netty.threadLocalMap.stringBuilder.initialSize: 1024
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.InternalThreadLocalMap <clinit>
+미세: -Dio.netty.threadLocalMap.stringBuilder.maxSize: 4096
+12월 09, 2025 5:31:26 오후 io.netty.util.ResourceLeakDetector <clinit>
+미세: -Dio.netty.leakDetection.level: simple
+12월 09, 2025 5:31:26 오후 io.netty.util.ResourceLeakDetector <clinit>
+미세: -Dio.netty.leakDetection.targetRecords: 4
+12월 09, 2025 5:31:26 오후 io.netty.channel.MultithreadEventLoopGroup <clinit>
+미세: -Dio.netty.eventLoopThreads: 44
+12월 09, 2025 5:31:26 오후 io.netty.util.concurrent.GlobalEventExecutor <clinit>
+미세: -Dio.netty.globalEventExecutor.quietPeriodSeconds: 1
+12월 09, 2025 5:31:26 오후 io.netty.channel.nio.NioEventLoop <clinit>
+미세: -Dio.netty.noKeySetOptimization: false
+12월 09, 2025 5:31:26 오후 io.netty.channel.nio.NioEventLoop <clinit>
+미세: -Dio.netty.selectorAutoRebuildThreshold: 512
+12월 09, 2025 5:31:26 오후 io.netty.util.internal.PlatformDependent$Mpsc <clinit>
+미세: org.jctools-core.MpscChunkedArrayQueue: available
+12월 09, 2025 5:31:26 오후 io.netty.util.NetUtil <clinit>
+미세: -Djava.net.preferIPv4Stack: false
+12월 09, 2025 5:31:26 오후 io.netty.util.NetUtil <clinit>
+미세: -Djava.net.preferIPv6Addresses: false
+12월 09, 2025 5:31:26 오후 io.netty.util.NetUtilInitializations determineLoopback
+미세: Loopback interface: lo (Software Loopback Interface 1, 127.0.0.1)
+12월 09, 2025 5:31:26 오후 io.netty.util.NetUtil$SoMaxConnAction run
+미세: Failed to get SOMAXCONN from sysctl and file \proc\sys\net\core\somaxconn. Default: 200
+12월 09, 2025 5:31:26 오후 io.netty.resolver.dns.DnsNameResolver <clinit>
+미세: Default ResolvedAddressTypes: IPV4_ONLY
+12월 09, 2025 5:31:26 오후 io.netty.resolver.dns.DnsNameResolver <clinit>
+미세: Localhost address: localhost/127.0.0.1
+12월 09, 2025 5:31:26 오후 io.netty.resolver.dns.DnsNameResolver <clinit>
+미세: Windows hostname: LAPTOP-5AM49EV0
+12월 09, 2025 5:31:26 오후 io.netty.resolver.dns.DnsNameResolver <clinit>
+미세: Default search domains: []
+12월 09, 2025 5:31:26 오후 io.netty.resolver.dns.DnsNameResolver <clinit>
+미세: Default UnixResolverOptions{ndots=1, timeout=5, attempts=16}
+12월 09, 2025 5:31:26 오후 io.netty.resolver.DefaultHostsFileEntriesResolver <clinit>
+미세: -Dio.netty.hostsFileRefreshInterval: 0
+12월 09, 2025 5:31:26 오후 io.netty.resolver.dns.DefaultDnsServerAddressStreamProvider <clinit>
+미세: Default DNS servers: [/14.34.138.2:53] (sun.net.dns.ResolverConfiguration)
+12월 09, 2025 5:31:28 오후 org.apache.catalina.core.StandardService stopInternal
+정보: Stopping service [Tomcat]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.mapper.MapperListener unregisterHost
+미세: Unregister host [localhost] at domain [null] for service [StandardService[Tomcat]]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.mapper.MapperListener unregisterContext
+미세: Unregister Context [] for service [StandardService[Tomcat]]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.mapper.MapperListener unregisterWrapper
+미세: Unregister Wrapper [dispatcherServlet] in Context [] for service [StandardService[Tomcat]]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.core.ApplicationFilterConfig unregisterJMX
+미세: JMX de-registration complete for filter of type [org.springframework.boot.web.servlet.filter.OrderedRequestContextFilter] and name [requestContextFilter]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.core.ApplicationFilterConfig unregisterJMX
+미세: JMX de-registration complete for filter of type [org.springframework.web.filter.ServerHttpObservationFilter] and name [webMvcObservationFilter]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.core.ApplicationFilterConfig unregisterJMX
+미세: JMX de-registration complete for filter of type [org.apache.tomcat.websocket.server.WsFilter] and name [Tomcat WebSocket (JSR356) Filter]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.core.ApplicationFilterConfig unregisterJMX
+미세: JMX de-registration complete for filter of type [org.springframework.boot.web.servlet.filter.OrderedCharacterEncodingFilter] and name [characterEncodingFilter]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.core.ApplicationFilterConfig unregisterJMX
+미세: JMX de-registration complete for filter of type [org.springframework.boot.web.servlet.filter.OrderedFormContentFilter] and name [formContentFilter]
+12월 09, 2025 5:31:28 오후 org.apache.catalina.session.StandardManager doUnload
+미세: No persisted sessions to unload
+12월 09, 2025 5:31:28 오후 org.apache.catalina.loader.WebappLoader stopInternal
+미세: Stopping this Loader
+
+> Task :bootRun FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun'.
+> Process 'command 'C:\Program Files\Eclipse Adoptium\jdk-17.0.15.6-hotspot\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+

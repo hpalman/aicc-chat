@@ -1,0 +1,26 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - '6379:6379'
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.11-management
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    restart: unless-stopped
+
+  aicc-chat:
+    image: openjdk:17-jdk-slim
+    ports:
+      - '8080:8080'
+    environment:
+      - SPRING_REDIS_HOST=redis
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - APP_SYSTEM_MODE=REDIS_ONLY
+    depends_on:
+      - redis
+      - rabbitmq

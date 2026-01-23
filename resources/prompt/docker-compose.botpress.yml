@@ -1,0 +1,112 @@
+services:
+  postgres:
+    image: postgres:13-alpine
+    container_name: botpress-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: botpress
+      POSTGRES_USER: botpress
+      POSTGRES_PASSWORD: botpress_secure_password_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - botpress-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botpress"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  botpress:
+    image: botpress/server:12.26.11
+    container_name: botpress-server
+    restart: unless-stopped
+    user: root
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      # 데이터베이스
+      DATABASE_URL: postgres://botpress:botpress_secure_password_2024@postgres:5432/botpress
+
+      # HTTP 서버
+      BP_CONFIG_HTTPSERVER_HOST: 0.0.0.0
+      BP_CONFIG_HTTPSERVER_PORT: 3000
+      BP_CONFIG_HTTPSERVER_BACKLOG: 511
+      BP_CONFIG_HTTPSERVER_BODYLIMIT: 100mb
+      BP_CONFIG_HTTPSERVER_EXTERNALURL: "http://192.168.133.132:3000"
+      BP_CONFIG_HTTPSERVER_USECOOKIESTORAGE: "true"
+
+      # CORS
+      BP_CONFIG_HTTPSERVER_CORS_ENABLED: "true"
+      BP_CONFIG_HTTPSERVER_CORS_ORIGIN: "http://192.168.133.132:3000"
+      BP_CONFIG_HTTPSERVER_CORS_CREDENTIALS: "true"
+
+      # 외부 URL
+      EXTERNAL_URL: http://192.168.133.132:3000
+
+      # JWT 토큰 (고정된 Secret!)
+      # BP_CONFIG_JWTTOKEN_SECRET: "this-is-my-super-secret-jwt-key-minimum-32-characters-long"
+      # BP_CONFIG_JWTTOKEN_DURATION: "24h"
+      BP_CONFIG_JWTTOKEN_ALLOWREFRESH: "true"
+      BP_CONFIG_APPSECRET: "change-this-appsecret-in-production-please-use-32+chars"
+
+      # 프로덕션 모드
+      BP_PRODUCTION: "false"
+      NODE_ENV: "development"
+      VERBOSITY_LEVEL: "debug"
+
+      # Pro 비활성화
+      BP_CONFIG_PRO_ENABLED: "false"
+
+      # 모듈
+      BP_MODULE_NLU_DUCKLINGURL: http://duckling:8000
+      BP_MODULE_NLU_ENABLED: "true"
+      BP_MODULE_BUILTIN_ENABLED: "true"
+      BP_MODULE_CHANNEL_WEB_ENABLED: "true"
+      BP_MODULE_ANALYTICS_ENABLED: "false"
+      BP_MODULE_QNA_ENABLED: "false"
+      BP_MODULE_BASIC_SKILLS_ENABLED: "false"
+
+      # 대화
+      BP_CONFIG_DIALOG_JANITORINTERVAL: "10s"
+      BP_CONFIG_DIALOG_TIMEOUTINTERVAL: "2m"
+
+      # 클러스터링
+      CLUSTER_ENABLED: "false"
+
+    ports:
+      - "3000:3000"
+    volumes:
+      - botpress_data:/botpress/data
+      # 권장: 로그인/라우팅(세션/쿠키/외부URL) 문제 방지를 위해 설정 파일을 명시적으로 마운트
+      - ./botpress.config.json:/botpress/data/global/botpress.config.json:ro
+    networks:
+      - botpress-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+
+  duckling:
+    image: rasa/duckling:latest
+    container_name: botpress-duckling
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    networks:
+      - botpress-network
+
+networks:
+  botpress-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  botpress_data:
