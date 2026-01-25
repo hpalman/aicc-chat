@@ -32,6 +32,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     private final ChatSessionService chatSessionService;
 
     @Override
+    // 고객 메시지를 MiChat으로 전달하고 응답을 브로드캐스트
     public void handleMessage(String roomId, ChatMessage message) {
         // 1. 수신된 메시지를 해당 방의 모든 구독자에게 전파
         message.setRoomId(roomId);
@@ -118,6 +119,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     }
 
     @Override
+    // 방 생성 시 환영 메시지 전송 및 이력 저장
     public void onRoomCreated(ChatRoom room) {
         log.info("New room created for MiChat workflow: {}", room.getRoomId());
         
@@ -149,6 +151,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     }
 
     private void switchToAgentMode(String roomId) {
+        // 상담원 연결 요청 처리: WAITING 전환 및 알림 발송
         log.info("Switching room {} to WAITING mode", roomId);
         roomRepository.setRoutingMode(roomId, "WAITING");
         roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
@@ -183,6 +186,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     }
 
     private void cancelAgentMode(String roomId) {
+        // 상담원 연결 요청 취소 처리: BOT 복귀 및 알림 발송
         log.info("Canceling agent request for room {}, switching back to BOT mode", roomId);
         roomRepository.setRoutingMode(roomId, "BOT");
         roomUpdateBroadcaster.broadcastRoomList();

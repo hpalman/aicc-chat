@@ -15,7 +15,7 @@ public class RoomCleanupService {
 
     private final RoomRepository roomRepository;
     private final RoomUpdateBroadcaster roomUpdateBroadcaster;
-    private static final long IDLE_TIMEOUT = 10 * 60 * 1000; // 10분 (단위: ms)
+    private static final long IDLE_TIMEOUT = 1/*10*/ * 60 * 1000; // 10분 (단위: ms)
 
     /**
      * 일정 시간 동안 활동이 없는 채팅방을 정리합니다.
@@ -23,7 +23,7 @@ public class RoomCleanupService {
      */
     @Scheduled(fixedRate = 60000)
     public void cleanupIdleRooms() {
-        log.debug("Starting idle room cleanup task...");
+        // log.debug("Starting idle room cleanup task...");
         List<ChatRoom> allRooms = roomRepository.findAllRooms();
         long now = System.currentTimeMillis();
         boolean changed = false;

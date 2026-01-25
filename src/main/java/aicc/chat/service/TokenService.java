@@ -21,6 +21,7 @@ public class TokenService {
     private final ObjectMapper objectMapper;
 
     public String generateToken(UserInfo userInfo) {
+        // UserInfo를 Base64 JSON 토큰으로 생성
         try {
             String json = objectMapper.writeValueAsString(userInfo);
             return Base64.getEncoder().encodeToString(json.getBytes());
@@ -31,6 +32,7 @@ public class TokenService {
     }
 
     public UserInfo validateToken(String token) {
+        // JWT 또는 Base64 토큰을 파싱해 UserInfo로 복원
         if (token == null || token.isEmpty()) return null;
         
         try {
@@ -54,6 +56,7 @@ public class TokenService {
     }
 
     private UserInfo parseJwtToken(String token) {
+        // JWT payload에서 사용자 정보를 추출해 UserInfo로 변환
         try {
             String[] parts = token.split("\\.");
             if (parts.length < 2) return null;

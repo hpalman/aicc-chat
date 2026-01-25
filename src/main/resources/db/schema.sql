@@ -90,7 +90,39 @@ COMMENT ON COLUMN chat_history.created_at IS '생성 시간';
 COMMENT ON COLUMN chat_history.updated_at IS '수정 시간';
 
 -- =====================================================
--- 3. 외래키 제약조건 (선택사항)
+-- 3. 사용자 계정 테이블
+-- =====================================================
+CREATE TABLE IF NOT EXISTS user_account (
+    id BIGSERIAL PRIMARY KEY,
+    user_id VARCHAR(100) NOT NULL,
+    user_name VARCHAR(255) NOT NULL,
+    password VARCHAR(255),
+    role VARCHAR(50) NOT NULL, -- CUSTOMER, AGENT
+    email VARCHAR(255),
+    company_id VARCHAR(100),
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX ux_user_account_login ON user_account(user_id, role, company_id);
+CREATE INDEX idx_user_account_role ON user_account(role);
+CREATE INDEX idx_user_account_company_id ON user_account(company_id);
+CREATE INDEX idx_user_account_active ON user_account(active);
+
+COMMENT ON TABLE user_account IS '사용자 계정 정보';
+COMMENT ON COLUMN user_account.user_id IS '로그인 ID';
+COMMENT ON COLUMN user_account.user_name IS '사용자 이름';
+COMMENT ON COLUMN user_account.password IS '로그인 비밀번호(평문/해시)';
+COMMENT ON COLUMN user_account.role IS '역할(CUSTOMER, AGENT)';
+COMMENT ON COLUMN user_account.email IS '이메일';
+COMMENT ON COLUMN user_account.company_id IS '회사 ID';
+COMMENT ON COLUMN user_account.active IS '활성 여부';
+COMMENT ON COLUMN user_account.created_at IS '생성 시간';
+COMMENT ON COLUMN user_account.updated_at IS '수정 시간';
+
+-- =====================================================
+-- 4. 외래키 제약조건 (선택사항)
 -- =====================================================
 -- 필요시 chat_history의 room_id가 chat_session의 room_id를 참조하도록 설정
 -- ALTER TABLE chat_history 
@@ -99,7 +131,7 @@ COMMENT ON COLUMN chat_history.updated_at IS '수정 시간';
 -- ON DELETE CASCADE;
 
 -- =====================================================
--- 4. 파티셔닝 (선택사항 - 대용량 데이터 처리)
+-- 5. 파티셔닝 (선택사항 - 대용량 데이터 처리)
 -- =====================================================
 -- 월별 파티셔닝 예시 (PostgreSQL 10+)
 -- chat_history 테이블을 created_at 기준으로 월별 파티셔닝
@@ -130,8 +162,14 @@ COMMENT ON COLUMN chat_history.updated_at IS '수정 시간';
 -- -- 필요에 따라 추가 파티션 생성...
 
 -- =====================================================
--- 5. 샘플 데이터 (테스트용)
+-- 6. 샘플 데이터 (테스트용)
 -- =====================================================
+-- 샘플 사용자 계정
+INSERT INTO user_account (user_id, user_name, password, role, email, company_id)
+VALUES
+    ('agent01', '상담원-01', '1234', 'AGENT', 'agent01@aicc.com', 'SYSTEM'),
+    ('cust01', '홍길동', '1234', 'CUSTOMER', 'cust01@example.com', 'apt001');
+
 -- 샘플 세션 데이터
 INSERT INTO chat_session (room_id, room_name, customer_id, customer_name, status, company_id)
 VALUES 
@@ -146,7 +184,7 @@ VALUES
     ('room-test001', 'BOT', 'Bot', 'BOT', '배송 조회를 도와드리겠습니다. 주문번호를 알려주세요.', 'TALK', 'apt001');
 
 -- =====================================================
--- 6. 유용한 쿼리
+-- 7. 유용한 쿼리
 -- =====================================================
 
 -- 특정 방의 전체 대화 내역 조회
@@ -180,7 +218,7 @@ VALUES
 -- WHERE created_at < NOW() - INTERVAL '30 days';
 
 -- =====================================================
--- 7. 권한 설정
+-- 8. 권한 설정
 -- =====================================================
 -- GRANT ALL PRIVILEGES ON DATABASE aicc_chat TO aicc;
 -- GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO aicc;

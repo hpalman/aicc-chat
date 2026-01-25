@@ -23,6 +23,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional
+    // 상담 세션 생성
     public void createChatSession(ChatSession chatSession) {
         try {
             chatSessionMapper.insertChatSession(chatSession);
@@ -36,6 +37,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional(readOnly = true)
+    // roomId로 상담 세션 조회
     public ChatSession getChatSessionByRoomId(String roomId) {
         try {
             return chatSessionMapper.selectChatSessionByRoomId(roomId);
@@ -47,6 +49,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional(readOnly = true)
+    // 고객 ID로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByCustomerId(String customerId) {
         try {
             return chatSessionMapper.selectChatSessionsByCustomerId(customerId);
@@ -58,6 +61,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional(readOnly = true)
+    // 상담원 이름으로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByAgent(String assignedAgent) {
         try {
             return chatSessionMapper.selectChatSessionsByAgent(assignedAgent);
@@ -69,6 +73,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional(readOnly = true)
+    // 회사 ID와 상태로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByCompanyIdAndStatus(String companyId, String status) {
         try {
             return chatSessionMapper.selectChatSessionsByCompanyIdAndStatus(companyId, status);
@@ -81,6 +86,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional(readOnly = true)
+    // 활성 상담 세션 목록 조회
     public List<ChatSession> getActiveChatSessions() {
         try {
             return chatSessionMapper.selectActiveChatSessions();
@@ -92,6 +98,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional
+    // 상담 세션 상태 변경
     public void updateSessionStatus(String roomId, String status) {
         try {
             chatSessionMapper.updateChatSessionStatus(roomId, status);
@@ -104,6 +111,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional
+    // 상담원 배정 정보 업데이트
     public void assignAgent(String roomId, String assignedAgent) {
         try {
             chatSessionMapper.updateAssignedAgent(roomId, assignedAgent);
@@ -116,6 +124,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional
+    // 상담 종료 시간 기록
     public void endSession(String roomId) {
         try {
             chatSessionMapper.updateEndedAt(roomId, LocalDateTime.now());
@@ -128,6 +137,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional
+    // 마지막 활동 시간 갱신
     public void updateLastActivity(String roomId) {
         try {
             chatSessionMapper.updateLastActivityAt(roomId, LocalDateTime.now());

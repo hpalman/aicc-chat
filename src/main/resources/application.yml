@@ -39,9 +39,9 @@ spring:
   # PostgreSQL 데이터베이스 설정
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://127.0.0.1:5432/aicc_chat
-    username: aicc
-    password: aicc123!
+    url: jdbc:postgresql://127.0.0.1:5432/daclpg # aicc_chat
+    username: acldev # aicc
+    password: 1234 # aicc123!
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5

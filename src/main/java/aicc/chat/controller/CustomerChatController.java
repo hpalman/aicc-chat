@@ -36,6 +36,7 @@ public class CustomerChatController {
     private final ChatHistoryService chatHistoryService;
 
     @PostMapping("/chatbot")
+    // 고객의 챗봇 상담방을 생성하고 세션/목록을 갱신
     public ResponseEntity<ChatRoom> createRoomWithBot(@RequestHeader(value = "Authorization", required = false) String token) {
         log.info("Customer request createRoomWithBot");
         if (token == null || !token.startsWith("Bearer ")) return ResponseEntity.status(401).build();
@@ -73,6 +74,7 @@ public class CustomerChatController {
     }
 
     @MessageMapping("/customer/chat")
+    // 고객 메시지를 받아 이력 저장 후 라우팅
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;

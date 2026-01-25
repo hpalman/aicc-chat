@@ -22,13 +22,19 @@ public class AgentLoginController {
     private final TokenService tokenService;
 
     @PostMapping("/login")
+    // 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
     public ResponseEntity<UserInfo> login(
             @RequestParam String id,
             @RequestParam String password) {
-        return ResponseEntity.ok(agentAuthService.login(id, password));
+        UserInfo userInfo = agentAuthService.login(id, password);
+        if (userInfo == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return ResponseEntity.ok(userInfo);
     }
 
     @GetMapping("/me")
+    // Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환
     public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String token) {
         if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build();

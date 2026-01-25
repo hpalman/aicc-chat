@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="aicc.chat.mapper.UserAccountMapper">
+
+    <!-- ResultMap 정의 -->
+    <resultMap id="UserAccountResultMap" type="aicc.chat.domain.persistence.UserAccount">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="userName" column="user_name"/>
+        <result property="password" column="password"/>
+        <result property="role" column="role"/>
+        <result property="email" column="email"/>
+        <result property="companyId" column="company_id"/>
+        <result property="active" column="active"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 상담원 로그인용 사용자 조회 -->
+    <select id="selectAgentByLogin" resultMap="UserAccountResultMap">
+        SELECT
+            id,
+            user_id,
+            user_name,
+            password,
+            role,
+            email,
+            company_id,
+            active,
+            created_at,
+            updated_at
+        FROM user_account
+        WHERE user_id = #{userId}
+          AND role = 'AGENT'
+          AND active = TRUE
+          AND (
+                password IS NULL
+             OR password = ''
+             OR password = #{password}
+          )
+        LIMIT 1
+    </select>
+
+    <!-- 고객 로그인용 사용자 조회 -->
+    <select id="selectCustomerByLogin" resultMap="UserAccountResultMap">
+        SELECT
+            id,
+            user_id,
+            user_name,
+            password,
+            role,
+            email,
+            company_id,
+            active,
+            created_at,
+            updated_at
+        FROM user_account
+        WHERE user_id = #{userId}
+          AND role = 'CUSTOMER'
+          AND company_id = #{companyId}
+          AND active = TRUE
+          AND (
+                password IS NULL
+             OR password = ''
+             OR password = #{password}
+          )
+        LIMIT 1
+    </select>
+
+</mapper>

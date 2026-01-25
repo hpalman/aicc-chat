@@ -10,6 +10,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
+    // 정적 리소스(frontend) 경로 매핑 설정
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
         // 프로젝트 루트의 'frontend' 폴더를 '/frontend/**' URL로 매핑
         // file:./frontend/ 는 현재 실행 경로(프로젝트 루트)의 frontend 폴더를 의미함
@@ -18,6 +19,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     }
 
     @Override
+    // CORS 허용 범위와 메서드 설정
     public void addCorsMappings(@NonNull CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins("http://localhost", "http://localhost:80", "http://localhost:3000", "http://ipv4.fiddler:28070")

@@ -30,6 +30,7 @@ public class WebSocketEventListener {
     
     // 연결 시도
     @EventListener
+    // STOMP 연결 이벤트 로깅
     public void onConnect(SessionConnectedEvent event) {
         log.info("ㅁㅁㅁ WebSocket connected: {}", event.getMessage().getHeaders());
         // WebSocket connected: {simpMessageType=CONNECT_ACK, simpConnectMessage=GenericMessage [payload=byte[0], headers={simpMessageType=CONNECT, stompCommand=CONNECT, nativeHeaders={accept-version=[1.1,1.0], heart-beat=[10000,10000]}, simpSessionAttributes={userName=고객-358d, userId=hong, roomId=room-00e386c1, companyId=apt001, userEmail=hong@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@5086e4db, simpSessionId=lxvx2g50}], simpSessionId=lxvx2g50}
@@ -37,6 +38,7 @@ public class WebSocketEventListener {
 
     // 연결 완료
     @EventListener
+    // 세션 연결 완료 시 로깅
     public void onConnected(SessionConnectedEvent event) {
     	StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
     	log.info("ㅁㅁㅁ onConnected: 세션 연결 완료 - sessionId={}", sha.getSessionId());
@@ -44,6 +46,7 @@ public class WebSocketEventListener {
     
     // 구독
     @EventListener
+    // 특정 방 토픽 구독 시 멤버 등록
     public void onSubscribe(SessionSubscribeEvent event) {
     	
         StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
@@ -65,6 +68,7 @@ public class WebSocketEventListener {
 
     // 구독 해제
     @EventListener
+    // 토픽 구독 해제 이벤트 로깅
     public void onUnsubscribe(SessionUnsubscribeEvent event) {
     	StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
     	log.info("ㅁㅁㅁ onUnsubscribe: 구독 해제 - sessionId={}", sha.getSessionId());
@@ -72,6 +76,7 @@ public class WebSocketEventListener {
 
     // 연결 해제
     @EventListener
+    // 연결 종료 시 세션 기반 멤버 정리
     public void onDisconnect(SessionDisconnectEvent event) {
     	log.info("ㅁㅁㅁ onDisconnect: 세션 연결 해제 - sessionId={}, closeStatus={}", event.getSessionId(), event.getCloseStatus());
     	

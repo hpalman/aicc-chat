@@ -26,6 +26,7 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     public static final String MODE_CLOSED = "CLOSED";
 
     @Override
+    // 방 상태에 따라 상담원/봇 라우팅으로 위임
     public void handleMessage(String roomId, ChatMessage message) {
         // 활동 시간 업데이트
         roomRepository.updateLastActivity(roomId);
@@ -63,6 +64,7 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     }
 
     @Override
+    // 방 생성 시 초기 모드 설정 및 봇 초기화 호출
     public void onRoomCreated(ChatRoom room) {
         // 방 생성 시 초기 모드는 BOT
         roomRepository.setRoutingMode(room.getRoomId(), MODE_BOT);

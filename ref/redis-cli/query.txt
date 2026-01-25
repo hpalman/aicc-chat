@@ -1,0 +1,43 @@
+# 1. 현재 활성화된 방 확인
+redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:rooms
+
+# 2. 특정 방의 멤버 확인
+redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:room:room-abc123
+
+# 3. 해당 방으로 메시지 전송
+redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-abc123","sender":"시스템","senderRole":"SYSTEM","message":"상담원이 곧 연결됩니다.","type":"TALK","companyId":"apt001"}'
+
+redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-eeb620f9","sender":"시스템","senderRole":"SYSTEM","message":"상담원이 곧 연결됩니다.","type":"TALK","companyId":"apt001"}'
+                                                    {"roomId":"room-eeb620f9","sender":"Bot","senderRole":"BOT","message":"서비스 연결에 실패했습니다.","type":"TALK","companyId":"apt001"}
+고객의 채팅 내용을 서버가 다시 고객에게 보낸 내용
+redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-eeb620f9","sender":"고객-5a97","senderRole":"CUSTOMER","message":"ㅇ","type":"TALK","companyId":"apt001"}'
+redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-eeb620f9","sender":"김고객","senderRole":"CUSTOMER","message":"ㅇ","type":"TALK","companyId":"apt001"}'
+
+AGENT, CUSTOMER, SYSTEM, BOT
+
+# 4. 방 상태 변경 (BOT → WAITING)
+redis-cli -h 127.0.0.1 -p 16379 SET chat:room:room-abc123:mode WAITING
+redis-cli -h 127.0.0.1 -p 16379 SET chat:room:room-eeb620f9:mode WAITING
+
+
+redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-eeb620f9","sender":"고객-5a97","senderRole":"CUSTOMER","message":"고객-5a97님이 퇴장하셨습니다.","type":"LEAVE","companyId":"apt001"}
+redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-eeb620f9","sender":"고객-5a97","senderRole":"CUSTOMER","message":"고객-5a97님이 입장하셨습니다.","type":"JOIN","companyId":"apt001"}
+
+
+예)
+C:\app\redis\Redis-7.4.2-Windows-x64-cygwin>redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:rooms
+(empty array)
+
+C:\app\redis\Redis-7.4.2-Windows-x64-cygwin>redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:rooms
+1) "room-d7276c12"
+
+C:\app\redis\Redis-7.4.2-Windows-x64-cygwin>redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:rooms
+1) "room-d7276c12"
+2) "room-27854004"
+
+C:\app\redis\Redis-7.4.2-Windows-x64-cygwin>redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:room:room-eeb620f9
+1) "hong3"
+
+C:\app\redis\Redis-7.4.2-Windows-x64-cygwin>redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:room:room-eeb620f9
+1) "hong3"
+2) "agent1-e3bc"

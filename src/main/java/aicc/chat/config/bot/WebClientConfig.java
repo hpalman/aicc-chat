@@ -29,6 +29,7 @@ public class WebClientConfig {
     private static final int MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024;
     
     @Bean
+    // AI 호출 전용 WebClient(커넥션 풀/타임아웃 설정 포함) 생성
     public WebClient chatWebClient(WebClient.Builder builder) {
         ConnectionProvider connectionProvider = ConnectionProvider.builder("chat-connection-pool")
             .maxConnections(MAX_CONNECTIONS)

@@ -45,21 +45,25 @@ public class MiChatAnalysisServiceImpl implements ChatAnalysisService {
     private String defaultUserId;
 
     @Override
+    // 상담 내용을 요약 API로 전달
     public String summarize(Map<String, Object> request) {
         return callApi(aiEndPoint + summaryUri, "요약", request);
     }
 
     @Override
+    // 상담 키워드 추출 API로 전달
     public String keyword(Map<String, Object> request) {
         return callApi(aiEndPoint + keywordUri, "키워드 추출", request);
     }
 
     @Override
+    // 상담 카테고리 분류 API로 전달
     public String category(Map<String, Object> request) {
         return callApi(aiEndPoint + categoryUri, "카테고리 분류", request);
     }
 
     private String callApi(String url, String taskName, Map<String, Object> request) {
+        // 공통 요청/응답 처리 (요청 변환, 호출, 에러 처리)
         if (request == null || request.isEmpty()) {
             log.warn("{} 요청이 비어있습니다.", taskName);
             return "잘못된 요청입니다.";
@@ -109,6 +113,7 @@ public class MiChatAnalysisServiceImpl implements ChatAnalysisService {
     }
 
     private Map<String, Object> buildRequestMap(String taskName, Map<String, Object> request, String sessionId) {
+        // 분석 API 요청 스키마에 맞게 payload 구성
         Map<String, Object> requestMap = new LinkedHashMap<>();
         
         // meta 설정
@@ -145,11 +150,13 @@ public class MiChatAnalysisServiceImpl implements ChatAnalysisService {
     }
 
     private void logError(String taskName, Throwable error) {
+        // WebClient 호출 오류 로그 출력
         log.error("{} API 호출 중 오류 발생: {}", taskName, error.getMessage());
     }
 
     @SuppressWarnings("unchecked")
     private String extractSessionId(Map<String, Object> request) {
+        // 요청에서 sessionId를 추출하고 없으면 기본값 생성
         String sessionId = null;
         if (request.containsKey("meta")) {
             Object metaObj = request.get("meta");

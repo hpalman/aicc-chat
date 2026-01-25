@@ -29,6 +29,7 @@ public class RedisOnlyConfig {
     private final ObjectMapper objectMapper;
 
     @Bean
+    // Redis pub 채널로 메시지를 발행하는 MessageBroker 구현
     public MessageBroker messageBroker() {
         return message -> {
             try {
@@ -41,6 +42,7 @@ public class RedisOnlyConfig {
     }
 
     @Bean
+    // Redis 구독을 처리할 리스너 컨테이너 구성
     public RedisMessageListenerContainer redisContainer(MessageListenerAdapter adapter) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(redisTemplate.getConnectionFactory());
@@ -49,6 +51,7 @@ public class RedisOnlyConfig {
     }
 
     @Bean
+    // Redis 메시지를 STOMP 토픽으로 중계하는 리스너 어댑터
     public MessageListenerAdapter listenerAdapter() {
         return new MessageListenerAdapter((MessageListener) (message, pattern) -> {
             try {

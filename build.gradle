@@ -59,7 +59,7 @@ dependencies {
 
 // 한글 인코딩 설정
 tasks.withType(JavaCompile) {
-	options.compilerArgs += ["-parameters"]
+	options.compilerArgs += "-parameters"
 	options.encoding = 'UTF-8'
 } 
 

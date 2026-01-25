@@ -1,3 +1,6 @@
+cursor 설정
+1. F5 또는 디버깅 시 패러미터 -parameters를 추가해서만 이 오류가 안 나타났음
+
 STS5 설정
 
 2.
@@ -12,3 +15,5 @@ Preferences > Java > Compiler > [v]Store information about method parameters
 
 이게 바로 -parameters 옵션을 켜는 설정입니다.
 체크하면 컴파일 시 자동으로 -parameters 플래그가 적용됩니다.
+
+

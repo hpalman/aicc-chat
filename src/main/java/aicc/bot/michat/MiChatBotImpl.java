@@ -49,6 +49,7 @@ public class MiChatBotImpl implements ChatBot {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(65);
 
     @Override
+    // 챗봇 요청을 SSE 스트리밍으로 호출하고 청크를 전달
     public void ask(ChatBotRequest requests, Consumer<String> onChunk, Runnable onComplete) {
         if (requests == null || requests.getMessage() == null) {
             log.warn("ChatBot 요청이 null이거나 메시지가 없습니다.");

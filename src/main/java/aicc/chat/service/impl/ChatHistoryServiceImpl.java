@@ -23,6 +23,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional
+    // 단건 채팅 이력 저장
     public void saveChatHistory(ChatHistory chatHistory) {
         try {
             chatHistoryMapper.insertChatHistory(chatHistory);
@@ -36,6 +37,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional
+    // 다건 채팅 이력 저장
     public void saveChatHistoryBatch(List<ChatHistory> chatHistories) {
         if (chatHistories == null || chatHistories.isEmpty()) {
             return;
@@ -52,6 +54,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional(readOnly = true)
+    // roomId로 채팅 이력 조회
     public List<ChatHistory> getChatHistoryByRoomId(String roomId) {
         try {
             return chatHistoryMapper.selectChatHistoryByRoomId(roomId);
@@ -63,6 +66,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional(readOnly = true)
+    // roomId와 시간 범위로 채팅 이력 조회
     public List<ChatHistory> getChatHistoryByRoomIdAndTimeRange(
             String roomId, 
             LocalDateTime startTime, 
@@ -77,6 +81,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional(readOnly = true)
+    // 고객 ID 기준 채팅 이력 조회
     public List<ChatHistory> getChatHistoryByCustomerId(String customerId) {
         try {
             return chatHistoryMapper.selectChatHistoryBySenderId(customerId, "CUSTOMER");
@@ -88,6 +93,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional(readOnly = true)
+    // 회사 ID와 시간 범위로 채팅 이력 조회
     public List<ChatHistory> getChatHistoryByCompanyIdAndTimeRange(
             String companyId,
             LocalDateTime startTime,
@@ -102,6 +108,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional
+    // roomId 기준 채팅 이력 삭제
     public int deleteChatHistoryByRoomId(String roomId) {
         try {
             int deletedCount = chatHistoryMapper.deleteChatHistoryByRoomId(roomId);
@@ -115,6 +122,7 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
     
     @Override
     @Transactional
+    // 특정 날짜 이전의 채팅 이력 삭제
     public int deleteOldChatHistory(LocalDateTime beforeDate) {
         try {
             int deletedCount = chatHistoryMapper.deleteOldChatHistory(beforeDate);

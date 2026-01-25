@@ -36,12 +36,14 @@ public class AgentChatController {
     private final ChatHistoryService chatHistoryService;
 
     @GetMapping("/rooms")
+    // 상담원에게 전체 상담방 목록을 반환
     public ResponseEntity<List<ChatRoom>> findAllRooms() {
         log.debug("Agent request findAllRooms");
         return ResponseEntity.ok(roomRepository.findAllRooms());
     }
 
     @GetMapping("/rooms/{roomId}")
+    // 특정 상담방 상세 정보를 조회
     public ResponseEntity<ChatRoom> findRoomById(
             @PathVariable("roomId") String roomId,
             @RequestHeader(value = "Authorization", required = false) String token) {
@@ -59,6 +61,7 @@ public class AgentChatController {
     }
 
     @PostMapping("/rooms/{roomId}/assign")
+    // 상담원을 방에 배정하고 상태/이력을 갱신
     public ResponseEntity<?> assignAgent(
             @PathVariable String roomId,
             @RequestHeader(value = "Authorization", required = false) String token) {
@@ -120,6 +123,7 @@ public class AgentChatController {
     }
 
     @DeleteMapping("/rooms/{roomId}")
+    // 상담 종료 또는 종료 방 삭제 처리
     public ResponseEntity<?> deleteRoom(
             @PathVariable String roomId,
             @RequestHeader(value = "Authorization", required = false) String token) {
@@ -182,6 +186,7 @@ public class AgentChatController {
     }
 
     @MessageMapping("/agent/chat")
+    // 상담원 채팅 메시지를 받아 이력 저장 후 라우팅
     public void onAgentMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;

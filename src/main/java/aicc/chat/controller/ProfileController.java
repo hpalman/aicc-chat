@@ -17,6 +17,7 @@ public class ProfileController {
     private final TokenService tokenService;
 
     @GetMapping("/me")
+    // Authorization 헤더의 토큰을 검증해 현재 사용자 정보 반환
     public ResponseEntity<UserInfo> getCurrentUser(@RequestHeader(value = "Authorization", required = false) String token) {
         if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(401).build();

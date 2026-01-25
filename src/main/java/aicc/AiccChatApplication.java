@@ -10,6 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan("aicc.chat.mapper")
 public class AiccChatApplication {
     public static void main(String[] args) {
+        // Spring Boot 애플리케이션 실행 진입점
         SpringApplication.run(AiccChatApplication.class, args);
     }
 }
