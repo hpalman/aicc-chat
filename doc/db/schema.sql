@@ -175,6 +175,7 @@ VALUES
     ('cust03' , '홍길동'   , '1234', 'CUSTOMER', 'cust03@example.com', 'apt001');
 
 -- 샘플 세션 데이터
+/*
 INSERT INTO chat_session (room_id, room_name, customer_id, customer_name, status, company_id)
 VALUES 
     ('room-test001', 'user001', 'user001', '홍길동', 'BOT', 'apt001'),
@@ -186,7 +187,7 @@ VALUES
     ('room-test001', 'BOT', 'Bot', 'BOT', '안녕하세요! 무엇을 도와드릴까요?', 'TALK', 'apt001'),
     ('room-test001', 'user001', '홍길동', 'CUSTOMER', '배송 조회를 하고 싶습니다.', 'TALK', 'apt001'),
     ('room-test001', 'BOT', 'Bot', 'BOT', '배송 조회를 도와드리겠습니다. 주문번호를 알려주세요.', 'TALK', 'apt001');
-
+*/
 -- =====================================================
 -- 7. 유용한 쿼리
 -- =====================================================
