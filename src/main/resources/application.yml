@@ -19,7 +19,7 @@ app:
     # mode: MICHAT    # MiChat(자체 AI 엔진) 연동 모드
     # mode: AGENT     # 상담원 전용 모드 (봇 없음)
     cleanup:
-      enabled: true   # 채팅방 자동 정리 기능 활성화 (true: 활성화, false: 비활성화)
+      enabled: false   # 채팅방 자동 정리 기능 활성화 (true: 활성화, false: 비활성화)
       idle-timeout: 600000  # 유휴 타임아웃 시간 (밀리초, 기본값: 10분 = 600000ms)
       check-interval: 60000  # 정리 작업 실행 주기 (밀리초, 기본값: 1분 = 60000ms)
   auth:
