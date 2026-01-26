@@ -137,7 +137,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
     
     @Override
     @Transactional
-    // 마지막 활동 시간 갱신
+    // 마지막 활동 시간 갱신 - DB
     public void updateLastActivity(String roomId) {
         try {
             chatSessionMapper.updateLastActivityAt(roomId, LocalDateTime.now());

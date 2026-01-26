@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CHAT 고객 콘솔</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .chat-container { max-width: 800px; margin: 10px auto; }
+        .chat-box { height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; background: #f0f2f5; display: flex; flex-direction: column; }
+        .message { margin-bottom: 10px; max-width: 80%; display: flex; flex-direction: column; }
+        .message.my { align-self: flex-end; align-items: flex-end; }
+        .message.other { align-self: flex-start; align-items: flex-start; }
+        .message .content { padding: 8px 12px; border-radius: 15px; font-size: 14px; position: relative; white-space: pre-wrap; word-break: break-all; }
+        .message.my .content { background: #0d6efd; color: white; border-bottom-right-radius: 2px; }
+        .message.other .content { background: white; border: 1px solid #ddd; border-bottom-left-radius: 2px; }
+        .message .timestamp { font-size: 10px; color: #999; margin-top: 2px; }
+        .message.my .timestamp { color: #ccc; }
+        .system { text-align: center; color: #888; font-size: 0.8em; margin: 10px 0; width: 100%; }
+        .room-info { font-size: 0.85em; color: #666; }
+        textarea#message { resize: none; max-height: 150px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container chat-container">
+    <h3 class="text-center mb-4">고객 상담 채팅</h3>
+    
+    <!-- 로그인 폼 -->
+    <div id="login-form">
+        <h4 class="mb-3">로그인</h4>
+        <div class="mb-3">
+            <label class="form-label">아이디</label>
+            <input type="text" id="loginId" class="form-control" value="cust01">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">비밀번호</label>
+            <input type="password" id="loginPw" class="form-control" value="1234">
+        </div>
+        <button class="btn btn-success w-100" onclick="login()">로그인</button>
+    </div>
+
+    <!-- 접속 폼 -->
+    <div id="connect-form" style="display:none;">
+        <div class="mb-3">
+            <label class="form-label">사용자 정보</label>
+            <input type="text" id="nickname" class="form-control" readonly>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">상담 문의 (방 이름)</label>
+            <input type="text" id="roomName" class="form-control" value='배송문의' placeholder="배송 문의합니다.">
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary flex-grow-1" onclick="createRoom()">상담 시작</button>
+            <button class="btn btn-outline-secondary" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+
+    <!-- 채팅 화면 -->
+    <div id="chat-page" style="display:none;">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <span id="room-title" class="fw-bold"></span>
+                <div id="room-id" class="room-info"></div>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-warning me-1" id="handoffBtn" onclick="requestHandoff()">상담원 연결</button>
+                <button class="btn btn-sm btn-outline-secondary me-1" id="cancelHandoffBtn" onclick="cancelHandoff()" style="display:none;">연결 취소</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="disconnect()">상담 종료</button>
+            </div>
+        </div>
+        <div id="chat-box" class="chat-box mb-3"></div>
+        <div class="input-group">
+            <textarea id="message" class="form-control" placeholder="메시지를 입력하세요..." rows="1" onkeydown="handleKey(event)"></textarea>
+            <button class="btn btn-primary" onclick="sendMessage()">전송</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+<script>
+    let stompClient = null;
+    let currentRoomId = null;
+    let nickname = null;
+    let authToken = null;
+
+    // 초기 로딩 시 로그인 상태 확인
+    window.onload = function() {
+        const token = sessionStorage.getItem("AUTH_TOKEN");
+        console.log('토큰 확인: [' + token + ']');
+        
+        if (token) {
+            fetch('/api/me', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => {
+                if (!res.ok) {
+                    // 토큰이 유효하지 않음
+                    console.log('저장된 토큰이 유효하지 않습니다.');
+                    sessionStorage.removeItem("AUTH_TOKEN");
+                    throw new Error('Invalid token');
+                }
+                return res.json();
+            })
+            .then(user => {
+                if (user && user.userName) {
+                    onLoginSuccess(user);
+                } else {
+                    throw new Error('Invalid user data');
+                }
+            })
+            .catch(err => {
+                console.log('자동 로그인 실패:', err.message);
+                sessionStorage.removeItem("AUTH_TOKEN");
+                document.getElementById("login-form").style.display = "block";
+            });
+        } else {
+            console.log('저장된 토큰이 없습니다. 로그인이 필요합니다.');
+            document.getElementById("login-form").style.display = "block";
+        }
+    }
+
+    function login() {
+        const id = document.getElementById("loginId").value;
+        const pw = document.getElementById("loginPw").value;
+
+        if (!id || !pw) {
+            alert("아이디와 비밀번호를 입력해주세요.");
+            return;
+        }
+        /*
+            {   "userId":"cust01",
+                "userName":"홍길철",
+                "role":"CUSTOMER",
+                "email":"cust01@example.com",
+                "token":"eyJ1c2VySWQiOiJjdXN0MDEiLCJ1c2VyTmFtZSI6Iu2Zjeq4uOyyoCIsInJvbGUiOiJDVVNUT01FUiIsImVtYWlsIjoiY3VzdDAxQGV4YW1wbGUuY29tIiwidG9rZW4iOm51bGwsInJvb21JZCI6bnVsbCwiY29tcGFueUlkIjoiYXB0MDAxIn0=",
+                "roomId":null,
+                "companyId":"apt001"
+            }
+        */
+        fetch(`/api/customer/apt001/login?id=${id}&password=${pw}`, { method: 'POST' })
+            .then(response => {
+                // HTTP 상태 코드 체크
+                if (!response.ok) {
+                    // 4xx, 5xx 에러 처리
+                    if (response.status === 401) {
+                        throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
+                    } else if (response.status === 500) {
+                        throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                    } else if (response.status === 404) {
+                        throw new Error('로그인 서비스를 찾을 수 없습니다.');
+                    } else {
+                        throw new Error(`로그인 실패 (상태 코드: ${response.status})`);
+                    }
+                    throw new Error(`로그인 실패 (상태 코드: ${response.status})`);
+                }
+                return response.json();
+            })
+            .then(user => {
+                // 응답 데이터 검증
+                if (!user) {
+                    throw new Error('로그인 응답이 올바르지 않습니다.');
+                }
+                
+                if (!user.token) {
+                    throw new Error('인증 토큰을 받지 못했습니다.');
+                }
+                sessionStorage.setItem("AUTH_TOKEN", user.token);
+                onLoginSuccess(user);
+            })
+            .catch(err => {
+                console.error('로그인 오류:', err);
+                // 에러 메시지 표시
+                alert(err.message || "로그인에 실패했습니다. 다시 시도해주세요.");
+            });
+    }
+
+    function onLoginSuccess(user) {
+        nickname = user.userName;
+        authToken = user.token;
+// 연결 전 토큰 저장
+localStorage.setItem('authToken', authToken);
+localStorage.setItem('user.userName', user.userName);
+localStorage.setItem('user.userId', user.userId);
+
+        console.log('ㅁ onLoginSuccess> nickname >[' + nickname + ']');
+        console.log('ㅁ onLoginSuccess> authToken >[' + authToken + ']');
+        document.getElementById("nickname").value = `${user.userName} (${user.userId})`;
+        document.getElementById("login-form").style.display = "none";
+        document.getElementById("connect-form").style.display = "block";
+    }
+
+    /**
+     * 로그아웃 기능
+     * - WebSocket 연결이 있으면 종료
+     * - 세션 스토리지 및 로컬 스토리지 정리
+     * - 로그인 화면으로 복귀
+     */
+    function logout() {
+        // 확인 메시지
+        if (!confirm("로그아웃 하시겠습니까?")) {
+            return;
+        }
+
+        console.log("로그아웃 시작...");
+
+        // 1. WebSocket 연결이 있으면 종료
+        if (stompClient !== null && currentRoomId) {
+            try {
+                stompClient.send("/app/customer/chat", {}, JSON.stringify({
+                    roomId: currentRoomId,
+                    sender: nickname,
+                    type: 'LEAVE',
+                    message: nickname + "님이 나갔습니다."
+                }));
+                stompClient.disconnect();
+                console.log("WebSocket 연결 종료됨");
+            } catch (err) {
+                console.error("WebSocket 종료 중 오류:", err);
+            }
+            stompClient = null;
+        }
+
+        // 2. 세션 스토리지 정리
+        sessionStorage.removeItem("AUTH_TOKEN");
+        console.log("세션 스토리지 정리 완료");
+
+        // 3. 로컬 스토리지 정리
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user.userName');
+        localStorage.removeItem('user.userId');
+        console.log("로컬 스토리지 정리 완료");
+
+        // 4. 전역 변수 초기화
+        nickname = null;
+        authToken = null;
+        currentRoomId = null;
+
+        // 5. UI 초기화 및 로그인 화면 표시
+        document.getElementById("chat-box").innerHTML = "";
+        document.getElementById("chat-page").style.display = "none";
+        document.getElementById("connect-form").style.display = "none";
+        document.getElementById("login-form").style.display = "block";
+        
+        // 6. 입력 필드 초기화
+        document.getElementById("nickname").value = "";
+        document.getElementById("roomName").value = "";
+        
+        console.log("로그아웃 완료");
+        // alert("로그아웃 되었습니다.");
+    }
+
+    function createRoom() {
+        const roomName = document.getElementById("roomName").value;
+
+        if (!roomName) {
+            alert("상담 문의 내용을 입력해주세요.");
+            return;
+        }
+
+        // 1. 방 생성 및 봇 초기화 API 호출
+        fetch(`/api/customer/chatbot`, { 
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        })
+            .then(res => {
+                if (!res.ok) {
+                    if (res.status === 401) {
+                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                        sessionStorage.removeItem("AUTH_TOKEN");
+                        window.location.reload();
+                        throw new Error('Unauthorized');
+                    } else if (res.status === 500) {
+                        throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+                    } else if (res.status === 404) {
+                        throw new Error('상담 서비스를 찾을 수 없습니다.');
+                    } else {
+                        throw new Error(`상담 연결 실패 (상태 코드: ${res.status})`);
+                    }
+                }
+                return res.json();
+            })
+            .then(room => {
+                if (!room || !room.roomId) {
+                    throw new Error('방 정보를 받지 못했습니다.');
+                }
+                console.log("상담방 생성 완료:", room);
+                currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
+                
+                updateHandoffButtons(room.status);
+                connect();
+            })
+            .catch(err => {
+                console.error('상담방 생성 오류:', err);
+                if (err.message !== 'Unauthorized') {
+                    alert(err.message || "상담 연결에 실패했습니다. 다시 시도해주세요.");
+                }
+            });
+    }
+
+    function updateHandoffButtons(status) {
+        const handoffBtn = document.getElementById("handoffBtn");
+        const cancelBtn = document.getElementById("cancelHandoffBtn");
+
+        if (status === 'WAITING') {
+            handoffBtn.disabled = true;
+            handoffBtn.innerText = "상담원 연결 중";
+            cancelBtn.style.display = "inline-block";
+        } else if (status === 'AGENT') {
+            handoffBtn.disabled = true;
+            handoffBtn.innerText = "상담원 연결됨";
+            cancelBtn.style.display = "none";
+        } else if (status === 'CLOSED') {
+            handoffBtn.disabled = true;
+            handoffBtn.innerText = "상담 종료됨";
+            cancelBtn.style.display = "none";
+        } else {
+            // BOT or other
+            handoffBtn.disabled = false;
+            handoffBtn.innerText = "상담원 연결";
+            cancelBtn.style.display = "none";
+        }
+    }
+
+    function connect() {
+        // 토큰과 roomId를 쿼리 파라미터로 전달
+        console.log('WebSocket 연결 시작 - authToken[' + authToken + '], currentRoomId[' + currentRoomId +']');
+        
+        try {
+            const socket = new SockJS(`/ws-chat?token=${authToken}&roomId=${currentRoomId}`);
+            stompClient = Stomp.over(socket);
+
+            // 연결 성공 콜백
+            stompClient.connect({}, function (frame) {
+                console.log('WebSocket 연결 성공: ' + frame);
+                
+                // UI 전환
+                document.getElementById("connect-form").style.display = "none";
+                document.getElementById("chat-page").style.display = "block";
+                
+                // 방 제목과 roomId 표시
+                document.getElementById("room-title").innerText = document.getElementById("roomName").value || "상담 중";
+                document.getElementById("room-id").innerText = `방 ID: ${currentRoomId}`;
+
+                // 2. 구독 (Subscribe) - 서버에서 받은 고유 roomId 사용
+                stompClient.subscribe('/topic/room/' + currentRoomId, function (message) {
+                    const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
+                    showMessage(payload);
+                });
+
+                // 3. 입장 메시지 전송
+                stompClient.send("/app/customer/chat", {}, JSON.stringify({
+                    roomId: currentRoomId,
+                    sender: nickname,
+                    type: 'JOIN',
+                    message: nickname + "님이 입장하셨습니다."
+                }));
+            }, function(error) {
+                // 연결 실패 콜백
+                console.error('WebSocket 연결 실패:', error);
+                alert('채팅 서버 연결에 실패했습니다.\n\n' + (error.headers?.message || '네트워크 상태를 확인해주세요.'));
+                
+                // 연결 폼으로 되돌리기
+                document.getElementById("chat-page").style.display = "none";
+                document.getElementById("connect-form").style.display = "block";
+                currentRoomId = null;
+            });
+        } catch (err) {
+            console.error('WebSocket 초기화 오류:', err);
+            alert('채팅 연결 초기화에 실패했습니다.\n다시 시도해주세요.');
+            
+            // 연결 폼으로 되돌리기
+            document.getElementById("chat-page").style.display = "none";
+            document.getElementById("connect-form").style.display = "block";
+            currentRoomId = null;
+        }
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.send("/app/customer/chat", {}, JSON.stringify({
+                roomId: currentRoomId,
+                sender: nickname,
+                type: 'LEAVE',
+                message: nickname + "님이 나갔습니다."
+            }));
+            stompClient.disconnect();
+            stompClient = null;
+        }
+        
+        // 2. 상담 종료 시 토큰은 유지하고 방 정보만 초기화하여 상담 신청 화면으로 이동
+        currentRoomId = null;
+        document.getElementById("chat-box").innerHTML = "";
+        document.getElementById("chat-page").style.display = "none";
+        document.getElementById("connect-form").style.display = "block";
+        document.getElementById("roomName").value = "";
+    }
+
+    function requestHandoff() {
+        if (stompClient && currentRoomId) {
+            const chatMessage = {
+                roomId: currentRoomId,
+                sender: nickname,
+                message: "상담원 연결을 요청합니다.",
+                type: 'HANDOFF'
+            };
+            stompClient.send("/app/customer/chat", {}, JSON.stringify(chatMessage));
+            updateHandoffButtons('WAITING');
+        }
+    }
+
+    function cancelHandoff() {
+        if (stompClient && currentRoomId) {
+            const chatMessage = {
+                roomId: currentRoomId,
+                sender: nickname,
+                message: "상담원 연결 요청을 취소합니다.",
+                type: 'CANCEL_HANDOFF'
+            };
+            stompClient.send("/app/customer/chat", {}, JSON.stringify(chatMessage));
+            updateHandoffButtons('BOT');
+        }
+    }
+
+    function sendMessage() {
+        const messageInput = document.getElementById("message");
+        const messageContent = messageInput.value.trim();
+        
+        if(messageContent && stompClient && currentRoomId) {
+            const chatMessage = {
+                roomId: currentRoomId,
+                sender: nickname,
+                message: messageContent,
+                type: 'TALK'
+            };
+            stompClient.send("/app/customer/chat", {}, JSON.stringify(chatMessage));
+            messageInput.value = '';
+            messageInput.style.height = 'auto'; // 높이 초기화
+        }
+    }
+
+    function handleKey(event) {
+        const input = event.target;
+        if (event.keyCode === 13) {
+            if (!event.shiftKey) {
+                event.preventDefault(); // 기본 Enter 줄바꿈 방지
+                sendMessage();
+            }
+            // Shift + Enter는 기본 동작(줄바꿈) 허용
+        }
+        
+        // 높이 자동 조절
+        setTimeout(() => {
+            input.style.height = 'auto';
+            input.style.height = (input.scrollHeight) + 'px';
+        }, 0);
+    }
+
+    /**
+     * 서버에서 받은 타임스탬프를 "YYYY-MM-DD HH:mm:ss" 형식으로 변환
+     * @param {string|array} timestamp - ISO 형식 문자열 또는 배열 [year, month, day, hour, minute, second]
+     */
+    function formatTimestamp(timestamp) {
+        if (!timestamp) {
+            return getCurrentTimestamp(); // fallback to client time
+        }
+        
+        try {
+            let date;
+            
+            // 서버에서 배열 형식으로 온 경우 (예: [2026, 1, 26, 14, 30, 45])
+            if (Array.isArray(timestamp)) {
+                const [year, month, day, hour, minute, second] = timestamp;
+                date = new Date(year, month - 1, day, hour, minute, second);
+            } 
+            // ISO 문자열 형식인 경우 (예: "2026-01-26T14:30:45")
+            else if (typeof timestamp === 'string') {
+                date = new Date(timestamp);
+            } else {
+                return getCurrentTimestamp(); // fallback
+            }
+            
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        } catch (e) {
+            console.error('Failed to format timestamp:', timestamp, e);
+            return getCurrentTimestamp(); // fallback to client time
+        }
+    }
+    
+    /**
+     * 클라이언트 현재 시간을 "YYYY-MM-DD HH:mm:ss" 형식으로 반환 (fallback용)
+     */
+    function getCurrentTimestamp() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    function showMessage(message) {
+        const chatBox = document.getElementById("chat-box");
+        const div = document.createElement("div");
+        
+        // 서버에서 받은 타임스탬프 사용 (없으면 클라이언트 시간 사용)
+        const timestamp = formatTimestamp(message.timestamp);
+
+        if (message.type === 'JOIN' || message.type === 'LEAVE') {
+            div.className = "system";
+            div.innerText = `[${timestamp}] ${message.message}`;
+            
+            // 상담 종료(LEAVE) 시 버튼 상태 초기화
+            if (message.type === 'LEAVE') {
+                updateHandoffButtons('CLOSED');
+                
+                // 서버에서 자동 종료 메시지를 받은 경우 (타임아웃)
+                if (message.sender === 'System' && message.message.includes("자동 종료")) {
+                    // 메시지를 표시한 후 3초 뒤에 자동으로 연결 해제
+                    setTimeout(() => {
+                        if (stompClient !== null) {
+                            stompClient.disconnect();
+                            stompClient = null;
+                        }
+                        
+                        // UI 초기화 (disconnect() 함수의 일부 로직 재사용)
+                        currentRoomId = null;
+                        document.getElementById("chat-box").innerHTML = "";
+                        document.getElementById("chat-page").style.display = "none";
+                        document.getElementById("connect-form").style.display = "block";
+                        document.getElementById("roomName").value = "";
+                        
+                        // 사용자에게 알림
+                        alert("장시간 대화가 없어 상담이 종료되었습니다.");
+                    }, 3000); // 3초 후 자동 종료
+                }
+            }
+        } else {
+            const isMe = message.senderRole === 'CUSTOMER';
+            div.className = isMe ? "message my" : "message other";
+            div.innerHTML = `<div class="fw-bold" style="font-size:12px; margin-bottom:2px;">${message.sender}</div>
+                             <div class="content">${message.message}</div>
+                             <div class="timestamp">${timestamp}</div>`;
+            
+            // 시스템 메시지로 상담원 연결 확인
+            if (message.sender === 'System' && message.message.includes("상담원과 연결되었습니다.")) {
+                updateHandoffButtons('AGENT');
+            }
+            // 상담원 연결 취소 확인
+            if (message.sender === 'System' && message.message.includes("상담원 연결 요청을 취소하였습니다.")) {
+                updateHandoffButtons('BOT');
+            }
+            // 상담원 상담 종료 → BOT 모드 복귀 확인
+            if (message.sender === 'System' && message.message.includes("상담원과의 상담이 종료되었습니다")) {
+                updateHandoffButtons('BOT');
+            }
+        }
+        
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+</body>
+</html>

@@ -167,8 +167,12 @@ COMMENT ON COLUMN user_account.updated_at IS '수정 시간';
 -- 샘플 사용자 계정
 INSERT INTO user_account (user_id, user_name, password, role, email, company_id)
 VALUES
-    ('agent01', '상담원-01', '1234', 'AGENT', 'agent01@aicc.com', 'SYSTEM'),
-    ('cust01', '홍길동', '1234', 'CUSTOMER', 'cust01@example.com', 'apt001');
+    ('agent01', '상담원-01', '1234', 'AGENT'   , 'agent01@aicc.com'  , 'apt001'),
+    ('agent02', '상담원-02', '1234', 'AGENT'   , 'agent02@aicc.com'  , 'apt001'),
+    ('agent03', '상담원-03', '1234', 'AGENT'   , 'agent03@aicc.com'  , 'apt001'),
+    ('cust01' , '홍길철'   , '1234', 'CUSTOMER', 'cust01@example.com', 'apt001'),
+    ('cust02' , '홍길수'   , '1234', 'CUSTOMER', 'cust02@example.com', 'apt001'),
+    ('cust03' , '홍길동'   , '1234', 'CUSTOMER', 'cust03@example.com', 'apt001');
 
 -- 샘플 세션 데이터
 INSERT INTO chat_session (room_id, room_name, customer_id, customer_name, status, company_id)

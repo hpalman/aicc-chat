@@ -18,6 +18,10 @@ app:
     mode: HYBRID      # MiChat -> Agent 전환 모드 (기본값)
     # mode: MICHAT    # MiChat(자체 AI 엔진) 연동 모드
     # mode: AGENT     # 상담원 전용 모드 (봇 없음)
+    cleanup:
+      enabled: true   # 채팅방 자동 정리 기능 활성화 (true: 활성화, false: 비활성화)
+      idle-timeout: 600000  # 유휴 타임아웃 시간 (밀리초, 기본값: 10분 = 600000ms)
+      check-interval: 60000  # 정리 작업 실행 주기 (밀리초, 기본값: 1분 = 60000ms)
   auth:
     login-api-url: "http://mock-auth-api.aicc/v1/login"
     agent-login-api-url: "http://mock-auth-api.aicc/v1/agent/login"
@@ -31,7 +35,7 @@ spring:
   data:
     redis:
       host: 127.0.0.1 # 10.50.1.58
-      port: 16379 # 36379
+      port: 6379 # 36379
       # password:  # 필요시 설정
       timeout: 3000
       connect-timeout: 3000
@@ -39,9 +43,11 @@ spring:
   # PostgreSQL 데이터베이스 설정
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://127.0.0.1:5432/daclpg # aicc_chat
-    username: acldev # aicc
-    password: 1234 # aicc123!
+    url: jdbc:postgresql://127.0.0.1:5432/postgres # aicc_chat
+    username: postgres # aicc
+    password: postgres # aicc123!
+    # url: jdbc:postgresql://127.0.0.1:5432/daclpg # aicc_chat
+    #	username: acldev # aicc
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
@@ -49,14 +55,8 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
-# MyBatis 설정
-mybatis:
-  mapper-locations: classpath:mybatis/mapper/**/*.xml
-  type-aliases-package: aicc.chat.domain.persistence
-  configuration:
-    map-underscore-to-camel-case: true
-    default-fetch-size: 100
-    default-statement-timeout: 30
+# MyBatis 설정 (MyBatisConfig.java에서 처리)
+# SQL 로그는 MyBatisSqlLogger 인터셉터가 출력합니다.
 
 #################################
 # LOGGING
@@ -68,12 +68,21 @@ logging:
     org.springframework.amqp.rabbit: debug
     com.rabbitmq: debug
     aicc.chat: debug
-    jdbc:
-      sqlonly: info
-    resultset: info
+    # MyBatis SQL 로깅 (쿼리 출력)
+    aicc.chat.mapper: trace
+    # JDBC SQL 로깅
+    org.springframework.jdbc.core: debug
+    org.springframework.jdbc.core.JdbcTemplate: debug
+    org.springframework.jdbc.core.StatementCreatorUtils: trace
+    # HikariCP 로깅
+    com.zaxxer.hikari: info
+    # PostgreSQL 드라이버 로깅
+    org.postgresql: info
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
 
 # ===============================
 # 기본 디버그 설정
 # ===============================
-# 기본적으로 디버그 모드를 활성화하여 개발 편의성 제공
-debug: true  # Spring Boot 디버그 모드 활성화
+debug: false  # Spring Boot 디버그 모드

@@ -79,12 +79,15 @@ public class AgentChatController {
 
         boolean success = roomRepository.assignAgent(roomId, userInfo.getUserName());
         if (success) {
+            LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
+            
             ChatMessage notice = ChatMessage.builder()
                     .roomId(roomId)
                     .sender("System")
                     .senderRole(UserRole.SYSTEM)
                     .message(userInfo.getUserName() + " 상담원과 연결되었습니다.")
                     .type(aicc.chat.domain.MessageType.TALK)
+                    .timestamp(now) // 서버 타임스탬프 설정
                     .build();
             
             try {
@@ -103,7 +106,7 @@ public class AgentChatController {
                         .senderRole("SYSTEM")
                         .message(notice.getMessage())
                         .messageType("TALK")
-                        .createdAt(LocalDateTime.now())
+                        .createdAt(now) // 서버 타임스탬프 사용
                         .build();
                 chatHistoryService.saveChatHistory(chatHistory);
                 
@@ -139,14 +142,7 @@ public class AgentChatController {
             return ResponseEntity.status(403).body("상담원만 방을 종료할 수 있습니다.");
         }
 
-        // 상담 종료 메시지 발송
-        ChatMessage notice = ChatMessage.builder()
-                .roomId(roomId)
-                .sender("System")
-                .senderRole(UserRole.BOT)
-                .message("상담원 " + userInfo.getUserName() + "에 의해 상담이 종료되었습니다.")
-                .type(aicc.chat.domain.MessageType.LEAVE)
-                .build();
+        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
         
         try {
             String currentMode = roomRepository.getRoutingMode(roomId);
@@ -156,13 +152,29 @@ public class AgentChatController {
                 log.info("Permanently deleting closed room: {}", roomId);
                 roomRepository.deleteRoom(roomId);
             } else {
-                messageBroker.publish(notice);
-                // 방 상태를 CLOSED로 변경
-                roomRepository.setRoutingMode(roomId, "CLOSED");
+                // 상담원이 상담 종료 시 BOT 모드로 복귀 (CLOSED가 아닌 BOT으로 변경)
+                log.info("Agent ending consultation, switching room {} back to BOT mode", roomId);
                 
-                // PostgreSQL에 종료 정보 저장
-                chatSessionService.updateSessionStatus(roomId, "CLOSED");
-                chatSessionService.endSession(roomId);
+                // 상담 종료 알림 메시지 발송
+                ChatMessage notice = ChatMessage.builder()
+                        .roomId(roomId)
+                        .sender("System")
+                        .senderRole(UserRole.BOT)
+                        .message("상담원과의 상담이 종료되었습니다. 다시 챗봇과 대화하실 수 있습니다.")
+                        .type(aicc.chat.domain.MessageType.TALK)
+                        .timestamp(now) // 서버 타임스탬프 설정
+                        .build();
+                
+                messageBroker.publish(notice);
+                
+                // 방 상태를 BOT으로 변경 (고객이 다시 봇과 대화 가능)
+                roomRepository.setRoutingMode(roomId, "BOT");
+                
+                // 상담원 배정 해제 (assignedAgent 키 삭제)
+                roomRepository.setAssignedAgent(roomId, null); // null로 설정하여 키 삭제
+                
+                // PostgreSQL에 상태 업데이트
+                chatSessionService.updateSessionStatus(roomId, "BOT");
                 
                 // 종료 메시지도 이력에 저장
                 ChatHistory chatHistory = ChatHistory.builder()
@@ -171,8 +183,8 @@ public class AgentChatController {
                         .senderName("System")
                         .senderRole("SYSTEM")
                         .message(notice.getMessage())
-                        .messageType("LEAVE")
-                        .createdAt(LocalDateTime.now())
+                        .messageType("TALK")
+                        .createdAt(now) // 서버 타임스탬프 사용
                         .build();
                 chatHistoryService.saveChatHistory(chatHistory);
             }
@@ -191,6 +203,9 @@ public class AgentChatController {
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;
         
+        // 서버에서 메시지 수신 시간 설정
+        message.setTimestamp(LocalDateTime.now());
+        
         if (sessionAttributes != null) {
             String userName = (String) sessionAttributes.get("userName");
             String companyId = (String) sessionAttributes.get("companyId");
@@ -203,7 +218,7 @@ public class AgentChatController {
             if (companyId != null) message.setCompanyId(companyId);
         }
         
-        log.debug("Agent message received for room: {}", message.getRoomId());
+        log.debug("Agent message received for room: {} at {}", message.getRoomId(), message.getTimestamp());
         
         // PostgreSQL에 채팅 이력 저장
         try {
@@ -215,7 +230,7 @@ public class AgentChatController {
                     .message(message.getMessage())
                     .messageType(message.getType().name())
                     .companyId(message.getCompanyId())
-                    .createdAt(LocalDateTime.now())
+                    .createdAt(message.getTimestamp()) // 서버 타임스탬프 사용
                     .build();
             chatHistoryService.saveChatHistory(chatHistory);
             

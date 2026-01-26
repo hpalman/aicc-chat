@@ -84,12 +84,15 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 // 스트림 완료 시 누적된 전체 메시지를 발송
                 String responseText = fullResponse.toString();
                 if (!responseText.isEmpty()) {
+                    LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
+                    
                     ChatMessage botMessage = ChatMessage.builder()
                             .roomId(roomId)
                             .sender("Bot")
                             .senderRole(UserRole.BOT)
                             .message(responseText)
                             .type(MessageType.TALK)
+                            .timestamp(now) // 서버 타임스탬프 설정
                             .build();
                     messageBroker.publish(botMessage);
                     
@@ -103,7 +106,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                                 .message(responseText)
                                 .messageType("TALK")
                                 .companyId(message.getCompanyId())
-                                .createdAt(LocalDateTime.now())
+                                .createdAt(now) // 서버 타임스탬프 사용
                                 .build();
                         chatHistoryService.saveChatHistory(chatHistory);
                         
@@ -123,12 +126,15 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     public void onRoomCreated(ChatRoom room) {
         log.info("New room created for MiChat workflow: {}", room.getRoomId());
         
+        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
+        
         ChatMessage welcome = ChatMessage.builder()
                 .roomId(room.getRoomId())
                 .sender("Bot")
                 .senderRole(UserRole.BOT)
                 .message("안녕하세요! 무엇을 도와드릴까요? '상담원 연결'을 입력하시면 상담원과 연결해 드립니다.")
                 .type(MessageType.TALK)
+                .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(welcome);
         
@@ -141,7 +147,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                     .senderRole("BOT")
                     .message(welcome.getMessage())
                     .messageType("TALK")
-                    .createdAt(LocalDateTime.now())
+                    .createdAt(now) // 서버 타임스탬프 사용
                     .build();
             chatHistoryService.saveChatHistory(chatHistory);
         } catch (Exception e) {
@@ -156,6 +162,8 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         roomRepository.setRoutingMode(roomId, "WAITING");
         roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
         
+        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
+        
         // 고객 화면에 "상담원 연결 중..." 알림 (서버 사이드 발송)
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
@@ -163,6 +171,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .senderRole(UserRole.BOT)
                 .message("상담원 연결을 요청하였습니다. 상담원이 연결될 때까지 잠시만 기다려 주세요.")
                 .type(MessageType.TALK)
+                .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(notice);
         
@@ -177,7 +186,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                     .senderRole("SYSTEM")
                     .message(notice.getMessage())
                     .messageType("TALK")
-                    .createdAt(LocalDateTime.now())
+                    .createdAt(now) // 서버 타임스탬프 사용
                     .build();
             chatHistoryService.saveChatHistory(chatHistory);
         } catch (Exception e) {
@@ -191,12 +200,15 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         roomRepository.setRoutingMode(roomId, "BOT");
         roomUpdateBroadcaster.broadcastRoomList();
         
+        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
+        
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
                 .sender("System")
                 .senderRole(UserRole.BOT)
                 .message("상담원 연결 요청을 취소하였습니다. 다시 챗봇이 도와드리겠습니다.")
                 .type(MessageType.TALK)
+                .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(notice);
         
@@ -211,7 +223,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                     .senderRole("SYSTEM")
                     .message(notice.getMessage())
                     .messageType("TALK")
-                    .createdAt(LocalDateTime.now())
+                    .createdAt(now) // 서버 타임스탬프 사용
                     .build();
             chatHistoryService.saveChatHistory(chatHistory);
         } catch (Exception e) {

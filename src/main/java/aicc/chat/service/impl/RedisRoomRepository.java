@@ -128,10 +128,15 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void setAssignedAgent(String roomId, String agentName) {
-        // [setAssignedAgent] 방에 배정된 상담원 저장
-        // 배정 상담원 저장
-        if (roomId != null && agentName != null) {
-            redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":assignedAgent", agentName);
+        // [setAssignedAgent] 방에 배정된 상담원 저장 또는 삭제
+        if (roomId != null) {
+            if (agentName != null) {
+                // 상담원 배정
+                redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":assignedAgent", agentName);
+            } else {
+                // agentName이 null이면 키 삭제 (상담원 배정 해제)
+                redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":assignedAgent");
+            }
         }
     }
 

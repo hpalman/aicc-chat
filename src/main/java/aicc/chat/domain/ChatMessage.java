@@ -2,6 +2,8 @@ package aicc.chat.domain;
 
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter @Setter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -13,4 +15,5 @@ public class ChatMessage {
     private String message;
     private MessageType type;
     private String companyId;
+    private LocalDateTime timestamp; // 메시지 발행 시간 (서버에서 설정)
 }

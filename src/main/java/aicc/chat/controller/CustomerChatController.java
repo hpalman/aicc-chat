@@ -72,12 +72,18 @@ public class CustomerChatController {
         roomUpdateBroadcaster.broadcastRoomList();
         return ResponseEntity.ok(room);
     }
-
+/*    
+    ["SEND\ndestination:/app/customer/chat\ncontent-length:107\n\n{\"roomId\":\"room-dba1f913\",\"sender\":\"홍길철\",\"type\":\"LEAVE\",\"message\":\"홍길철님이 나갔습니다.\"}\u0000"]
+    StompHeaderAccessor [headers={simpMessageType=MESSAGE, stompCommand=SEND, nativeHeaders={destination=[/app/customer/chat], content-length=[107]}, simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-6c736bd7, companyId=apt001, org.springframework.messaging.simp.SimpAttributes.COMPLETED=true, userEmail=cust01@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@11a9323d, lookupDestination=/customer/chat, simpSessionId=mlgk5gek, simpDestination=/app/customer/chat}]
+*/    
     @MessageMapping("/customer/chat")
     // 고객 메시지를 받아 이력 저장 후 라우팅
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;
+        
+        // 서버에서 메시지 수신 시간 설정
+        message.setTimestamp(LocalDateTime.now());
         
         if (sessionAttributes != null) {
             String roomId = (String) sessionAttributes.get("roomId");
@@ -92,7 +98,7 @@ public class CustomerChatController {
             message.setSenderRole(UserRole.CUSTOMER);
         }
         
-        log.debug("Customer message received for room: {}", message.getRoomId());
+        log.debug("Customer message received for room: {} at {}", message.getRoomId(), message.getTimestamp());
         
         // PostgreSQL에 채팅 이력 저장
         try {
@@ -104,18 +110,18 @@ public class CustomerChatController {
                     .message(message.getMessage())
                     .messageType(message.getType().name())
                     .companyId(message.getCompanyId())
-                    .createdAt(LocalDateTime.now())
+                    .createdAt(message.getTimestamp()) // 서버 타임스탬프 사용
                     .build();
             chatHistoryService.saveChatHistory(chatHistory);
             
             // 세션의 마지막 활동 시간 업데이트
-            chatSessionService.updateLastActivity(message.getRoomId());
+            chatSessionService.updateLastActivity(message.getRoomId()); // DB
         } catch (Exception e) {
             log.error("Failed to save chat history to DB: roomId={}", message.getRoomId(), e);
             // DB 저장 실패해도 채팅은 계속 진행
         }
         
-        roomRepository.updateLastActivity(message.getRoomId());
+        roomRepository.updateLastActivity(message.getRoomId()); // REDIS
         routingStrategy.handleMessage(message.getRoomId(), message);
     }
 }
