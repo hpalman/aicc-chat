@@ -4,7 +4,7 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <!-- <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread{24}] %-5level %class{48}.%M{32}:%L{3} - %msg%n</pattern> -->
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%24.24thread] %-5level %-48.48class.%-20.20M:%3.3L - %msg%n</pattern>            
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%23.23thread] %-5level %-48.48class:%-20.20M:%3.3L - %msg%n</pattern>            
             <!-- <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern> -->
             <charset>UTF-8</charset>
         </encoder>

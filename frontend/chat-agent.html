@@ -321,14 +321,33 @@
             return;
         }
 
-        // 이미 다른 상담원이 상담 중인 경우
+        // 이미 다른 상담원이 상담 중인 경우 (강제 개입 선택 가능)
         if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== nickname) {
-            alert(`${room.assignedAgent} 상담원이 이미 상담 중입니다.`);
-            currentRoomId = room.roomId;
-            document.getElementById("chat-box").innerHTML = "<div class='text-center mt-5 text-muted'>상담 권한이 없습니다.</div>";
-            updateHeader(room);
-            updateInputState(room);
-            updateRoomListUI(roomsData);
+            const takeover = confirm(`${room.assignedAgent} 상담원이 이미 상담 중입니다.\n지금 이 상담에 개입하시겠습니까?`);
+            if (!takeover) {
+                currentRoomId = room.roomId;
+                document.getElementById("chat-box").innerHTML = "<div class='text-center mt-5 text-muted'>상담 권한이 없습니다.</div>";
+                updateHeader(room);
+                updateInputState(room);
+                updateRoomListUI(roomsData);
+                return;
+            }
+            // 강제 개입 요청
+            fetch(`/api/agent/rooms/${room.roomId}/assign?force=true`, {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + authToken }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Force assignment failed");
+                room.status = 'AGENT';
+                room.assignedAgent = nickname;
+                proceedSelectRoom(room);
+            })
+            .catch(err => {
+                console.error(err);
+                alert("상담 개입에 실패했습니다.");
+                loadRooms();
+            });
             return;
         }
 

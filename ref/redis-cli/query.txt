@@ -1,8 +1,8 @@
 # 1. 현재 활성화된 방 확인
-redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:rooms
+redis-cli -h 127.0.0.1 -p 6379 SMEMBERS chat:rooms
 
 # 2. 특정 방의 멤버 확인
-redis-cli -h 127.0.0.1 -p 16379 SMEMBERS chat:room:room-abc123
+redis-cli -h 127.0.0.1 -p 6379 SMEMBERS chat:room:room-abc123
 
 # 3. 해당 방으로 메시지 전송
 redis-cli -h 127.0.0.1 -p 16379 PUBLISH chat.topic '{"roomId":"room-abc123","sender":"시스템","senderRole":"SYSTEM","message":"상담원이 곧 연결됩니다.","type":"TALK","companyId":"apt001"}'

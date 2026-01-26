@@ -64,7 +64,8 @@ public class AgentChatController {
     // 상담원을 방에 배정하고 상태/이력을 갱신
     public ResponseEntity<?> assignAgent(
             @PathVariable String roomId,
-            @RequestHeader(value = "Authorization", required = false) String token) {
+            @RequestHeader(value = "Authorization", required = false) String token,
+            @RequestParam(value = "force", required = false, defaultValue = "false") boolean force) {
         
         log.info("Agent request assignAgent: roomId={}", roomId);
         if (token == null || !token.startsWith("Bearer ")) {
@@ -121,6 +122,46 @@ public class AgentChatController {
                 log.info("Room {} already assigned to the same agent: {}", roomId, currentAgent);
                 return ResponseEntity.ok().build(); // 이미 본인에게 배정된 경우 성공 처리
             }
+            if (force) {
+                log.info("Force assigning agent {} to room {} (current: {})", userInfo.getUserName(), roomId, currentAgent);
+                // 강제 배정: 기존 배정 상담원 교체
+                roomRepository.setAssignedAgent(roomId, userInfo.getUserName());
+                roomRepository.setRoutingMode(roomId, "AGENT");
+                roomRepository.updateLastActivity(roomId);
+
+                LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
+                ChatMessage notice = ChatMessage.builder()
+                        .roomId(roomId)
+                        .sender("System")
+                        .senderRole(UserRole.SYSTEM)
+                        .message(userInfo.getUserName() + " 상담원이 상담에 개입했습니다.")
+                        .type(aicc.chat.domain.MessageType.INTERVENE)
+                        .timestamp(now)
+                        .build();
+
+                try {
+                    messageBroker.publish(notice);
+                    roomUpdateBroadcaster.broadcastRoomList();
+
+                    chatSessionService.updateSessionStatus(roomId, "AGENT");
+                    chatSessionService.assignAgent(roomId, userInfo.getUserName());
+
+                    ChatHistory chatHistory = ChatHistory.builder()
+                            .roomId(roomId)
+                            .senderId("SYSTEM")
+                            .senderName("System")
+                            .senderRole("SYSTEM")
+                            .message(notice.getMessage())
+                            .messageType("INTERVENE")
+                            .createdAt(now)
+                            .build();
+                    chatHistoryService.saveChatHistory(chatHistory);
+                } catch (Exception e) {
+                    log.error("Failed to post-force-assign actions", e);
+                }
+
+                return ResponseEntity.ok().build();
+            }
             return ResponseEntity.status(409).body("이미 다른 상담원(" + currentAgent + ")이 배정되었습니다.");
         }
     }
@@ -172,6 +213,8 @@ public class AgentChatController {
                 
                 // 상담원 배정 해제 (assignedAgent 키 삭제)
                 roomRepository.setAssignedAgent(roomId, null); // null로 설정하여 키 삭제
+                // 상담원 멤버 정보 제거 (Redis 멤버 목록 정리)
+                roomRepository.removeMember(roomId, userInfo.getUserId());
                 
                 // PostgreSQL에 상태 업데이트
                 chatSessionService.updateSessionStatus(roomId, "BOT");
