@@ -39,14 +39,16 @@ public class CustomerChatController {
     // 고객의 챗봇 상담방을 생성하고 세션/목록을 갱신
     public ResponseEntity<ChatRoom> createRoomWithBot(@RequestHeader(value = "Authorization", required = false) String token) {
         log.info("Customer request createRoomWithBot");
-        if (token == null || !token.startsWith("Bearer ")) return ResponseEntity.status(401).build();
+        if (token == null || !token.startsWith("Bearer "))
+            return ResponseEntity.status(401).build();
         
         String actualToken = token.substring(7);
         UserInfo custInfo = tokenService.validateToken(actualToken);
-        if (custInfo == null) return ResponseEntity.status(401).build();
+        if (custInfo == null)
+            return ResponseEntity.status(401).build();
 
         String newRoomId = "room-" + UUID.randomUUID().toString().substring(0, 8);
-        ChatRoom room = roomRepository.createRoom(newRoomId, custInfo.getUserId());
+        ChatRoom room = roomRepository.createRoom(newRoomId, custInfo.getUserId()); // 룸 생성(Redis에 키 및 값들 넣음)
         roomRepository.addMember(newRoomId, custInfo.getUserId()); // 고객을 멤버로 추가
         
         // PostgreSQL에 세션 정보 저장

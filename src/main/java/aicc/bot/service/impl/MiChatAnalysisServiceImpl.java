@@ -44,133 +44,133 @@ public class MiChatAnalysisServiceImpl implements ChatAnalysisService {
     @Value("${app.ai-bot.analysis.default-user-id:manager}")
     private String defaultUserId;
 
-    @Override
-    // 상담 내용을 요약 API로 전달
-    public String summarize(Map<String, Object> request) {
-        return callApi(aiEndPoint + summaryUri, "요약", request);
-    }
+    ////@Override
+    ////// 상담 내용을 요약 API로 전달
+    ////public String summarize(Map<String, Object> request) {
+    ////    return callApi(aiEndPoint + summaryUri, "요약", request);
+    ////}
+    ////
+    ////@Override
+    ////// 상담 키워드 추출 API로 전달
+    ////public String keyword(Map<String, Object> request) {
+    ////    return callApi(aiEndPoint + keywordUri, "키워드 추출", request);
+    ////}
+    ////
+    ////@Override
+    ////// 상담 카테고리 분류 API로 전달
+    ////public String category(Map<String, Object> request) {
+    ////    return callApi(aiEndPoint + categoryUri, "카테고리 분류", request);
+    ////}
 
-    @Override
-    // 상담 키워드 추출 API로 전달
-    public String keyword(Map<String, Object> request) {
-        return callApi(aiEndPoint + keywordUri, "키워드 추출", request);
-    }
-
-    @Override
-    // 상담 카테고리 분류 API로 전달
-    public String category(Map<String, Object> request) {
-        return callApi(aiEndPoint + categoryUri, "카테고리 분류", request);
-    }
-
-    private String callApi(String url, String taskName, Map<String, Object> request) {
-        // 공통 요청/응답 처리 (요청 변환, 호출, 에러 처리)
-        if (request == null || request.isEmpty()) {
-            log.warn("{} 요청이 비어있습니다.", taskName);
-            return "잘못된 요청입니다.";
-        }
-
-        try {
-            String sessionId = extractSessionId(request);
-            Map<String, Object> requestMap = buildRequestMap(taskName, request, sessionId);
-            
-            String requestBody = objectMapper.writeValueAsString(requestMap);
-            log.info("{} API 호출 시작 - SessionId: {}", taskName, sessionId);
-            
-            if (log.isDebugEnabled()) {
-                log.debug("{} 요청 Body: {}", taskName, requestBody);
-            }
-            
-            String response = chatWebClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .timeout(Duration.ofSeconds(30))
-                .doOnError(error -> logError(taskName, error))
-                .block();
-            
-            log.info("{} API 호출 완료 - SessionId: {}", taskName, sessionId);
-            
-            if (log.isDebugEnabled()) {
-                log.debug("{} 응답: {}", taskName, response);
-            }
-            
-            return response != null ? response : "응답이 없습니다.";
-            
-        } catch (JsonProcessingException e) {
-            log.error("{} 요청 JSON 생성 실패", taskName, e);
-            return "요청 처리 중 오류가 발생했습니다.";
-        } catch (WebClientResponseException e) {
-            log.error("{} API 응답 오류 - Status: {}, Body: {}", 
-                taskName, e.getStatusCode(), 
-                e.getResponseBodyAsString(StandardCharsets.UTF_8));
-            return "API 호출 중 오류가 발생했습니다.";
-        } catch (Exception e) {
-            log.error("{} API 호출 중 예상치 못한 오류 발생", taskName, e);
-            return "시스템 오류가 발생했습니다.";
-        }
-    }
-
-    private Map<String, Object> buildRequestMap(String taskName, Map<String, Object> request, String sessionId) {
-        // 분석 API 요청 스키마에 맞게 payload 구성
-        Map<String, Object> requestMap = new LinkedHashMap<>();
-        
-        // meta 설정
-        Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put("companyId", request.getOrDefault("companyId", defaultCompanyId));
-        meta.put("consultantId", defaultUserId);
-        meta.put("sessionId", sessionId);
-        meta.put("userId", defaultUserId);
-        
-        requestMap.put("meta", meta);
-        requestMap.put("messages", request.get("messages"));
-
-        // task별 추가 설정
-        if ("요약".equals(taskName)) {
-            Map<String, Object> config = new LinkedHashMap<>();
-            config.put("maxLength", 300);
-            config.put("stream", false);
-            config.put("summaryType", "general");
-            requestMap.put("config", config);
-        } else if ("키워드 추출".equals(taskName)) {
-            Map<String, Object> config = new LinkedHashMap<>();
-            config.put("includeFrequency", false);
-            config.put("keywordType", "general");
-            config.put("maxKeywords", 8);
-            requestMap.put("config", config);
-        } else if ("카테고리 분류".equals(taskName)) {
-            if (request.containsKey("categories")) {
-                requestMap.put("categories", request.get("categories"));
-            }
-            requestMap.put("maxCategories", request.getOrDefault("maxCategories", 1));
-        }
-        
-        return requestMap;
-    }
-
-    private void logError(String taskName, Throwable error) {
-        // WebClient 호출 오류 로그 출력
-        log.error("{} API 호출 중 오류 발생: {}", taskName, error.getMessage());
-    }
-
-    @SuppressWarnings("unchecked")
-    private String extractSessionId(Map<String, Object> request) {
-        // 요청에서 sessionId를 추출하고 없으면 기본값 생성
-        String sessionId = null;
-        if (request.containsKey("meta")) {
-            Object metaObj = request.get("meta");
-            if (metaObj instanceof Map) {
-                sessionId = (String) ((Map<String, Object>) metaObj).get("sessionId");
-            }
-        }
-        if (sessionId == null) {
-            sessionId = (String) request.get("sessionId");
-        }
-        if (sessionId == null || sessionId.isEmpty()) {
-            sessionId = "chat-" + System.currentTimeMillis();
-        }
-        return sessionId;
-    }
+    ////private String callApi(String url, String taskName, Map<String, Object> request) {
+    ////    // 공통 요청/응답 처리 (요청 변환, 호출, 에러 처리)
+    ////    if (request == null || request.isEmpty()) {
+    ////        log.warn("{} 요청이 비어있습니다.", taskName);
+    ////        return "잘못된 요청입니다.";
+    ////    }
+    ////
+    ////    try {
+    ////        String sessionId = extractSessionId(request);
+    ////        Map<String, Object> requestMap = buildRequestMap(taskName, request, sessionId);
+    ////        
+    ////        String requestBody = objectMapper.writeValueAsString(requestMap);
+    ////        log.info("{} API 호출 시작 - SessionId: {}", taskName, sessionId);
+    ////        
+    ////        if (log.isDebugEnabled()) {
+    ////            log.debug("{} 요청 Body: {}", taskName, requestBody);
+    ////        }
+    ////        
+    ////        String response = chatWebClient.post()
+    ////            .uri(url)
+    ////            .contentType(MediaType.APPLICATION_JSON)
+    ////            .bodyValue(requestBody)
+    ////            .retrieve()
+    ////            .bodyToMono(String.class)
+    ////            .timeout(Duration.ofSeconds(30))
+    ////            .doOnError(error -> logError(taskName, error))
+    ////            .block();
+    ////        
+    ////        log.info("{} API 호출 완료 - SessionId: {}", taskName, sessionId);
+    ////        
+    ////        if (log.isDebugEnabled()) {
+    ////            log.debug("{} 응답: {}", taskName, response);
+    ////        }
+    ////        
+    ////        return response != null ? response : "응답이 없습니다.";
+    ////        
+    ////    } catch (JsonProcessingException e) {
+    ////        log.error("{} 요청 JSON 생성 실패", taskName, e);
+    ////        return "요청 처리 중 오류가 발생했습니다.";
+    ////    } catch (WebClientResponseException e) {
+    ////        log.error("{} API 응답 오류 - Status: {}, Body: {}", 
+    ////            taskName, e.getStatusCode(), 
+    ////            e.getResponseBodyAsString(StandardCharsets.UTF_8));
+    ////        return "API 호출 중 오류가 발생했습니다.";
+    ////    } catch (Exception e) {
+    ////        log.error("{} API 호출 중 예상치 못한 오류 발생", taskName, e);
+    ////        return "시스템 오류가 발생했습니다.";
+    ////    }
+    ////}
+    ////
+    ////private Map<String, Object> buildRequestMap(String taskName, Map<String, Object> request, String sessionId) {
+    ////    // 분석 API 요청 스키마에 맞게 payload 구성
+    ////    Map<String, Object> requestMap = new LinkedHashMap<>();
+    ////    
+    ////    // meta 설정
+    ////    Map<String, Object> meta = new LinkedHashMap<>();
+    ////    meta.put("companyId", request.getOrDefault("companyId", defaultCompanyId));
+    ////    meta.put("consultantId", defaultUserId);
+    ////    meta.put("sessionId", sessionId);
+    ////    meta.put("userId", defaultUserId);
+    ////    
+    ////    requestMap.put("meta", meta);
+    ////    requestMap.put("messages", request.get("messages"));
+    ////
+    ////    // task별 추가 설정
+    ////    if ("요약".equals(taskName)) {
+    ////        Map<String, Object> config = new LinkedHashMap<>();
+    ////        config.put("maxLength", 300);
+    ////        config.put("stream", false);
+    ////        config.put("summaryType", "general");
+    ////        requestMap.put("config", config);
+    ////    } else if ("키워드 추출".equals(taskName)) {
+    ////        Map<String, Object> config = new LinkedHashMap<>();
+    ////        config.put("includeFrequency", false);
+    ////        config.put("keywordType", "general");
+    ////        config.put("maxKeywords", 8);
+    ////        requestMap.put("config", config);
+    ////    } else if ("카테고리 분류".equals(taskName)) {
+    ////        if (request.containsKey("categories")) {
+    ////            requestMap.put("categories", request.get("categories"));
+    ////        }
+    ////        requestMap.put("maxCategories", request.getOrDefault("maxCategories", 1));
+    ////    }
+    ////    
+    ////    return requestMap;
+    ////}
+    ////
+    ////private void logError(String taskName, Throwable error) {
+    ////    // WebClient 호출 오류 로그 출력
+    ////    log.error("{} API 호출 중 오류 발생: {}", taskName, error.getMessage());
+    ////}
+    ////
+    ////@SuppressWarnings("unchecked")
+    ////private String extractSessionId(Map<String, Object> request) {
+    ////    // 요청에서 sessionId를 추출하고 없으면 기본값 생성
+    ////    String sessionId = null;
+    ////    if (request.containsKey("meta")) {
+    ////        Object metaObj = request.get("meta");
+    ////        if (metaObj instanceof Map) {
+    ////            sessionId = (String) ((Map<String, Object>) metaObj).get("sessionId");
+    ////        }
+    ////    }
+    ////    if (sessionId == null) {
+    ////        sessionId = (String) request.get("sessionId");
+    ////    }
+    ////    if (sessionId == null || sessionId.isEmpty()) {
+    ////        sessionId = "chat-" + System.currentTimeMillis();
+    ////    }
+    ////    return sessionId;
+    ////}
 }
 

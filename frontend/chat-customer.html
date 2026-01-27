@@ -247,8 +247,8 @@ localStorage.setItem('user.userId', user.userId);
         document.getElementById("login-form").style.display = "block";
         
         // 6. 입력 필드 초기화
-        document.getElementById("nickname").value = "";
-        document.getElementById("roomName").value = "";
+//      document.getElementById("nickname").value = "";
+//      document.getElementById("roomName").value = "";
         
         console.log("로그아웃 완료");
         // alert("로그아웃 되었습니다.");
@@ -263,6 +263,7 @@ localStorage.setItem('user.userId', user.userId);
         }
 
         // 1. 방 생성 및 봇 초기화 API 호출
+        // 허:2026-01-27) 별도의 http(s) api로 채팅방생성시 장점(명확한 RESTful, 권권한/인증,비즈니스로직분리,멀터서버환경)
         fetch(`/api/customer/chatbot`, { 
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + authToken }
@@ -383,16 +384,17 @@ localStorage.setItem('user.userId', user.userId);
                     showMessage(payload);
                 });
 
-                // 3. 입장 메시지 전송
-                stompClient.send("/app/customer/chat", {}, JSON.stringify({
-                    roomId: currentRoomId,
-                    sender: nickname,
-                    type: 'JOIN',
-                    message: nickname + "님이 입장하셨습니다."
-                }));
-
-                // 4. 상담원 가용성 주기적 체크 시작 (30초마다)
-                startAvailabilityCheck();
+                //// // 3. 입장 메시지 전송 - 허:2026.01.27) UI에서 보낼 것이 아니고, 서버에서 CLIENT로 보내는 것으로 변경해야 해서 주석처리
+                //// stompClient.send("/app/customer/chat", {}, JSON.stringify({
+                ////     roomId: currentRoomId,
+                ////     sender: nickname,
+                ////     type: 'JOIN',
+                ////     message: nickname + "님이 입장하셨습니다."
+                //// }));
+                //// 
+                //// // 4. 상담원 가용성 주기적 체크 시작 (30초마다)
+                //// startAvailabilityCheck();
+                
             }, function(error) {
                 // 연결 실패 콜백
                 console.error('WebSocket 연결 실패:', error);
@@ -434,7 +436,7 @@ localStorage.setItem('user.userId', user.userId);
         document.getElementById("chat-box").innerHTML = "";
         document.getElementById("chat-page").style.display = "none";
         document.getElementById("connect-form").style.display = "block";
-        document.getElementById("roomName").value = "";
+//      document.getElementById("roomName").value = "";
     }
 
     /**
@@ -605,7 +607,7 @@ localStorage.setItem('user.userId', user.userId);
                         document.getElementById("chat-box").innerHTML = "";
                         document.getElementById("chat-page").style.display = "none";
                         document.getElementById("connect-form").style.display = "block";
-                        document.getElementById("roomName").value = "";
+//                      document.getElementById("roomName").value = "";
                         
                         // 사용자에게 알림
                         alert("장시간 대화가 없어 상담이 종료되었습니다.");

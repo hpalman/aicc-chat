@@ -64,15 +64,15 @@ spring:
 logging:
   level:
     root: info
-    org.springframework.amqp: debug
-    org.springframework.amqp.rabbit: debug
-    com.rabbitmq: debug
+    #org.springframework.amqp: debug
+    #org.springframework.amqp.rabbit: debug
+    #com.rabbitmq: debug
     aicc.chat: debug
     # MyBatis SQL 로깅 (쿼리 출력)
     aicc.chat.mapper: trace
     # JDBC SQL 로깅
     org.springframework.jdbc.core: debug
-    org.springframework.jdbc.core.JdbcTemplate: debug
+    org.springframework.jdbc.core.JdbcTemplate: info
     org.springframework.jdbc.core.StatementCreatorUtils: trace
     # HikariCP 로깅
     com.zaxxer.hikari: info
