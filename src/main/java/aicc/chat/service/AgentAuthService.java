@@ -7,7 +7,10 @@ import aicc.chat.mapper.UserAccountMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -19,6 +22,9 @@ public class AgentAuthService {
 
     private final TokenService tokenService;
     private final UserAccountMapper userAccountMapper;
+    private final StringRedisTemplate redisTemplate;
+    
+    private static final String ONLINE_AGENTS_KEY = "chat:online:agents";
 
     public UserInfo login(String id, String password) {
         // 상담원 로그인 후 토큰을 생성해 반환
@@ -47,7 +53,21 @@ public class AgentAuthService {
                 .build();
 
         userInfo.setToken(tokenService.generateToken(userInfo));
+        
+        // Redis에 온라인 상담원 등록 (10분 TTL)
+        String agentKey = ONLINE_AGENTS_KEY + ":" + account.getUserId();
+        redisTemplate.opsForValue().set(agentKey, account.getUserName(), 10, TimeUnit.MINUTES);
+        log.info("Agent {} registered as online in Redis", account.getUserId());
+        
         return userInfo;
+    }
+    
+    /**
+     * 상담원 하트비트 - 온라인 상태 유지
+     */
+    public void heartbeat(String userId) {
+        String agentKey = ONLINE_AGENTS_KEY + ":" + userId;
+        redisTemplate.expire(agentKey, 10, TimeUnit.MINUTES);
     }
 }
 

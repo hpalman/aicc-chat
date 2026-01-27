@@ -60,6 +60,7 @@
         <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
                 <span id="room-title" class="fw-bold"></span>
+                <span id="user-info" class="text-muted ms-2" style="font-size: 0.9em;"></span>
                 <div id="room-id" class="room-info"></div>
             </div>
             <div>
@@ -83,6 +84,8 @@
     let currentRoomId = null;
     let nickname = null;
     let authToken = null;
+    let currentUserId = null; // 사용자 ID 저장
+    let availabilityCheckInterval = null; // 가용성 체크 인터벌
 
     // 초기 로딩 시 로그인 상태 확인
     window.onload = function() {
@@ -177,6 +180,7 @@
 
     function onLoginSuccess(user) {
         nickname = user.userName;
+        currentUserId = user.userId; // 사용자 ID 저장
         authToken = user.token;
 // 연결 전 토큰 저장
 localStorage.setItem('authToken', authToken);
@@ -198,9 +202,9 @@ localStorage.setItem('user.userId', user.userId);
      */
     function logout() {
         // 확인 메시지
-        if (!confirm("로그아웃 하시겠습니까?")) {
-            return;
-        }
+        //if (!confirm("로그아웃 하시겠습니까?")) {
+        //    return;
+        //}
 
         console.log("로그아웃 시작...");
 
@@ -315,11 +319,41 @@ localStorage.setItem('user.userId', user.userId);
             handoffBtn.innerText = "상담 종료됨";
             cancelBtn.style.display = "none";
         } else {
-            // BOT or other
-            handoffBtn.disabled = false;
-            handoffBtn.innerText = "상담원 연결";
-            cancelBtn.style.display = "none";
+            // BOT or other - 상담원 가용성 확인
+            checkAgentAvailability();
         }
+    }
+
+    /**
+     * 상담원 가용성 확인 및 버튼 상태 업데이트
+     */
+    function checkAgentAvailability() {
+        const handoffBtn = document.getElementById("handoffBtn");
+        const cancelBtn = document.getElementById("cancelHandoffBtn");
+        
+        fetch('/api/agent/availability')
+            .then(res => res.json())
+            .then(data => {
+                if (data.available) {
+                    // 상담원 가용 - 버튼 활성화
+                    handoffBtn.disabled = false;
+                    handoffBtn.innerText = "상담원 연결";
+                    handoffBtn.title = "상담원과 연결할 수 있습니다";
+                } else {
+                    // 상담원 불가 - 버튼 비활성화
+                    handoffBtn.disabled = true;
+                    handoffBtn.innerText = "상담원 대기 중";
+                    handoffBtn.title = "모든 상담원이 상담 중입니다. 잠시 후 다시 시도해주세요.";
+                }
+                cancelBtn.style.display = "none";
+            })
+            .catch(err => {
+                console.error('상담원 가용성 확인 실패:', err);
+                // 오류 시 기본적으로 버튼 활성화 (기존 동작 유지)
+                handoffBtn.disabled = false;
+                handoffBtn.innerText = "상담원 연결";
+                cancelBtn.style.display = "none";
+            });
     }
 
     function connect() {
@@ -341,6 +375,7 @@ localStorage.setItem('user.userId', user.userId);
                 // 방 제목과 roomId 표시
                 document.getElementById("room-title").innerText = document.getElementById("roomName").value || "상담 중";
                 document.getElementById("room-id").innerText = `방 ID: ${currentRoomId}`;
+                document.getElementById("user-info").innerText = `(${nickname} / ${currentUserId})`;
 
                 // 2. 구독 (Subscribe) - 서버에서 받은 고유 roomId 사용
                 stompClient.subscribe('/topic/room/' + currentRoomId, function (message) {
@@ -355,6 +390,9 @@ localStorage.setItem('user.userId', user.userId);
                     type: 'JOIN',
                     message: nickname + "님이 입장하셨습니다."
                 }));
+
+                // 4. 상담원 가용성 주기적 체크 시작 (30초마다)
+                startAvailabilityCheck();
             }, function(error) {
                 // 연결 실패 콜백
                 console.error('WebSocket 연결 실패:', error);
@@ -377,6 +415,9 @@ localStorage.setItem('user.userId', user.userId);
     }
 
     function disconnect() {
+        // 가용성 체크 중단
+        stopAvailabilityCheck();
+        
         if (stompClient !== null) {
             stompClient.send("/app/customer/chat", {}, JSON.stringify({
                 roomId: currentRoomId,
@@ -394,6 +435,32 @@ localStorage.setItem('user.userId', user.userId);
         document.getElementById("chat-page").style.display = "none";
         document.getElementById("connect-form").style.display = "block";
         document.getElementById("roomName").value = "";
+    }
+
+    /**
+     * 상담원 가용성 주기적 체크 시작
+     */
+    function startAvailabilityCheck() {
+        // 즉시 한 번 체크
+        checkAgentAvailability();
+        
+        // 30초마다 체크
+        availabilityCheckInterval = setInterval(() => {
+            checkAgentAvailability();
+        }, 30000);
+        
+        console.log('상담원 가용성 주기적 체크 시작 (30초 간격)');
+    }
+
+    /**
+     * 상담원 가용성 주기적 체크 중단
+     */
+    function stopAvailabilityCheck() {
+        if (availabilityCheckInterval) {
+            clearInterval(availabilityCheckInterval);
+            availabilityCheckInterval = null;
+            console.log('상담원 가용성 주기적 체크 중단');
+        }
     }
 
     function requestHandoff() {

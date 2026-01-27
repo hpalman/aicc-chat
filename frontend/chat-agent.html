@@ -8,8 +8,14 @@
         body, html { height: 100vh; overflow: hidden; }
         .sidebar { height: 100%; border-right: 1px solid #ddd; padding: 20px; background: #f8f9fa; overflow-y: auto; }
         .chat-area { height: 100%; display: flex; flex-direction: column; }
+        .chat-tabs { border-bottom: 1px solid #ddd; background: #fff; padding: 10px 10px 0 10px; display: flex; overflow-x: auto; }
+        .chat-tab { position: relative; padding: 10px 40px 10px 15px; border: 1px solid #ddd; border-bottom: none; background: #f8f9fa; cursor: pointer; margin-right: 5px; border-radius: 5px 5px 0 0; white-space: nowrap; transition: 0.2s; }
+        .chat-tab:hover { background: #e9ecef; }
+        .chat-tab.active { background: #fff; font-weight: bold; border-bottom: 2px solid #fff; margin-bottom: -1px; }
+        .chat-tab .close-tab { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; font-size: 18px; cursor: pointer; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+        .chat-tab .close-tab:hover { color: #dc3545; }
         .chat-header { padding: 15px; border-bottom: 1px solid #ddd; background: #fff; }
-        .chat-box { flex: 0 0 50%; overflow-y: auto; padding: 20px; background: #f0f2f5; display: flex; flex-direction: column; }
+        .chat-box { flex: 1; overflow-y: auto; padding: 20px; background: #f0f2f5; display: flex; flex-direction: column; }
         .chat-input { padding: 20px; border-top: 1px solid #ddd; background: #fff; }
         
         .room-item { cursor: pointer; padding: 10px; border-radius: 5px; margin-bottom: 5px; transition: 0.2s; }
@@ -76,6 +82,12 @@
 
     <!-- 오른쪽: 채팅 영역 -->
     <div class="col-md-9 chat-area">
+        <!-- 탭 영역 -->
+        <div class="chat-tabs" id="chat-tabs">
+            <!-- Tabs will be dynamically added here -->
+        </div>
+        
+        <!-- 활성 채팅 영역 -->
         <div class="chat-header" id="chat-header">
             <span class="fw-bold fs-5">상담을 선택해주세요</span>
         </div>
@@ -98,10 +110,14 @@
     let currentRoomId = null;
     let nickname = null;
     let authToken = null;
+    let currentUserId = null; // 상담원 ID 저장
     let roomMessages = {}; // roomId -> Array of messages
     let subscriptions = {}; // roomId -> subscription object
     let unreadRooms = {}; // roomId -> boolean (true if needs reply)
     let roomsData = []; // 전역 방 데이터 보관
+    let openTabs = {}; // roomId -> room object (열려있는 탭 관리)
+    let tabOrder = []; // roomId 배열 (탭 순서 관리)
+    let heartbeatInterval = null; // 하트비트 인터벌
 
     // 페이지 로드 시 로그인 상태 확인
     window.onload = function() {
@@ -139,7 +155,8 @@
         .then(user => {
             authToken = token;
             nickname = user.userName;
-            document.getElementById("displayAgentName").innerText = nickname;
+            currentUserId = user.userId; // 상담원 ID 저장
+            document.getElementById("displayAgentName").innerText = `${nickname} (${currentUserId})`;
             document.getElementById("login-form").style.display = "none";
             document.getElementById("admin-main").style.display = "flex";
             connectWebSocket();
@@ -152,6 +169,9 @@
     }
 
     function logout() {
+        // 하트비트 중단
+        stopHeartbeat();
+        
         sessionStorage.removeItem("AGENT_TOKEN");
         window.location.reload();
     }
@@ -172,7 +192,55 @@
 
             // 초기 목록 로드
             loadRooms();
+            
+            // 하트비트 시작 (5분마다 온라인 상태 갱신)
+            startHeartbeat();
         });
+    }
+
+    /**
+     * 하트비트 시작 - 온라인 상태 유지
+     */
+    function startHeartbeat() {
+        // 즉시 한 번 실행
+        sendHeartbeat();
+        
+        // 5분마다 하트비트 전송
+        heartbeatInterval = setInterval(() => {
+            sendHeartbeat();
+        }, 5 * 60 * 1000); // 5분
+        
+        console.log('상담원 하트비트 시작 (5분 간격)');
+    }
+
+    /**
+     * 하트비트 전송
+     */
+    function sendHeartbeat() {
+        fetch('/api/agent/me', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        })
+        .then(res => {
+            if (res.ok) {
+                console.log('하트비트 전송 성공');
+            } else {
+                console.warn('하트비트 전송 실패 - 재로그인 필요');
+            }
+        })
+        .catch(err => {
+            console.error('하트비트 오류:', err);
+        });
+    }
+
+    /**
+     * 하트비트 중단
+     */
+    function stopHeartbeat() {
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+            console.log('상담원 하트비트 중단');
+        }
     }
 
     function loadRooms() {
@@ -192,23 +260,28 @@
         }
 
         rooms.forEach(room => {
-            // 백그라운드 구독 관리: 대기 중이거나 내 방인 경우에만 알림을 위해 구독
-            const isWaiting = room.status === 'WAITING';
-            const isMyRoom = room.status === 'AGENT' && room.assignedAgent === nickname;
-            
-            if ((isWaiting || isMyRoom) && !subscriptions[room.roomId]) {
-                subscribeToRoom(room.roomId);
-            } else if (!isWaiting && !isMyRoom && subscriptions[room.roomId] && currentRoomId !== room.roomId) {
-                // 더 이상 대기 상태도 아니고 내 방도 아니면 구독 해제 (단, 현재 보고 있는 방은 제외)
-                subscriptions[room.roomId].unsubscribe();
-                delete subscriptions[room.roomId];
+            // 백그라운드 구독 관리: 열린 탭이 아닌 방은 구독 해제
+            if (openTabs[room.roomId]) {
+                // 열린 탭은 항상 구독 유지
+                if (!subscriptions[room.roomId]) {
+                    subscribeToRoom(room.roomId);
+                }
+            } else {
+                // 열린 탭이 아니면 구독 해제
+                if (subscriptions[room.roomId]) {
+                    subscriptions[room.roomId].unsubscribe();
+                    delete subscriptions[room.roomId];
+                }
             }
 
             const div = document.createElement("div");
             const isBot = room.status === 'BOT';
+            const isWaiting = room.status === 'WAITING';
+            const isMyRoom = room.status === 'AGENT' && room.assignedAgent === nickname;
             const hasUnread = unreadRooms[room.roomId];
+            const isOpen = openTabs[room.roomId] ? true : false;
             
-            div.className = `room-item ${currentRoomId === room.roomId ? 'active' : ''} ${isWaiting ? 'waiting' : ''} ${hasUnread && currentRoomId !== room.roomId ? 'needs-reply' : ''}`;
+            div.className = `room-item ${isOpen ? 'active' : ''} ${isWaiting ? 'waiting' : ''} ${hasUnread && !isOpen ? 'needs-reply' : ''}`;
             
             const displayName = room.roomName || '알 수 없는 고객';
             
@@ -216,28 +289,23 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <strong>${displayName}</strong>
                     <div>
+                        ${isOpen ? '<span class="badge bg-success">열림</span>' : ''}
                         ${isBot ? '<span class="badge bg-info">챗봇상담중</span>' : ''}
                         ${room.status === 'CLOSED' ? '<span class="badge bg-danger">상담종료</span>' : ''}
                         ${isMyRoom ? '<span class="badge bg-primary">상담중(나)</span>' : (room.status === 'AGENT' ? `<span class="badge bg-secondary">상담중(${room.assignedAgent})</span>` : '')}
                         ${isWaiting ? '<span class="badge bg-warning text-dark">연결대기</span>' : ''}
-                        ${hasUnread && currentRoomId !== room.roomId ? '<span class="badge bg-danger">NEW</span>' : ''}
+                        ${hasUnread && !isOpen ? '<span class="badge bg-danger">NEW</span>' : ''}
                     </div>
                 </div>
                 <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">${room.roomId}</div>
             `;
             div.onclick = () => selectRoom(room);
             list.appendChild(div);
-
-            if (currentRoomId === room.roomId) {
-                updateInputState(room);
-                updateHeader(room);
-            }
         });
     }
 
     function updateHeader(room) {
         let statusBadge = '';
-        let closeBtn = '';
         
         if (room.status === 'BOT') statusBadge = '<span class="badge bg-info">챗봇상담중</span>';
         else if (room.status === 'WAITING') statusBadge = '<span class="badge bg-warning text-dark">연결대기</span>';
@@ -245,26 +313,19 @@
         else if (room.status === 'AGENT') {
             const isMyRoom = room.assignedAgent === nickname;
             statusBadge = isMyRoom ? '<span class="badge bg-primary">상담중(나)</span>' : `<span class="badge bg-secondary">상담중(${room.assignedAgent})</span>`;
-            
-            // 내 방이거나 종료된 방인 경우 처리 버튼 표시
-            if (isMyRoom || room.status === 'CLOSED') {
-                const btnLabel = room.status === 'CLOSED' ? '방 삭제' : '상담종료';
-                const btnClass = room.status === 'CLOSED' ? 'btn-outline-danger' : 'btn-danger';
-                closeBtn = `<button class="btn btn-sm ${btnClass} ms-2" onclick="closeConsultation('${room.roomId}', '${room.status}')">${btnLabel}</button>`;
-            }
         }
+        
         document.getElementById("chat-header").innerHTML = `
             <div class="d-flex justify-content-between align-items-center w-100">
                 <div>
                     <span class="fw-bold fs-5">${room.roomName}</span> ${statusBadge}
                 </div>
-                ${closeBtn}
             </div>
         `;
     }
 
     function closeConsultation(roomId, status) {
-        const msg = status === 'CLOSED' ? "방을 목록에서 완전히 삭제하시겠습니까?" : "상담을 종료하시겠습니까? (상담종료 상태로 변경됩니다)";
+        const msg = status === 'CLOSED' ? "방을 목록에서 완전히 삭제하시겠습니까?" : "상담을 종료하시겠습니까?";
         if (!confirm(msg)) return;
 
         fetch(`/api/agent/rooms/${roomId}`, {
@@ -274,17 +335,115 @@
         .then(res => {
             if (res.ok) {
                 alert("상담이 종료되었습니다.");
-                currentRoomId = null;
-                document.getElementById("chat-box").innerHTML = "";
-                document.getElementById("chat-header").innerHTML = '<span class="fw-bold fs-5">상담을 선택해주세요</span>';
-                document.getElementById("message").disabled = true;
-                document.getElementById("sendBtn").disabled = true;
+                // 탭 닫기
+                closeTab(roomId);
                 loadRooms();
             } else {
                 alert("상담 종료에 실패했습니다.");
             }
         })
         .catch(err => console.error(err));
+    }
+
+    // 탭 UI 업데이트
+    function updateTabsUI() {
+        const tabsContainer = document.getElementById("chat-tabs");
+        tabsContainer.innerHTML = "";
+        
+        if (tabOrder.length === 0) {
+            tabsContainer.innerHTML = '<div class="text-muted" style="padding: 10px;">열린 상담이 없습니다.</div>';
+            return;
+        }
+        
+        tabOrder.forEach(roomId => {
+            const room = openTabs[roomId];
+            if (!room) return;
+            
+            const tabDiv = document.createElement("div");
+            tabDiv.className = `chat-tab ${currentRoomId === roomId ? 'active' : ''}`;
+            tabDiv.innerHTML = `
+                <span>${room.roomName || '알 수 없음'}</span>
+                <span class="close-tab" onclick="event.stopPropagation(); closeTab('${roomId}')" title="상담 종료">×</span>
+            `;
+            tabDiv.onclick = () => switchTab(roomId);
+            tabsContainer.appendChild(tabDiv);
+        });
+    }
+
+    // 탭 추가 (새로운 상담 열기)
+    function openTab(room) {
+        if (!openTabs[room.roomId]) {
+            openTabs[room.roomId] = room;
+            tabOrder.push(room.roomId);
+            
+            // 구독 시작
+            subscribeToRoom(room.roomId);
+        }
+        
+        switchTab(room.roomId);
+        updateTabsUI();
+    }
+
+    // 탭 전환
+    function switchTab(roomId) {
+        if (!openTabs[roomId]) return;
+        
+        currentRoomId = roomId;
+        const room = openTabs[roomId];
+        
+        unreadRooms[roomId] = false;
+        updateHeader(room);
+        updateInputState(room);
+        
+        const chatBox = document.getElementById("chat-box");
+        chatBox.innerHTML = "";
+        
+        if (roomMessages[roomId]) {
+            roomMessages[roomId].forEach(msg => showMessage(msg));
+        }
+        
+        updateTabsUI();
+        updateRoomListUI(roomsData);
+    }
+
+    // 탭 닫기 (상담 종료)
+    function closeTab(roomId) {
+        if (!openTabs[roomId]) return;
+        
+        const room = openTabs[roomId];
+        const isMyRoom = room.status === 'AGENT' && room.assignedAgent === nickname;
+        
+        // 내 상담방이면 종료 확인
+        if (isMyRoom && room.status !== 'CLOSED') {
+            closeConsultation(roomId, room.status);
+            return;
+        }
+        
+        // 탭만 닫기
+        delete openTabs[roomId];
+        tabOrder = tabOrder.filter(id => id !== roomId);
+        
+        // 구독 해제
+        if (subscriptions[roomId]) {
+            subscriptions[roomId].unsubscribe();
+            delete subscriptions[roomId];
+        }
+        
+        // 현재 탭이었다면 다른 탭으로 전환
+        if (currentRoomId === roomId) {
+            if (tabOrder.length > 0) {
+                switchTab(tabOrder[tabOrder.length - 1]);
+            } else {
+                currentRoomId = null;
+                document.getElementById("chat-box").innerHTML = "";
+                document.getElementById("chat-header").innerHTML = '<span class="fw-bold fs-5">상담을 선택해주세요</span>';
+                document.getElementById("message").disabled = true;
+                document.getElementById("sendBtn").disabled = true;
+            }
+        }
+        
+        updateTabsUI();
+        updateRoomListUI(roomsData);
     }
 
     function subscribeToRoom(roomId) {
@@ -304,8 +463,7 @@
             if (currentRoomId === roomId) {
                 showMessage(msg);
             } else {
-                // 내 상담방이 아니더라도 목록 알림은 필요할 수 있으나, 
-                // 요구사항에 따라 내가 상담하는 방 위주로 처리
+                // 백그라운드 메시지 알림
                 if (msg.senderRole !== 'AGENT' && msg.type === 'TALK') {
                     unreadRooms[roomId] = true;
                     updateRoomListUI(roomsData);
@@ -316,8 +474,9 @@
     }
 
     function selectRoom(room) {
-        if (currentRoomId === room.roomId) {
-            updateInputState(room);
+        // 이미 열린 탭이면 전환만
+        if (openTabs[room.roomId]) {
+            switchTab(room.roomId);
             return;
         }
 
@@ -325,11 +484,6 @@
         if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== nickname) {
             const takeover = confirm(`${room.assignedAgent} 상담원이 이미 상담 중입니다.\n지금 이 상담에 개입하시겠습니까?`);
             if (!takeover) {
-                currentRoomId = room.roomId;
-                document.getElementById("chat-box").innerHTML = "<div class='text-center mt-5 text-muted'>상담 권한이 없습니다.</div>";
-                updateHeader(room);
-                updateInputState(room);
-                updateRoomListUI(roomsData);
                 return;
             }
             // 강제 개입 요청
@@ -341,7 +495,7 @@
                 if (!res.ok) throw new Error("Force assignment failed");
                 room.status = 'AGENT';
                 room.assignedAgent = nickname;
-                proceedSelectRoom(room);
+                openTab(room);
             })
             .catch(err => {
                 console.error(err);
@@ -372,38 +526,19 @@
             })
             .then(res => {
                 if (!res) return;
-                // 배정 성공 후 처리
+                // 배정 성공 후 탭 열기
                 room.status = 'AGENT';
                 room.assignedAgent = nickname;
-                proceedSelectRoom(room);
+                openTab(room);
             })
             .catch(err => {
                 console.error(err);
                 alert("상담원 배정에 실패했습니다.");
             });
         } else {
-            proceedSelectRoom(room);
+            // 이미 배정된 내 상담방이면 탭 열기
+            openTab(room);
         }
-    }
-
-    function proceedSelectRoom(room) {
-        currentRoomId = room.roomId;
-        unreadRooms[room.roomId] = false;
-        
-        updateHeader(room);
-        updateInputState(room);
-
-        const chatBox = document.getElementById("chat-box");
-        chatBox.innerHTML = "";
-        
-        // 선택한 방만 새로 구독
-        subscribeToRoom(currentRoomId);
-
-        if (roomMessages[currentRoomId]) {
-            roomMessages[currentRoomId].forEach(msg => showMessage(msg));
-        }
-
-        updateRoomListUI(roomsData);
     }
 
     function updateInputState(room) {

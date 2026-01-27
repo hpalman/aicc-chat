@@ -46,6 +46,9 @@ public class AgentLoginController {
             return ResponseEntity.status(401).build();
         }
         
+        // 하트비트 - 온라인 상태 유지
+        agentAuthService.heartbeat(userInfo.getUserId());
+        
         return ResponseEntity.ok(userInfo);
     }
 }

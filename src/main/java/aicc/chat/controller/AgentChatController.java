@@ -34,12 +34,76 @@ public class AgentChatController {
     private final aicc.chat.service.MessageBroker messageBroker;
     private final ChatSessionService chatSessionService;
     private final ChatHistoryService chatHistoryService;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
+    
+    private static final String ONLINE_AGENTS_KEY = "chat:online:agents";
 
     @GetMapping("/rooms")
     // 상담원에게 전체 상담방 목록을 반환
     public ResponseEntity<List<ChatRoom>> findAllRooms() {
         log.debug("Agent request findAllRooms");
         return ResponseEntity.ok(roomRepository.findAllRooms());
+    }
+
+    @GetMapping("/availability")
+    // 상담원 가용성 확인: 로그인한 상담원이 있고 3개 미만의 상담을 하고 있는지 확인
+    public ResponseEntity<Map<String, Object>> checkAgentAvailability() {
+        log.debug("Checking agent availability");
+        
+        // 1. 온라인 상담원 목록 조회
+        java.util.Set<String> onlineAgentKeys = redisTemplate.keys(ONLINE_AGENTS_KEY + ":*");
+        java.util.Set<String> onlineAgentIds = new java.util.HashSet<>();
+        
+        if (onlineAgentKeys != null) {
+            for (String key : onlineAgentKeys) {
+                String agentId = key.substring((ONLINE_AGENTS_KEY + ":").length());
+                onlineAgentIds.add(agentId);
+            }
+        }
+        
+        log.info("Online agents: {}", onlineAgentIds);
+        
+        // 온라인 상담원이 없으면 즉시 불가 반환
+        if (onlineAgentIds.isEmpty()) {
+            log.info("No online agents available");
+            return ResponseEntity.ok(Map.of(
+                "available", false,
+                "onlineAgentCount", 0,
+                "agentCount", 0,
+                "agentRoomCount", java.util.Collections.emptyMap()
+            ));
+        }
+        
+        // 2. 상담원이 배정된 방 개수 세기
+        List<ChatRoom> allRooms = roomRepository.findAllRooms();
+        java.util.Map<String, Long> agentRoomCount = allRooms.stream()
+            .filter(room -> "AGENT".equals(room.getStatus()) && room.getAssignedAgent() != null)
+            .collect(java.util.stream.Collectors.groupingBy(
+                ChatRoom::getAssignedAgent,
+                java.util.stream.Collectors.counting()
+            ));
+        
+        // 3. 온라인 상담원 중 3개 미만의 상담을 하고 있는 상담원이 있는지 확인
+        boolean hasAvailableAgent = onlineAgentIds.stream()
+            .anyMatch(agentId -> {
+                // 해당 상담원의 userName 조회 (Redis에서)
+                String agentName = redisTemplate.opsForValue().get(ONLINE_AGENTS_KEY + ":" + agentId);
+                if (agentName == null) return false;
+                
+                // 현재 상담 개수 확인
+                long currentChats = agentRoomCount.getOrDefault(agentName, 0L);
+                return currentChats < 3;
+            });
+        
+        log.info("Agent availability check - Online: {}, Available: {}, Room count: {}", 
+                 onlineAgentIds.size(), hasAvailableAgent, agentRoomCount);
+        
+        return ResponseEntity.ok(Map.of(
+            "available", hasAvailableAgent,
+            "onlineAgentCount", onlineAgentIds.size(),
+            "agentCount", agentRoomCount.size(),
+            "agentRoomCount", agentRoomCount
+        ));
     }
 
     @GetMapping("/rooms/{roomId}")

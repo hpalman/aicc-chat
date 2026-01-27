@@ -3,10 +3,12 @@ package aicc.chat.websocket;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.*;
 
+import aicc.chat.domain.UserRole;
 import aicc.chat.service.RoomRepository;
 
 @Slf4j
@@ -15,6 +17,9 @@ import aicc.chat.service.RoomRepository;
 public class WebSocketEventListener {
 
     private final RoomRepository roomRepository;
+    private final StringRedisTemplate redisTemplate;
+    
+    private static final String ONLINE_AGENTS_KEY = "chat:online:agents";
 
     
     /*
@@ -76,12 +81,40 @@ public class WebSocketEventListener {
 
     // 연결 해제
     @EventListener
-    // 연결 종료 시 세션 기반 멤버 정리
+    // 연결 종료 시 세션 기반 멤버 정리 및 상담원 온라인 상태 제거
     public void onDisconnect(SessionDisconnectEvent event) {
     	log.info("ㅁㅁㅁ onDisconnect: 세션 연결 해제 - sessionId={}, closeStatus={}", event.getSessionId(), event.getCloseStatus());
     	
-        String sessionId = StompHeaderAccessor.wrap(event.getMessage()).getSessionId();
+        StompHeaderAccessor sha = StompHeaderAccessor.wrap(event.getMessage());
+        String sessionId = sha.getSessionId();
+        
+        // 1. 모든 방에서 세션 ID로 멤버 제거
         roomRepository.removeMemberFromAll(sessionId);
+        
+        // 2. 상담원인 경우 Redis 온라인 상태 제거
+        if (sha.getSessionAttributes() != null) {
+            Object userIdObj = sha.getSessionAttributes().get("userId");
+            Object userRoleObj = sha.getSessionAttributes().get("userRole");
+            
+            if (userIdObj != null && userRoleObj != null) {
+                String userId = userIdObj.toString();
+                String userRoleStr = userRoleObj.toString();
+                
+                // 상담원(AGENT)인 경우에만 Redis 온라인 상태 제거
+                if ("AGENT".equals(userRoleStr) || UserRole.AGENT.toString().equals(userRoleStr)) {
+                    String agentKey = ONLINE_AGENTS_KEY + ":" + userId;
+                    Boolean deleted = redisTemplate.delete(agentKey);
+                    
+                    if (Boolean.TRUE.equals(deleted)) {
+                        log.info("✅ 상담원 오프라인 처리 완료 - userId={}, sessionId={}", userId, sessionId);
+                    } else {
+                        log.warn("⚠️ 상담원 온라인 키 삭제 실패 (이미 만료됨?) - userId={}, sessionId={}", userId, sessionId);
+                    }
+                }
+            }
+        }
+        
+        log.debug("세션 연결 해제 처리 완료 - sessionId={}", sessionId);
     }
    
 }
