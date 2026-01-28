@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.MessageHeaders;
+import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Component;
@@ -59,7 +60,7 @@ public class WebSocketEventListener {
     ///    return getSimpSessionAttributesValue(accessor.getMessageHeaders(), key);
     ///}
 
-    private WebSocketSessionAttribute getSimpSessionAttributes(StompHeaderAccessor accessor) {
+	private WebSocketSessionAttribute getSimpSessionAttributes(StompHeaderAccessor accessor) {
         ObjectMapper mapper = new ObjectMapper();
         MessageHeaders headers = accessor.getMessageHeaders();
         Map<?,?> map = (Map<?,?>) headers.get("simpSessionAttributes");
@@ -73,15 +74,12 @@ public class WebSocketEventListener {
                 	GenericMessage<?> genericMessage = (GenericMessage<?>) value;
 
             	    // Payload 확인
-            	    Object payload = genericMessage.getPayload();
-            	    System.out.println("Payload: " + payload);
+            	    //Object payload = genericMessage.getPayload();
+            	    //System.out.println("Payload: " + payload);
 
             	    // Headers 확인
             	    Map<String, Object> headers2 = genericMessage.getHeaders();
-            	    
             	    map = (Map<?,?>) headers2.get("simpSessionAttributes");
-            	    
-            	    //System.out.println("Headers2: " + headers2);
                 }
                 //System.out.println("Header: [" + key + "] = " + value);
             }
@@ -92,22 +90,20 @@ public class WebSocketEventListener {
 
             // 특정 Native Header 출력
             //List<String> userIds = accessor.getNativeHeader("userId");
-            //if (userIds != null) {
-            //    log.info("ㅁㅁㅁ userId header: " + userIds);
-            //}
-
         }
         WebSocketSessionAttribute sessionAttribute = mapper.convertValue(map, WebSocketSessionAttribute.class);
-/*
+        /*
         StompHeaderAccessor [headers={simpMessageType=CONNECT_ACK,
                 simpConnectMessage=GenericMessage [payload=byte[0], headers={simpMessageType=CONNECT, stompCommand=CONNECT,
                 nativeHeaders={accept-version=[1.1,1.0], heart-beat=[10000,10000]},
                 simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-e2e2007b, companyId=apt001, userEmail=cust01@example.com, userRole=CUSTOMER},
                 simpHeartbeat=[J@499017b8, simpSessionId=eatejeae}], simpSessionId=eatejeae}]
-*/
+ 		*/
         sessionAttribute.setSessionId( accessor.getSessionId() );
         sessionAttribute.setDestination( accessor.getDestination() );
-        sessionAttribute.setCommand( accessor.getCommand() != null ? accessor.getCommand().name() : "UNKNOWN" );
+
+        StompCommand stompCommand = accessor.getCommand();
+        sessionAttribute.setCommand ( (stompCommand != null) ? stompCommand.name() : "UNKNOWN" );
 
         return sessionAttribute;
     }

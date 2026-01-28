@@ -28,6 +28,8 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 방 상태에 따라 상담원/봇 라우팅으로 위임
     public void handleMessage(String roomId, ChatMessage message) {
+        log.info("※※※※※ ▶ DynamicRoutingStrategy handleMessage 시작 ▶▶▶▶▶▶▶▶▶▶");
+    	log.info("※※※※※ ▶ roomId:{}, message:{}", roomId, message);
         // 활동 시간 업데이트
         roomRepository.updateLastActivity(roomId);
 
@@ -61,14 +63,17 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
         } else {
             miChatRoutingStrategy.handleMessage(roomId, message);
         }
+        log.info("※※※※※ ◀ DynamicRoutingStrategy handleMessage 종료 ◀◀◀◀◀◀◀◀◀◀");
     }
 
     @Override
     // 방 생성 시 초기 모드 설정 및 봇 초기화 호출
     public void onRoomCreated(ChatRoom room) {
         // 방 생성 시 초기 모드는 BOT
+        log.info("※※※※※ ▶ DynamicRoutingStrategy onRoomCreated ▶▶▶▶▶▶▶▶▶▶");
         roomRepository.setRoutingMode(room.getRoomId(), MODE_BOT);
         miChatRoutingStrategy.onRoomCreated(room);
+        log.info("※※※※※ ◀ DynamicRoutingStrategy onRoomCreated 종료 ◀◀◀◀◀◀◀◀◀◀");
     }
 }
 
