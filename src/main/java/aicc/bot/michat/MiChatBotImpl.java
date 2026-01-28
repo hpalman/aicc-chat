@@ -22,27 +22,29 @@ import aicc.bot.dto.ChatBotRequest;
 import aicc.bot.dto.MiChatAskRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
+/*
+ 챗봇과 연계 기능 제공
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class MiChatBotImpl implements ChatBot {
-    
+
     private final WebClient chatWebClient;
     private final ObjectMapper objectMapper;
-    
+
     @Value("${app.ai-bot.ai-end-point}")
     private String aiEndPoint;
-    
+
     @Value("${app.ai-bot.company-id:apt001}")
     private String companyId;
-    
+
     @Value("${app.ai-bot.default-user-id:manager}")
     private String defaultUserId;
-    
+
     @Value("${app.ai-bot.rag-sys-info:DEFAULT_RAG}")
     private String ragSysInfo;
-    
+
     private static final String ASK_ENDPOINT = "/v1/chatbot/ask";
     private static final String SSE_DATA_PREFIX = "data:";
     private static final String SSE_DONE_MESSAGE = "[DONE]";
@@ -51,6 +53,7 @@ public class MiChatBotImpl implements ChatBot {
     @Override
     // 챗봇 요청을 SSE 스트리밍으로 호출하고 청크를 전달
     public void ask(ChatBotRequest requests, Consumer<String> onChunk, Runnable onComplete) {
+log.info("★★★★★ ask 호출됨");
         if (requests == null || requests.getMessage() == null) {
             log.warn("ChatBot 요청이 null이거나 메시지가 없습니다.");
             onChunk.accept("잘못된 요청입니다.");
@@ -61,10 +64,10 @@ public class MiChatBotImpl implements ChatBot {
         try {
             MiChatAskRequest askRequest = buildAskRequest(requests);
             String requestBody = objectMapper.writeValueAsString(askRequest);
-            
-            log.info("ChatBot API 호출 시작 - SessionId: {}, CompanyId: {}", 
+
+            log.info("ChatBot API 호출 시작 - SessionId: {}, CompanyId: {}",
                 askRequest.getMeta().getSessionId(), askRequest.getMeta().getCompanyId());
-            
+
             chatWebClient.post()
                 .uri(aiEndPoint + ASK_ENDPOINT)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -95,11 +98,13 @@ public class MiChatBotImpl implements ChatBot {
             if (onComplete != null) onComplete.run();
         }
     }
-    
+
     /**
      * 표준화된 Request DTO 빌드
      */
     private MiChatAskRequest buildAskRequest(ChatBotRequest requests) {
+        log.info("★★★★★ buildAskRequest 호출됨");
+
         return MiChatAskRequest.builder()
             .chat(MiChatAskRequest.ChatConfig.builder()
                 .message(requests.getMessage())
@@ -107,10 +112,10 @@ public class MiChatBotImpl implements ChatBot {
                 .useHistory(true)
                 .build())
             .meta(MiChatAskRequest.MetaConfig.builder()
-                .companyId(requests.getCompanyId() != null && !requests.getCompanyId().isEmpty() 
+                .companyId(requests.getCompanyId() != null && !requests.getCompanyId().isEmpty()
                     ? requests.getCompanyId() : this.companyId)
                 .sessionId(requests.getSessionId())
-                .userId(requests.getUserId() != null && !requests.getUserId().isEmpty() 
+                .userId(requests.getUserId() != null && !requests.getUserId().isEmpty()
                     ? requests.getUserId() : this.defaultUserId)
                 .category1(requests.getCategory1() != null ? requests.getCategory1() : "")
                 .category2(requests.getCategory2() != null ? requests.getCategory2() : "")
@@ -118,20 +123,22 @@ public class MiChatBotImpl implements ChatBot {
                 .build())
             .build();
     }
-    
+
     /**
      * SSE 스트림 라인을 처리합니다.
      */
     private void processStreamLine(String line, Consumer<String> onChunk) {
+        log.info("★★★★★ processStreamLine 호출됨");
+
         // 디버깅을 위해 수신된 라인을 INFO 레벨로 출력
         if (log.isDebugEnabled()) {
              log.debug("SSE Raw Line 수신: '{}'", line);
         }
-        
+
         if (line == null || line.trim().isEmpty()) {
             return;
         }
-        
+
         // [DONE] 메시지 처리
         if (SSE_DONE_MESSAGE.equals(line.trim()) || line.contains(SSE_DONE_MESSAGE)) {
             log.debug("ChatBot Stream [DONE] 수신");
@@ -143,15 +150,15 @@ public class MiChatBotImpl implements ChatBot {
         if (line.startsWith(SSE_DATA_PREFIX)) {
             raw = line.substring(SSE_DATA_PREFIX.length()).trim();
         }
-        
+
         try {
             JsonNode node = objectMapper.readTree(raw);
             String delta = null;
-            
+
             // 1. 'delta' 필드 확인
             if (node.has("delta")) {
                 delta = node.get("delta").asText();
-            } 
+            }
             // 2. 'content' 필드 확인 (OpenAI 스타일)
             else if (node.has("content")) {
                 delta = node.get("content").asText();
@@ -180,11 +187,13 @@ public class MiChatBotImpl implements ChatBot {
             log.warn("ChatBot Stream 응답 파싱 실패 - Raw: {}", raw, e);
         }
     }
-    
+
     /**
      * 상세 에러 처리 (표준 에러 응답 구조 대응)
      */
     private void handleDetailedError(Throwable error, Consumer<String> onChunk) {
+        log.info("★★★★★ handleDetailedError 호출됨");
+
         if (error instanceof WebClientResponseException responseEx) {
             String errorBody = responseEx.getResponseBodyAsString(StandardCharsets.UTF_8);
             try {
@@ -193,10 +202,10 @@ public class MiChatBotImpl implements ChatBot {
                     JsonNode errorDetail = errorNode.get("error");
                     String errorCode = errorDetail.get("error_code").asText();
                     String errorMessage = errorDetail.get("error_message").asText();
-                    
-                    log.error("AI 엔진 오류 발생 - Code: {}, Message: {}, RequestId: {}", 
+
+                    log.error("AI 엔진 오류 발생 - Code: {}, Message: {}, RequestId: {}",
                         errorCode, errorMessage, errorDetail.has("requestId") ? errorDetail.get("requestId").asText() : "N/A");
-                    
+
                     if (errorCode.startsWith("MAI-4")) {
                         onChunk.accept("요청이 올바르지 않습니다. (" + errorMessage + ")");
                     } else {
