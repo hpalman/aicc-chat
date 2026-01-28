@@ -1,0 +1,28 @@
+Windows 11에 cursor cli인 agent를 설치해 사용해보기
+
+1. WSL(Windows Subsystem for Linux) 준비
+# PowerShell
+wsl --install
+username > hpalman
+password > ckawhgdk
+
+2. Cursor CLI 설치
+# PowerShell
+curl https://cursor.com/install -fsS | bash
+
+# bash(위 명령에서 자동으로 bash가 실행됨)
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+
+3. 설치 확인(보전 표시된 경우 설치 성공) <-- 설치 이후에는 PowerShell에서 bash(GitBash 아님) 실행
+# bash
+agent --version
+
+4. workspace 목록으로 이동 또는 지정후 agent 실행(로그인 필요)
+# bash
+agent
+agent --workspace /mnt/e/aicc-dev/aicc/aicc-chat
+agent --model gpt-5.2
+
+참고
+# 난 윈도11에 있는 Docker를 설치제거해야 했다.
