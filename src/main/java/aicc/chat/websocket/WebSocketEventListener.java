@@ -9,6 +9,7 @@ import java.util.Map;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.*;
 
@@ -63,17 +64,30 @@ public class WebSocketEventListener {
         MessageHeaders headers = accessor.getMessageHeaders();
         Map<?,?> map = (Map<?,?>) headers.get("simpSessionAttributes");
         if ( map == null ) {
-
             // 모든 헤더 출력
 
             // 2. keySet() + get()
             for (String key : headers.keySet()) {
                 Object value = headers.get(key);
-                System.out.println("Header: [" + key + "] = " + value);
+                if ( value instanceof GenericMessage) {
+                	GenericMessage<?> genericMessage = (GenericMessage<?>) value;
+
+            	    // Payload 확인
+            	    Object payload = genericMessage.getPayload();
+            	    System.out.println("Payload: " + payload);
+
+            	    // Headers 확인
+            	    Map<String, Object> headers2 = genericMessage.getHeaders();
+            	    
+            	    map = (Map<?,?>) headers2.get("simpSessionAttributes");
+            	    
+            	    //System.out.println("Headers2: " + headers2);
+                }
+                //System.out.println("Header: [" + key + "] = " + value);
             }
 
             accessor.getMessageHeaders().forEach((key, value) -> {
-                log.info("onConnect Header [" + key + "] = " + value);
+                // log.info("onConnect Header [" + key + "] = " + value);
             });
 
             // 특정 Native Header 출력
