@@ -47,49 +47,7 @@ public class WebSocketEventListener {
     SessionUnsubscribeEvent 클라이언트가 구독을 해제할 때 발생         채팅방 탈퇴 추적, 알림 해제
    */
 	private WebSocketSessionAttribute getSimpSessionAttributes(StompHeaderAccessor accessor) {
-        ObjectMapper mapper = new ObjectMapper();
-        MessageHeaders headers = accessor.getMessageHeaders();
-        Map<?,?> map = (Map<?,?>) headers.get("simpSessionAttributes");
-        if ( map == null ) {
-            // 2. keySet() + get()
-            for (String key : headers.keySet()) {
-                Object value = headers.get(key);
-                if ( value instanceof GenericMessage) {
-                	GenericMessage<?> genericMessage = (GenericMessage<?>) value;
-
-            	    // Payload 확인
-            	    //Object payload = genericMessage.getPayload();
-            	    //System.out.println("Payload: " + payload);
-
-            	    // Headers 확인
-            	    Map<String, Object> headers2 = genericMessage.getHeaders();
-            	    map = (Map<?,?>) headers2.get("simpSessionAttributes");
-                }
-                //System.out.println("Header: [" + key + "] = " + value);
-            }
-
-            accessor.getMessageHeaders().forEach((key, value) -> {
-                // log.info("onConnect Header [" + key + "] = " + value);
-            });
-
-            // 특정 Native Header 출력
-            //List<String> userIds = accessor.getNativeHeader("userId");
-        }
-        WebSocketSessionAttribute sessionAttribute = mapper.convertValue(map, WebSocketSessionAttribute.class);
-        /*
-        StompHeaderAccessor [headers={simpMessageType=CONNECT_ACK,
-                simpConnectMessage=GenericMessage [payload=byte[0], headers={simpMessageType=CONNECT, stompCommand=CONNECT,
-                nativeHeaders={accept-version=[1.1,1.0], heart-beat=[10000,10000]},
-                simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-e2e2007b, companyId=apt001, userEmail=cust01@example.com, userRole=CUSTOMER},
-                simpHeartbeat=[J@499017b8, simpSessionId=eatejeae}], simpSessionId=eatejeae}]
- 		*/
-        sessionAttribute.setSessionId( accessor.getSessionId() );
-        sessionAttribute.setDestination( accessor.getDestination() );
-
-        StompCommand stompCommand = accessor.getCommand();
-        sessionAttribute.setCommand ( (stompCommand != null) ? stompCommand.name() : "UNKNOWN" );
-
-        return sessionAttribute;
+		return WebSocketAttributes.getSimpSessionAttributes(accessor);		
     }
 
     // 연결 시도

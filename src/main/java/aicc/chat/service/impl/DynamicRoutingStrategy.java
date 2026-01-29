@@ -31,7 +31,7 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
         log.info("※※※※※ ▶ DynamicRoutingStrategy handleMessage 시작 ▶▶▶▶▶▶▶▶▶▶");
     	log.info("※※※※※ ▶ roomId:{}, message:{}", roomId, message);
         // 활동 시간 업데이트
-        roomRepository.updateLastActivity(roomId);
+        roomRepository.updateLastActivity(roomId); // REDIS
 
         // 퇴장 메시지인 경우 방 상태를 CLOSED로 변경
         if (aicc.chat.domain.MessageType.LEAVE.equals(message.getType())) {
@@ -40,7 +40,7 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
             roomUpdateBroadcaster.broadcastRoomList();
         }
 
-        String mode = roomRepository.getRoutingMode(roomId);
+        String mode = roomRepository.getRoutingMode(roomId); // REDIS
         if (mode == null) {
             mode = MODE_BOT;
         }

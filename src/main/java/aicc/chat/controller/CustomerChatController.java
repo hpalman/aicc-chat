@@ -13,11 +13,14 @@ import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.ChatSessionService;
 import aicc.chat.service.inteface.MessageBroker;
 import aicc.chat.service.inteface.RoomRepository;
+import aicc.chat.websocket.WebSocketAttributes;
+import aicc.chat.websocket.domain.WebSocketSessionAttribute;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -97,12 +100,19 @@ public class CustomerChatController {
     // 고객 메시지를 받아 이력 저장 후 라우팅
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         log.info("▶ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 시작");
+        String sessionId = headerAccessor.getSessionId();
+        log.info("sessionId:{}, MessageType:{}", sessionId, message.getType().toString());
+    	WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);		
+        log.info("attr:{}", attr);
+        
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;
 
         // 서버에서 메시지 수신 시간 설정
         message.setTimestamp(LocalDateTime.now());
-
+// 세션id
+// userId
+// roomId        
         if (sessionAttributes != null) {
             String roomId = (String) sessionAttributes.get("roomId");
             String userName = (String) sessionAttributes.get("userName");
@@ -161,9 +171,9 @@ public class CustomerChatController {
                     .companyId(message.getCompanyId())
                     .createdAt(message.getTimestamp()) // 서버 타임스탬프 사용
                     .build();
-            chatHistoryService.saveChatHistory(chatHistory);
+            chatHistoryService.saveChatHistory(chatHistory); // DB
 
-            // 세션의 마지막 활동 시간 업데이트
+            // 세션의 마지막 활동 시간 DB 업데이트
             chatSessionService.updateLastActivity(message.getRoomId()); // DB
         } catch (Exception e) {
             log.error("Failed to save chat history to DB: roomId={}", message.getRoomId(), e);
