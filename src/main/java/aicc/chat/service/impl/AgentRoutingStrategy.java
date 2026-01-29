@@ -1,8 +1,8 @@
 package aicc.chat.service.impl;
 
 import aicc.chat.domain.ChatMessage;
-import aicc.chat.service.ChatRoutingStrategy;
-import aicc.chat.service.MessageBroker;
+import aicc.chat.service.inteface.ChatRoutingStrategy;
+import aicc.chat.service.inteface.MessageBroker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,7 +18,7 @@ public class AgentRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 상담원 메시지를 중계하여 구독자에게 전파
     public void handleMessage(String roomId, ChatMessage message) {
-        log.debug("Agent routing for room: {}", roomId);
+        log.info("▼ Agent routing for room: {}", roomId);
         message.setRoomId(roomId);
         messageBroker.publish(message);
     }

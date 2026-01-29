@@ -21,6 +21,7 @@ public class TokenService {
     private final ObjectMapper objectMapper;
 
     public String generateToken(UserInfo userInfo) {
+        log.info("▼ generateToken");
         // UserInfo를 Base64 JSON 토큰으로 생성
         try {
             String json = objectMapper.writeValueAsString(userInfo);
@@ -32,9 +33,11 @@ public class TokenService {
     }
 
     public UserInfo validateToken(String token) {
+        log.info("▼ validateToken. token:{}", token);
         // JWT 또는 Base64 토큰을 파싱해 UserInfo로 복원
-        if (token == null || token.isEmpty()) return null;
-        
+        if (token == null || token.isEmpty())
+            return null;
+
         try {
             // 1. JWT 토큰 처리 (ey... 로 시작)
             if (token.startsWith("ey") && token.contains(".")) {
@@ -56,6 +59,7 @@ public class TokenService {
     }
 
     private UserInfo parseJwtToken(String token) {
+        log.info("▼ parseJwtToken. token:{}", token);
         // JWT payload에서 사용자 정보를 추출해 UserInfo로 변환
         try {
             String[] parts = token.split("\\.");
@@ -70,21 +74,21 @@ public class TokenService {
 
             String userId = (String) payload.get("sub");
             String authorities = (String) payload.get("auth");
-            
+
             log.info("[TokenService] Parsing JWT - sub: {}, auth: {}", userId, authorities);
 
             // principal 맵에서 이름과 로그인 ID 추출 시도
             String userName = userId;
             String loginId = userId; // 기본값은 userId
             Map<String, Object> principal = (Map<String, Object>) payload.get("principal");
-            
+
             if (principal != null) {
                 log.info("[TokenService] Principal object: {}", principal);
-                
+
                 if (principal.get("mbrNm") != null) {
                     userName = (String) principal.get("mbrNm");
                 }
-                
+
                 // 로그인 ID 추출 시도 (여러 가능한 키 확인)
                 if (principal.get("lgnId") != null) {
                     loginId = (String) principal.get("lgnId");
@@ -111,8 +115,8 @@ public class TokenService {
             UserRole role = UserRole.CUSTOMER;
             if (authorities != null) {
                 String upperAuth = authorities.toUpperCase();
-                if (upperAuth.contains("ROLE_ADM") || 
-                    upperAuth.contains("ROLE_ADMIN") || 
+                if (upperAuth.contains("ROLE_ADM") ||
+                    upperAuth.contains("ROLE_ADMIN") ||
                     upperAuth.contains("ROLE_AGENT") ||
                     upperAuth.contains("ROLE_CONSULTANT") ||
                     upperAuth.contains("ROLE_MBR")) {

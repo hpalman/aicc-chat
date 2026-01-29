@@ -2,7 +2,7 @@ package aicc.chat.service.impl;
 
 import aicc.chat.domain.persistence.ChatSession;
 import aicc.chat.mapper.ChatSessionMapper;
-import aicc.chat.service.ChatSessionService;
+import aicc.chat.service.inteface.ChatSessionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,27 +18,29 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ChatSessionServiceImpl implements ChatSessionService {
-    
+
     private final ChatSessionMapper chatSessionMapper;
-    
+
     @Override
     @Transactional
     // 상담 세션 생성
     public void createChatSession(ChatSession chatSession) {
+        log.info("▼ createChatSession. chatSession:{}", chatSession);
         try {
             chatSessionMapper.insertChatSession(chatSession);
-            log.info("Chat session created: roomId={}, customerId={}", 
+            log.info("Chat session created: roomId={}, customerId={}",
                     chatSession.getRoomId(), chatSession.getCustomerId());
         } catch (Exception e) {
             log.error("Failed to create chat session: roomId={}", chatSession.getRoomId(), e);
             throw new RuntimeException("상담 세션 생성 실패", e);
         }
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     // roomId로 상담 세션 조회
     public ChatSession getChatSessionByRoomId(String roomId) {
+        log.info("▼ getChatSessionByRoomId. roomId:{}", roomId);
         try {
             return chatSessionMapper.selectChatSessionByRoomId(roomId);
         } catch (Exception e) {
@@ -46,11 +48,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("상담 세션 조회 실패", e);
         }
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     // 고객 ID로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByCustomerId(String customerId) {
+        log.info("▼ getChatSessionsByCustomerId. customerId:{}",customerId);
         try {
             return chatSessionMapper.selectChatSessionsByCustomerId(customerId);
         } catch (Exception e) {
@@ -58,11 +61,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("고객별 상담 세션 조회 실패", e);
         }
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     // 상담원 이름으로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByAgent(String assignedAgent) {
+        log.info("▼ getChatSessionsByAgent. assignedAgent:{}",assignedAgent);
         try {
             return chatSessionMapper.selectChatSessionsByAgent(assignedAgent);
         } catch (Exception e) {
@@ -70,24 +74,26 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("상담원별 상담 세션 조회 실패", e);
         }
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     // 회사 ID와 상태로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByCompanyIdAndStatus(String companyId, String status) {
+        log.info("▼ getChatSessionsByCompanyIdAndStatus. companyId:{}, status:{}",companyId, status);
         try {
             return chatSessionMapper.selectChatSessionsByCompanyIdAndStatus(companyId, status);
         } catch (Exception e) {
-            log.error("Failed to get chat sessions by companyId and status: companyId={}, status={}", 
+            log.error("Failed to get chat sessions by companyId and status: companyId={}, status={}",
                     companyId, status, e);
             throw new RuntimeException("회사별 상담 세션 조회 실패", e);
         }
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     // 활성 상담 세션 목록 조회
     public List<ChatSession> getActiveChatSessions() {
+        log.info("▼ getActiveChatSessions");
         try {
             return chatSessionMapper.selectActiveChatSessions();
         } catch (Exception e) {
@@ -95,11 +101,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("활성 상담 세션 조회 실패", e);
         }
     }
-    
+
     @Override
     @Transactional
     // 상담 세션 상태 변경
     public void updateSessionStatus(String roomId, String status) {
+        log.info("▼ updateSessionStatus. roomId:{}, status:{}", roomId, status);
         try {
             chatSessionMapper.updateChatSessionStatus(roomId, status);
             log.info("Chat session status updated: roomId={}, status={}", roomId, status);
@@ -108,11 +115,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("상담 세션 상태 변경 실패", e);
         }
     }
-    
+
     @Override
     @Transactional
     // 상담원 배정 정보 업데이트
     public void assignAgent(String roomId, String assignedAgent) {
+        log.info("▼ assignAgent. roomId:{}, assignedAgent:{}", roomId, assignedAgent);
         try {
             chatSessionMapper.updateAssignedAgent(roomId, assignedAgent);
             log.info("Agent assigned to session: roomId={}, agent={}", roomId, assignedAgent);
@@ -121,11 +129,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("상담원 배정 실패", e);
         }
     }
-    
+
     @Override
     @Transactional
     // 상담 종료 시간 기록
     public void endSession(String roomId) {
+        log.info("▼ endSession. roomId:{}",roomId);
         try {
             chatSessionMapper.updateEndedAt(roomId, LocalDateTime.now());
             log.info("Chat session ended: roomId={}", roomId);
@@ -134,11 +143,12 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             throw new RuntimeException("상담 종료 실패", e);
         }
     }
-    
+
     @Override
     @Transactional
     // 마지막 활동 시간 갱신 - DB
     public void updateLastActivity(String roomId) {
+        log.info("▼ updateLastActivity. roomId:{}",roomId);
         try {
             chatSessionMapper.updateLastActivityAt(roomId, LocalDateTime.now());
         } catch (Exception e) {

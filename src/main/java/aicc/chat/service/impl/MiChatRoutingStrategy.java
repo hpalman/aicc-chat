@@ -7,11 +7,11 @@ import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
-import aicc.chat.service.ChatHistoryService;
-import aicc.chat.service.ChatRoutingStrategy;
-import aicc.chat.service.ChatSessionService;
-import aicc.chat.service.MessageBroker;
-import aicc.chat.service.RoomRepository;
+import aicc.chat.service.inteface.ChatHistoryService;
+import aicc.chat.service.inteface.ChatRoutingStrategy;
+import aicc.chat.service.inteface.ChatSessionService;
+import aicc.chat.service.inteface.MessageBroker;
+import aicc.chat.service.inteface.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,6 +34,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 고객 메시지를 MiChat으로 전달하고 응답을 브로드캐스트
     public void handleMessage(String roomId, ChatMessage message) {
+        log.info("▼ handleMessage. roomId:{},message:{}",roomId, message);
         // 1. 수신된 메시지를 해당 방의 모든 구독자에게 전파
         message.setRoomId(roomId);
         messageBroker.publish(message);
@@ -64,7 +65,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
         // 5. 사용자가 보낸 메시지인 경우 MiChat으로 전달하여 응답 요청
         log.info("Forwarding customer message to MiChat for room: {}", roomId);
-        
+
         ChatBotRequest request = ChatBotRequest.builder()
                 .sessionId(roomId)
                 .message(message.getMessage())
@@ -74,18 +75,18 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
         // 스트리밍 응답을 누적하기 위한 StringBuilder
         StringBuilder fullResponse = new StringBuilder();
-        
-        chatBot.ask(request, 
+
+        chatBot.ask(request,
             chunk -> {
                 // 수신된 청크를 누적
                 fullResponse.append(chunk);
-            }, 
+            },
             () -> {
                 // 스트림 완료 시 누적된 전체 메시지를 발송
                 String responseText = fullResponse.toString();
                 if (!responseText.isEmpty()) {
                     LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-                    
+
                     ChatMessage botMessage = ChatMessage.builder()
                             .roomId(roomId)
                             .sender("Bot")
@@ -95,7 +96,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                             .timestamp(now) // 서버 타임스탬프 설정
                             .build();
                     messageBroker.publish(botMessage);
-                    
+
                     // PostgreSQL에 BOT 응답 저장
                     try {
                         ChatHistory chatHistory = ChatHistory.builder()
@@ -109,7 +110,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                                 .createdAt(now) // 서버 타임스탬프 사용
                                 .build();
                         chatHistoryService.saveChatHistory(chatHistory);
-                        
+
                         // 세션 마지막 활동 시간 업데이트
                         chatSessionService.updateLastActivity(roomId);
                     } catch (Exception e) {
@@ -124,10 +125,11 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 방 생성 시 환영 메시지 전송 및 이력 저장
     public void onRoomCreated(ChatRoom room) {
+        log.info("▼ onRoomCreated. room:{}",room);
         log.info("New room created for MiChat workflow: {}", room.getRoomId());
-        
+
         LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-        
+
         ChatMessage welcome = ChatMessage.builder()
                 .roomId(room.getRoomId())
                 .sender("Bot")
@@ -137,7 +139,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(welcome);
-        
+
         // PostgreSQL에 환영 메시지 저장
         try {
             ChatHistory chatHistory = ChatHistory.builder()
@@ -157,13 +159,14 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     }
 
     private void switchToAgentMode(String roomId) {
+        log.info("▼ switchToAgentMode. roomId:{}", roomId);
         // 상담원 연결 요청 처리: WAITING 전환 및 알림 발송
         log.info("Switching room {} to WAITING mode", roomId);
         roomRepository.setRoutingMode(roomId, "WAITING");
         roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
-        
+
         LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-        
+
         // 고객 화면에 "상담원 연결 중..." 알림 (서버 사이드 발송)
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
@@ -174,11 +177,11 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(notice);
-        
+
         // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
         try {
             chatSessionService.updateSessionStatus(roomId, "WAITING");
-            
+
             ChatHistory chatHistory = ChatHistory.builder()
                     .roomId(roomId)
                     .senderId("SYSTEM")
@@ -195,13 +198,14 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     }
 
     private void cancelAgentMode(String roomId) {
+        log.info("▼ cancelAgentMode, roomId:{}", roomId);
         // 상담원 연결 요청 취소 처리: BOT 복귀 및 알림 발송
         log.info("Canceling agent request for room {}, switching back to BOT mode", roomId);
         roomRepository.setRoutingMode(roomId, "BOT");
         roomUpdateBroadcaster.broadcastRoomList();
-        
+
         LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-        
+
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
                 .sender("System")
@@ -211,11 +215,11 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(notice);
-        
+
         // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
         try {
             chatSessionService.updateSessionStatus(roomId, "BOT");
-            
+
             ChatHistory chatHistory = ChatHistory.builder()
                     .roomId(roomId)
                     .senderId("SYSTEM")

@@ -3,7 +3,7 @@ package aicc.chat.config.mode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import aicc.chat.domain.ChatMessage;
-import aicc.chat.service.MessageBroker;
+import aicc.chat.service.inteface.MessageBroker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

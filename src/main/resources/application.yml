@@ -58,6 +58,11 @@ spring:
 # MyBatis 설정 (MyBatisConfig.java에서 처리)
 # SQL 로그는 MyBatisSqlLogger 인터셉터가 출력합니다.
 
+
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
 #################################
 # LOGGING
 #################################
@@ -78,6 +83,13 @@ logging:
     com.zaxxer.hikari: info
     # PostgreSQL 드라이버 로깅
     org.postgresql: info
+    org.mybatis: INFO
+    #org.apache.ibatis.logging.jdbc.BaseJdbcLogger: INFO
+    org.apache.ibatis.logging.jdbc: INFO
+# 01-29 13:35:29.891 [clientInboundChannel-22] [DEBUG] org.apache.ibatis.logging.jdbc.BaseJdbcLogger   :debug               :135 ==>  Preparing: UPDATE chat_session SET last_activity_at = ?, updated_at = NOW() WHERE room_id = ?    
+# 01-29 13:35:29.900 [clientInboundChannel-22] [DEBUG] org.mybatis.logging.Logger                      :debug               : 49 Releasing transactional SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@6e0da654]
+# 01-29 13:35:29.918 [clientInboundChannel-22] [DEBUG] org.mybatis.logging.Logger                      :debug               : 49 Transaction synchronization committing SqlSession [org.apache.ibatis.session.defaults.DefaultSqlSession@6e0da654]
+    
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"

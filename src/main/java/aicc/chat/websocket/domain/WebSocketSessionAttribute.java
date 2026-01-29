@@ -1,4 +1,4 @@
-package aicc.chat.websocket;
+package aicc.chat.websocket.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

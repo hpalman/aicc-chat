@@ -16,7 +16,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
 
 import aicc.chat.domain.ChatRoom;
-import aicc.chat.service.RoomRepository;
+import aicc.chat.service.inteface.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +33,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public ChatRoom createRoom(String name) {
+        log.info("▼ createRoom. name:{}",name);
         // [createRoom] name만 받은 경우 내부에서 roomId(UUID) 생성
         // roomId를 서버에서 생성(전체 UUID)
         return createRoom(UUID.randomUUID().toString(), name);
@@ -40,7 +41,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public ChatRoom createRoom(String roomId, String name) {
-    	log.info("▶▶▶ roomId:{}, name:{}", roomId, name);
+    	log.info("▶ createRoom. roomId:{}, name:{}", roomId, name);
         // [createRoom] roomId를 지정해 방 생성 및 메타 키 초기화
         long now = System.currentTimeMillis();
         // roomId를 전체 인덱스(Set)에 등록
@@ -50,10 +51,12 @@ public class RedisRoomRepository implements RoomRepository {
             redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":name", name); // chat:room:{roomId}:name, cust01
         }
         log.info("▶▶▶ {} {}", ROOM_KEY_PREFIX + roomId + ":createdAt", String.valueOf(now) );
-        
+
         redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":createdAt", String.valueOf(now));
         updateLastActivity(roomId);
-        return ChatRoom.builder()
+
+        ChatRoom chatRoom =
+          ChatRoom.builder()
                 .roomId(roomId)
                 .roomName(name)
                 .members(new HashSet<>())
@@ -61,19 +64,21 @@ public class RedisRoomRepository implements RoomRepository {
                 .createdAt(now)
                 .lastActivityAt(now)
                 .build();
+        log.info("◀ createRoom E. chatRoom:{}", chatRoom);
+        return chatRoom;
     }
 
     @Override
     public ChatRoom findRoomById(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId);
-    	
+        log.info("▶ findRoomById. roomId:{}", roomId);
+
     	// [findRoomById] Redis의 분산 키들을 조회해 ChatRoom으로 합성
         // roomId에 해당하는 멤버/상태/메타 정보를 조합해 ChatRoom으로 복원
         Set<String> members = Optional.ofNullable(redisTemplate.opsForSet().members(ROOM_KEY_PREFIX + roomId))
                 .orElse(Collections.emptySet());
-        
+
         ValueOperations<String, String> ofv = redisTemplate.opsForValue();
- 
+
         String name            = ofv.get(ROOM_KEY_PREFIX + roomId + ":name");
         String status          = ofv.get(ROOM_KEY_PREFIX + roomId + ":mode");
         String assignedAgent   = ofv.get(ROOM_KEY_PREFIX + roomId + ":assignedAgent");
@@ -82,8 +87,9 @@ public class RedisRoomRepository implements RoomRepository {
 
         long createdAt = createdAtStr != null ? Long.parseLong(createdAtStr) : 0;
         long lastActivityAt = lastActivityStr != null ? Long.parseLong(lastActivityStr) : 0;
-        
-        return ChatRoom.builder()
+
+        ChatRoom chatRoom =
+            ChatRoom.builder()
                 .roomId(roomId)
                 .roomName(name == null ? roomId : name)
                 .members(members)
@@ -92,11 +98,13 @@ public class RedisRoomRepository implements RoomRepository {
                 .createdAt(createdAt)
                 .lastActivityAt(lastActivityAt)
                 .build();
+        log.info("◀ findRoomById E. chatRoom:{}", chatRoom);
+        return chatRoom;
     }
 
     @Override
     public void addMember(String roomId, String memberId) {
-        log.info("▶▶▶ roomId:{}, memberId:{}", roomId, memberId);
+        log.info("▼ addMember. roomId:{}, memberId:{}", roomId, memberId);
 
         // [addMember] 방 멤버 Set에 추가 + roomId 인덱스 유지
         // 멤버는 Set으로 관리(중복 방지)
@@ -106,7 +114,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void removeMember(String roomId, String memberId) {
-        log.info("▶▶▶ roomId:{}, memberId:{}", roomId, memberId);
+        log.info("▼ removeMember. roomId:{}, memberId:{}", roomId, memberId);
 
         // [removeMember] 방 멤버 Set에서 제거
         redisTemplate.opsForSet().remove(ROOM_KEY_PREFIX + roomId, memberId); // "chat:room:"
@@ -114,7 +122,8 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void removeMemberFromAll(String memberId) {
-    	log.info("▶▶▶ memberId:{}", memberId);
+        log.info("▼ removeMemberFromAll. memberId:{}", memberId);
+
         // [removeMemberFromAll] 인덱스의 모든 roomId를 순회하며 해당 멤버 제거
         // 멤버가 들어간 모든 방에서 제거 (Set 전체 순회)
         Set<String> roomIds = Optional.ofNullable(redisTemplate.opsForSet().members(ROOM_INDEX_KEY)) // chat:rooms
@@ -130,7 +139,7 @@ public class RedisRoomRepository implements RoomRepository {
         // 인덱스 Set에 있는 roomId들을 조회해 목록 구성
         Set<String> roomIds = Optional.ofNullable(redisTemplate.opsForSet().members(ROOM_INDEX_KEY))
                 .orElse(Collections.emptySet());
-        log.info("▶▶▶ List<ChatRoom> size:{}", roomIds.size());        
+        log.info("▼ findAllRooms. List<ChatRoom> size:{}", roomIds.size());
         return roomIds.stream()
                 .map(this::findRoomById)
                 .collect(Collectors.toList());
@@ -138,7 +147,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void setRoutingMode(String roomId, String mode) {
-        log.info("▶▶▶ roomId:{}, mode:{}", roomId, mode);        
+        log.info("▼ setRoutingMode. roomId:{}, mode:{}", roomId, mode);
 
         // [setRoutingMode] 방의 라우팅 상태 저장
         // 방 상태(BOT/WAITING/AGENT/CLOSED 등) 저장
@@ -149,7 +158,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public String getRoutingMode(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId);        
+        log.info("▶▶▶ roomId:{}", roomId);
 
         // [getRoutingMode] 방의 라우팅 상태 조회
         return roomId != null ? redisTemplate.opsForValue().get(ROOM_KEY_PREFIX + roomId + ":mode") : null;
@@ -157,7 +166,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void setAssignedAgent(String roomId, String agentName) {
-        log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName);        
+        log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName);
         // [setAssignedAgent] 방에 배정된 상담원 저장 또는 삭제
         if (roomId != null) {
             if (agentName != null) {
@@ -172,7 +181,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public String getAssignedAgent(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId );        
+        log.info("▶▶▶ roomId:{}", roomId );
 
         // [getAssignedAgent] 방에 배정된 상담원 조회
         return roomId != null ? redisTemplate.opsForValue().get(ROOM_KEY_PREFIX + roomId + ":assignedAgent") : null;
@@ -180,7 +189,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public boolean assignAgent(String roomId, String agentName) {
-        log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName );        
+        log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName );
 
         // [assignAgent] 이미 배정된 경우 실패, 최초 배정만 성공
         if (roomId == null || agentName == null) return false;
@@ -197,7 +206,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void updateLastActivity(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId );        
+        log.info("▶▶▶ roomId:{}", roomId );
 
         // [updateLastActivity] 방의 마지막 활동 시간 갱신
         // 마지막 활동 시간 갱신(밀리초)
@@ -208,7 +217,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     @Override
     public void deleteRoom(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId );        
+        log.info("▶▶▶ roomId:{}", roomId );
         Boolean b;
         // [deleteRoom] roomId 인덱스와 관련 메타 키 삭제
         // 방 관련 키 일괄 삭제(인덱스 + 멤버/메타)

@@ -460,6 +460,31 @@
             const msg = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
             roomMessages[roomId].push(msg);
             
+            // 고객 연결 해제 또는 퇴장 알림 처리
+            if (msg.type === 'CUSTOMER_DISCONNECTED' || msg.type === 'CUSTOMER_LEFT') {
+                console.log('🔔 고객 이탈 알림 수신:', msg.type, roomId);
+                
+                // 탭이 열려있으면 메시지 표시
+                if (currentRoomId === roomId) {
+                    showMessage(msg);
+                }
+                
+                // 방 상태 업데이트를 위해 방 목록 새로고침
+                setTimeout(() => {
+                    loadRooms();
+                }, 500);
+                
+                // 탭 배지에 알림 표시
+                if (openTabs[roomId]) {
+                    const tab = document.querySelector(`.chat-tab[data-room-id="${roomId}"]`);
+                    if (tab) {
+                        tab.style.backgroundColor = '#ffebee'; // 연한 빨간색 배경
+                    }
+                }
+                
+                return; // 일반 메시지 처리 로직 생략
+            }
+            
             if (currentRoomId === roomId) {
                 showMessage(msg);
             } else {
@@ -666,6 +691,36 @@
             div.className = "system-msg";
             div.style.color = "red";
             div.innerText = `[${timestamp}] ─── ${msg.message} (상담 종료) ───`;
+        } else if (msg.type === 'CUSTOMER_DISCONNECTED') {
+            // 고객 연결 해제 알림
+            div.className = "system-msg";
+            div.style.cssText = "color: #ff6b6b; font-weight: bold; background-color: #fff3cd; padding: 10px; border-left: 4px solid #ff6b6b;";
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">⚠️</span>
+                    <div>
+                        <div>[${timestamp}] ${msg.message}</div>
+                        <div style="font-size: 0.9em; color: #856404; margin-top: 4px;">
+                            고객의 네트워크 연결이 끊어졌습니다. 잠시 기다려주세요.
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (msg.type === 'CUSTOMER_LEFT') {
+            // 고객 퇴장 알림
+            div.className = "system-msg";
+            div.style.cssText = "color: #d32f2f; font-weight: bold; background-color: #ffebee; padding: 10px; border-left: 4px solid #d32f2f;";
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 20px;">👋</span>
+                    <div>
+                        <div>[${timestamp}] ${msg.message}</div>
+                        <div style="font-size: 0.9em; color: #c62828; margin-top: 4px;">
+                            고객이 채팅을 종료했습니다. 상담을 마무리해주세요.
+                        </div>
+                    </div>
+                </div>
+            `;
         } else {
             const isMe = msg.senderRole === 'AGENT';
             div.className = `message ${isMe ? 'my' : 'other'}`;

@@ -53,11 +53,12 @@ public class MiChatBotImpl implements ChatBot {
     @Override
     // 챗봇 요청을 SSE 스트리밍으로 호출하고 청크를 전달
     public void ask(ChatBotRequest requests, Consumer<String> onChunk, Runnable onComplete) {
-log.info("★★★★★ ask 호출됨");
+log.info("▶ ask S.");
         if (requests == null || requests.getMessage() == null) {
             log.warn("ChatBot 요청이 null이거나 메시지가 없습니다.");
             onChunk.accept("잘못된 요청입니다.");
-            if (onComplete != null) onComplete.run();
+            if (onComplete != null)
+                onComplete.run();
             return;
         }
 
@@ -80,11 +81,13 @@ log.info("★★★★★ ask 호출됨");
                     line -> processStreamLine(line, onChunk),
                     error -> {
                         handleDetailedError(error, onChunk);
-                        if (onComplete != null) onComplete.run();
+                        if (onComplete != null)
+                            onComplete.run();
                     },
                     () -> {
                         log.info("ChatBot Stream 완료 - SessionId: {}", askRequest.getMeta().getSessionId());
-                        if (onComplete != null) onComplete.run();
+                        if (onComplete != null)
+                            onComplete.run();
                     }
                 );
 
@@ -95,15 +98,17 @@ log.info("★★★★★ ask 호출됨");
         } catch (Exception e) {
             log.error("ChatBot Stream 호출 중 예상치 못한 오류 발생", e);
             onChunk.accept("시스템 오류가 발생했습니다.");
-            if (onComplete != null) onComplete.run();
+            if (onComplete != null)
+                onComplete.run();
         }
+        log.info("◀ ask E.");
     }
 
     /**
      * 표준화된 Request DTO 빌드
      */
     private MiChatAskRequest buildAskRequest(ChatBotRequest requests) {
-        log.info("★★★★★ buildAskRequest 호출됨");
+        log.info("▼ buildAskRequest 호출됨");
 
         return MiChatAskRequest.builder()
             .chat(MiChatAskRequest.ChatConfig.builder()
@@ -128,7 +133,7 @@ log.info("★★★★★ ask 호출됨");
      * SSE 스트림 라인을 처리합니다.
      */
     private void processStreamLine(String line, Consumer<String> onChunk) {
-        log.info("★★★★★ processStreamLine 호출됨");
+        log.info("▶ processStreamLine S. line={}", line);
 
         // 디버깅을 위해 수신된 라인을 INFO 레벨로 출력
         if (log.isDebugEnabled()) {
@@ -136,12 +141,14 @@ log.info("★★★★★ ask 호출됨");
         }
 
         if (line == null || line.trim().isEmpty()) {
+            log.info("◀ processStreamLine E. line == null");
             return;
         }
 
         // [DONE] 메시지 처리
         if (SSE_DONE_MESSAGE.equals(line.trim()) || line.contains(SSE_DONE_MESSAGE)) {
             log.debug("ChatBot Stream [DONE] 수신");
+            log.info("◀ processStreamLine E. SSE_DONE_MESSAGE");
             return;
         }
 
@@ -186,14 +193,14 @@ log.info("★★★★★ ask 호출됨");
         } catch (JsonProcessingException e) {
             log.warn("ChatBot Stream 응답 파싱 실패 - Raw: {}", raw, e);
         }
+        log.info("◀ processStreamLine E.");
     }
 
     /**
      * 상세 에러 처리 (표준 에러 응답 구조 대응)
      */
     private void handleDetailedError(Throwable error, Consumer<String> onChunk) {
-        log.info("★★★★★ handleDetailedError 호출됨");
-
+        log.info("▶ handleDetailedError S.");
         if (error instanceof WebClientResponseException responseEx) {
             String errorBody = responseEx.getResponseBodyAsString(StandardCharsets.UTF_8);
             try {
@@ -219,6 +226,7 @@ log.info("★★★★★ ask 호출됨");
         }
         log.error("ChatBot Stream 처리 중 예외 발생", error.getMessage());
         onChunk.accept("서비스 연결에 실패했습니다.");
+        log.info("◀ handleDetailedError E.");
     }
 
 }

@@ -23,13 +23,13 @@ public class AgentAuthService {
     private final TokenService tokenService;
     private final UserAccountMapper userAccountMapper;
     private final StringRedisTemplate redisTemplate;
-    
+
     private static final String ONLINE_AGENTS_KEY = "chat:online:agents";
 
     public UserInfo login(String id, String password) {
         // 상담원 로그인 후 토큰을 생성해 반환
-        log.info("Attempting agent login via API: {}", agentLoginApiUrl);
-        
+        log.info("▼ Attempting agent login via API: {}", agentLoginApiUrl);
+
         UserAccount account = userAccountMapper.selectAgentByLogin(id, password);
         if (account == null) {
             return null;
@@ -53,19 +53,20 @@ public class AgentAuthService {
                 .build();
 
         userInfo.setToken(tokenService.generateToken(userInfo));
-        
+
         // Redis에 온라인 상담원 등록 (10분 TTL)
         String agentKey = ONLINE_AGENTS_KEY + ":" + account.getUserId();
         redisTemplate.opsForValue().set(agentKey, account.getUserName(), 10, TimeUnit.MINUTES);
         log.info("Agent {} registered as online in Redis", account.getUserId());
-        
+
         return userInfo;
     }
-    
+
     /**
      * 상담원 하트비트 - 온라인 상태 유지
      */
     public void heartbeat(String userId) {
+        log.info("▼ heartbeat. userId:{}", userId);
         String agentKey = ONLINE_AGENTS_KEY + ":" + userId;
         redisTemplate.expire(agentKey, 10, TimeUnit.MINUTES);
     }

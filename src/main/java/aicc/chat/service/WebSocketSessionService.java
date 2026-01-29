@@ -35,6 +35,7 @@ public class WebSocketSessionService {
      * @param userRole 사용자 역할 (CUSTOMER, AGENT 등)
      */
     public void registerSession(String sessionId, String userId, String userRole) {
+        log.info("▼ broadcastRoomList. sessionId:{}, userId:{}, userRole:{}", sessionId, userId, userRole);
         if (sessionId == null || userId == null) {
             log.warn("sessionId 또는 userId가 null입니다. 등록하지 않습니다.");
             return;
@@ -74,6 +75,8 @@ public class WebSocketSessionService {
      * @param sessionId WebSocket 세션 ID
      */
     public void unregisterSession(String sessionId) {
+        log.info("▼ unregisterSession. sessionId:{}",sessionId);
+
         if (sessionId == null) {
             log.warn("sessionId가 null입니다. 제거하지 않습니다.");
             return;
@@ -123,6 +126,7 @@ public class WebSocketSessionService {
      * @return 사용자 ID (없으면 null)
      */
     public String getUserIdBySessionId(String sessionId) {
+        log.info("▼ getUserIdBySessionId. sessionId:{}",sessionId);
         if (sessionId == null) {
             return null;
         }
@@ -138,6 +142,8 @@ public class WebSocketSessionService {
      * @return 세션 ID Set (없으면 빈 Set)
      */
     public Set<String> getSessionIdsByUserId(String userId) {
+        log.info("▼ getSessionIdsByUserId. userId:{}", userId);
+
         if (userId == null) {
             return Collections.emptySet();
         }
@@ -154,6 +160,8 @@ public class WebSocketSessionService {
      * @return 사용자 역할 (CUSTOMER, AGENT 등, 없으면 null)
      */
     public String getUserRoleBySessionId(String sessionId) {
+        log.info("▼ getUserRoleBySessionId. sessionId:{}",sessionId);
+
         if (sessionId == null) {
             return null;
         }
@@ -168,6 +176,7 @@ public class WebSocketSessionService {
      * @return 모든 활성 세션 ID Set
      */
     public Set<String> getAllActiveSessions() {
+        log.info("▼ getAllActiveSessions");
         Set<String> sessions = redisTemplate.opsForSet().members(WS_ALL_SESSIONS_KEY);
         return sessions != null ? sessions : Collections.emptySet();
     }
@@ -179,6 +188,8 @@ public class WebSocketSessionService {
      * @return 온라인 여부
      */
     public boolean isUserOnline(String userId) {
+        log.info("▼ isUserOnline. userId:{}", userId);
+
         if (userId == null) {
             return false;
         }
@@ -194,6 +205,7 @@ public class WebSocketSessionService {
      * @param sessionId WebSocket 세션 ID
      */
     public void refreshSessionTTL(String sessionId) {
+        log.info("▼ refreshSessionTTL. sessionId:{}", sessionId);
         if (sessionId == null) {
             return;
         }
@@ -223,6 +235,8 @@ public class WebSocketSessionService {
      * @return 세션 수
      */
     public long getTotalSessionCount() {
+        log.info("▼ getTotalSessionCount");
+
         Long count = redisTemplate.opsForSet().size(WS_ALL_SESSIONS_KEY);
         return count != null ? count : 0;
     }

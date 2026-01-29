@@ -1,0 +1,10 @@
+---
+name: hpalman-rule
+description: This is a new rule
+---
+
+# Overview
+
+Insert overview text here. The agent will only see this should they choose to apply the rule.
+Cursor의 답변을 저장하는 Markdown 파일은 doc/ai-qa 폴더에 년월일시분초를 .md 파일명에 붙여서 저장하라.
+종합 정리한 내용도 md 파일내에 추가하라.

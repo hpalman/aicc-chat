@@ -3,6 +3,7 @@ package aicc.chat.websocket;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -14,8 +15,14 @@ import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.*;
 
-import aicc.chat.service.RoomRepository;
+import aicc.chat.domain.ChatMessage;
+import aicc.chat.domain.ChatRoom;
+import aicc.chat.domain.MessageType;
+import aicc.chat.domain.UserRole;
 import aicc.chat.service.WebSocketSessionService;
+import aicc.chat.service.inteface.MessageBroker;
+import aicc.chat.service.inteface.RoomRepository;
+import aicc.chat.websocket.domain.WebSocketSessionAttribute;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -26,6 +33,7 @@ public class WebSocketEventListener {
 
     private final RoomRepository roomRepository;
     private final WebSocketSessionService webSocketSessionService;
+    private final MessageBroker messageBroker;
 
 
     /*
@@ -309,11 +317,14 @@ nativeHeaders   연결 종료 시점에 포함된 헤더 (일반적으로 CONNEC
         log.info("📌 closeStatus: {}", closeStatus);
 
         String simpSessionId = sessionAttribute.getSessionId();
-        // 3. Redis에서 세션 정보 제거
+        String userId = sessionAttribute.getUserId();
+        String userName = sessionAttribute.getUserName();
+        String userRole = sessionAttribute.getUserRole();
+        String roomId = sessionAttribute.getRoomId();
+        
+        // 1. Redis에서 세션 정보 제거
         if (simpSessionId != null) {
             log.info("💾 Redis에서 세션 정보 제거 시작...");
-            //log.info("  - sessionId (simpSessionId): {}", simpSessionId);
-            //log.info("  - userId: {}", userId);
 
             webSocketSessionService.unregisterSession(simpSessionId);
 
@@ -323,6 +334,40 @@ nativeHeaders   연결 종료 시점에 포함된 헤더 (일반적으로 CONNEC
             log.error("❌ Redis 세션 제거 실패 - simpSessionId가 null입니다.");
         }
 
+        // 2. 고객이 연결 해제된 경우 상담원에게 알림
+        if ("CUSTOMER".equals(userRole) && roomId != null && userId != null) {
+            log.info("🔔 고객 연결 해제 알림 전송 시작...");
+            log.info("  - roomId: {}", roomId);
+            log.info("  - userId: {}", userId);
+            log.info("  - userName: {}", userName);
+            
+            try {
+                // 채팅방 정보 조회
+                ChatRoom room = roomRepository.findRoomById(roomId);
+                
+                if (room != null && room.getAssignedAgent() != null) {
+                    // 상담원이 배정된 경우에만 알림 전송
+                    log.info("  - assignedAgent: {}", room.getAssignedAgent());
+                    
+                    ChatMessage disconnectNotice = ChatMessage.builder()
+                            .roomId(roomId)
+                            .sender("System")
+                            .senderRole(UserRole.SYSTEM)
+                            .message(userName + " 고객의 연결이 끊어졌습니다.")
+                            .type(MessageType.CUSTOMER_DISCONNECTED)
+                            .timestamp(LocalDateTime.now())
+                            .build();
+                    
+                    messageBroker.publish(disconnectNotice);
+                    
+                    log.info("✅ 고객 연결 해제 알림 전송 완료!");
+                } else {
+                    log.info("  ℹ️ 상담원이 배정되지 않은 방이거나 BOT 상담 중 - 알림 전송 생략");
+                }
+            } catch (Exception e) {
+                log.error("❌ 고객 연결 해제 알림 전송 실패", e);
+            }
+        }
 
 /*
 예시 로그:
@@ -334,7 +379,7 @@ nativeHeaders   연결 종료 시점에 포함된 헤더 (일반적으로 CONNEC
     	    simpSessionId=aroiqtew
    	    }
 */
-        // 4. 채팅방 멤버 제거
+        // 3. 채팅방 멤버 제거
         roomRepository.removeMemberFromAll(simpSessionId);
         log.info("◀ WebSocket 연결 해제 처리 종료 ◀◀◀◀◀◀◀◀◀◀");
     }

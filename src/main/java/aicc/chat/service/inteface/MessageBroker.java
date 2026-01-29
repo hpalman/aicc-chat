@@ -1,4 +1,4 @@
-package aicc.chat.service;
+package aicc.chat.service.inteface;
 
 import aicc.chat.domain.ChatMessage;
 

@@ -12,12 +12,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import lombok.extern.slf4j.Slf4j;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
 
+@Slf4j
 @Configuration
 public class WebClientConfig {
-    
+
     private static final int MAX_CONNECTIONS = 100;
     private static final int PENDING_ACQUIRE_MAX_COUNT = 50;
     private static final Duration MAX_IDLE_TIME = Duration.ofSeconds(20);
@@ -27,10 +29,11 @@ public class WebClientConfig {
     private static final int WRITE_TIMEOUT_SECONDS = 60;
     private static final Duration RESPONSE_TIMEOUT = Duration.ofSeconds(60);
     private static final int MAX_IN_MEMORY_SIZE = 10 * 1024 * 1024;
-    
+
     @Bean
     // AI 호출 전용 WebClient(커넥션 풀/타임아웃 설정 포함) 생성
     public WebClient chatWebClient(WebClient.Builder builder) {
+        log.info("▼ chatWebClient");
         ConnectionProvider connectionProvider = ConnectionProvider.builder("chat-connection-pool")
             .maxConnections(MAX_CONNECTIONS)
             .pendingAcquireMaxCount(PENDING_ACQUIRE_MAX_COUNT)
@@ -38,16 +41,16 @@ public class WebClientConfig {
             .maxLifeTime(MAX_LIFE_TIME)
             .evictInBackground(Duration.ofSeconds(30))
             .build();
-        
+
         HttpClient httpClient = HttpClient.create(connectionProvider)
             .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
             .option(ChannelOption.SO_KEEPALIVE, true)
             .responseTimeout(RESPONSE_TIMEOUT)
-            .doOnConnected(conn -> 
+            .doOnConnected(conn ->
                 conn.addHandlerLast(new ReadTimeoutHandler(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS))
                     .addHandlerLast(new WriteTimeoutHandler(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)))
             .compress(true);
-        
+
         ExchangeStrategies exchangeStrategies = ExchangeStrategies.builder()
             .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(MAX_IN_MEMORY_SIZE))
             .build();

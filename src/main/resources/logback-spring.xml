@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+    <!--
+    <logger name="org.mybatis" level="INFO"/>
+    -->
+
     <!-- 콘솔 출력 설정 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <!-- <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread{24}] %-5level %class{48}.%M{32}:%L{3} - %msg%n</pattern> -->
-            <pattern>%d{MM-dd HH:mm:ss.SSS} [%23.23thread] [%-5level] %-48.48class:%-20.20M:%3.3L %msg%n</pattern>            
+            <pattern>%d{MM-dd HH:mm:ss.SSS} [%23.23thread] [%-5level] %-48.48class:%-20.20M:%3.3L %msg%n</pattern>
             <!-- <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern> -->
             <charset>UTF-8</charset>
         </encoder>
@@ -14,7 +18,7 @@
     <appender name="SQL_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/sql.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/sql.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>/logs/aicc-chat/sql.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -27,7 +31,7 @@
     <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/application.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/application.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>/logs/aicc-chat/application.%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -49,13 +53,17 @@
     </logger>
 
     <!-- JDBC SQL 로거 -->
-    <logger name="org.springframework.jdbc.core" level="DEBUG" additivity="false">
+    <logger name="org.springframework.jdbc.core" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="SQL_FILE"/>
     </logger>
 
+    <logger name="org.apache.ibatis.logging.jdbc" level="INFO" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
     <!-- MyBatis 내부 로거 -->
-    <logger name="org.mybatis" level="DEBUG" additivity="false">
+    <logger name="org.mybatis" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="SQL_FILE"/>
     </logger>

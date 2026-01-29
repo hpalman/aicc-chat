@@ -3,8 +3,8 @@ package aicc.chat.service.impl;
 import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.UserRole;
-import aicc.chat.service.ChatRoutingStrategy;
-import aicc.chat.service.RoomRepository;
+import aicc.chat.service.inteface.ChatRoutingStrategy;
+import aicc.chat.service.inteface.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
