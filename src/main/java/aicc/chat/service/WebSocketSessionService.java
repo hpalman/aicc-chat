@@ -35,7 +35,7 @@ public class WebSocketSessionService {
      * @param userRole 사용자 역할 (CUSTOMER, AGENT 등)
      */
     public void registerSession(String sessionId, String userId, String userRole) {
-        log.info("▼ broadcastRoomList. sessionId:{}, userId:{}, userRole:{}", sessionId, userId, userRole);
+        log.info("▼ registerSession called. broadcastRoomList. sessionId:{}, userId:{}, userRole:{}", sessionId, userId, userRole);
         if (sessionId == null || userId == null) {
             log.warn("sessionId 또는 userId가 null입니다. 등록하지 않습니다.");
             return;
