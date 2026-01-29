@@ -38,35 +38,11 @@ public class WebSocketEventListener {
     SessionSubscribeEvent   클라이언트가 특정 토픽을 구독할 때 발생    채팅방 참여 추적, 알림 등록
     SessionUnsubscribeEvent 클라이언트가 구독을 해제할 때 발생         채팅방 탈퇴 추적, 알림 해제
    */
-
-    ///private Object getSimpSessionAttributes(MessageHeaders headers, String key) {
-    ///    Object values = headers.get(key);
-    ///    return values;
-    ///}
-    ///
-    ///private String getSimpSessionAttributesValue(MessageHeaders headers, String key) {
-    ///    Object values = headers.get("simpSessionAttributes");
-    ///    if ( values == null || !(values instanceof java.util.Map) ) {
-    ///        return "";
-    ///    }
-    ///    Map<?, ?> map = (Map<?, ?>) values;
-    ///    Object value = map.get(key);
-    ///    if ( value == null )
-    ///        return "";
-    ///    return (String) value;
-    ///}
-    ///
-    ///private String getSimpSessionAttributesValue(StompHeaderAccessor accessor, String key) {
-    ///    return getSimpSessionAttributesValue(accessor.getMessageHeaders(), key);
-    ///}
-
 	private WebSocketSessionAttribute getSimpSessionAttributes(StompHeaderAccessor accessor) {
         ObjectMapper mapper = new ObjectMapper();
         MessageHeaders headers = accessor.getMessageHeaders();
         Map<?,?> map = (Map<?,?>) headers.get("simpSessionAttributes");
         if ( map == null ) {
-            // 모든 헤더 출력
-
             // 2. keySet() + get()
             for (String key : headers.keySet()) {
                 Object value = headers.get(key);
