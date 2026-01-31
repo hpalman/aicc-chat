@@ -20,9 +20,9 @@ public class WebSocketSessionService {
     private final StringRedisTemplate redisTemplate;
 
     // Redis 키 구조
-    private static final String WS_SESSION_TO_USER_PREFIX  = "ws:session:";     // sessionId -> userId 매핑
-    private static final String WS_USER_TO_SESSIONS_PREFIX = "ws:user:";        // userId -> Set<sessionId> 매핑
-    private static final String WS_ALL_SESSIONS_KEY        = "ws:sessions:all"; // 모든 활성 세션 Set
+    private static final String WS_SESSION_TO_USER_PREFIX  = "chat:wssession:";     // sessionId -> userId 매핑
+    private static final String WS_USER_TO_SESSIONS_PREFIX = "chat:wsuser:";        // userId -> Set<sessionId> 매핑
+    private static final String WS_ALL_SESSIONS_KEY        = "chat:wssessions:all"; // 모든 활성 세션 Set
 
     // TTL 설정 (기본 24시간)
     private static final long SESSION_TTL_HOURS = 24;

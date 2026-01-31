@@ -7,6 +7,7 @@ import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
 import aicc.chat.domain.persistence.ChatSession;
+import aicc.chat.service.CustomerAuthService;
 import aicc.chat.service.TokenService;
 import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
@@ -31,7 +32,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @RequestMapping("/api/customer")
 @Slf4j
-public class CustomerChatController {
+public class ChatCustomerController {
 
     private final RoomRepository roomRepository;
     private final ChatRoutingStrategy routingStrategy;
@@ -40,6 +41,38 @@ public class CustomerChatController {
     private final ChatSessionService chatSessionService;
     private final ChatHistoryService chatHistoryService;
     private final MessageBroker messageBroker;
+    private final CustomerAuthService customerAuthService;
+
+    @PostMapping("/{companyId}/login")
+    // 회사별 고객 로그인 처리
+    public ResponseEntity<UserInfo> login(
+            @PathVariable String companyId,
+            @RequestParam String id,
+            @RequestParam String password) {
+        log.info("▶ 회사별 고객 로그인 처리:login 시작");
+        ResponseEntity<UserInfo> ret;
+        UserInfo userInfo = customerAuthService.login(id, password, companyId);
+        if (userInfo == null) {
+            ret = ResponseEntity.status(401).build();
+        } else {
+            ret = ResponseEntity.ok(userInfo);
+        }
+        log.info("◀ 회사별 고객 로그인 처리:login 완료 ");
+        return ret;
+    }
+
+    @PostMapping("/login")
+    // 기본 회사(default)로 고객 로그인 처리
+    public ResponseEntity<UserInfo> loginDefault(
+            @RequestParam String id,
+            @RequestParam String password) {
+        ResponseEntity<UserInfo> ret;
+        log.info("▶ 기본 회사(default)로 고객 로그인 처리:loginDefault 시작");
+        ret = login("default", id, password);
+        log.info("◀ 기본 회사(default)로 고객 로그인 처리:loginDefault 완료 ");
+        return ret;
+    }
+
 
     @PostMapping("/chatbot")
     // 고객의 챗봇 상담방을 생성하고 세션/목록을 갱신
@@ -102,9 +135,9 @@ public class CustomerChatController {
         log.info("▶ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 시작");
         String sessionId = headerAccessor.getSessionId();
         log.info("sessionId:{}, MessageType:{}", sessionId, message.getType().toString());
-    	WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);		
+    	WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);
         log.info("attr:{}", attr);
-        
+
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;
 
@@ -112,7 +145,7 @@ public class CustomerChatController {
         message.setTimestamp(LocalDateTime.now());
 // 세션id
 // userId
-// roomId        
+// roomId
         if (sessionAttributes != null) {
             String roomId = (String) sessionAttributes.get("roomId");
             String userName = (String) sessionAttributes.get("userName");

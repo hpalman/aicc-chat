@@ -67,8 +67,8 @@ public class AgentAuthService {
      */
     public void heartbeat(String userId) {
         log.info("▼ heartbeat. userId:{}", userId);
-        String agentKey = ONLINE_AGENTS_KEY + ":" + userId;
-        redisTemplate.expire(agentKey, 10, TimeUnit.MINUTES);
+        String agentKey = ONLINE_AGENTS_KEY + ":" + userId; // "chat:online:agents:{userId}"
+        redisTemplate.expire(agentKey, 10, TimeUnit.MINUTES); // TTL 재설정
     }
 }
 

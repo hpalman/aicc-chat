@@ -5,6 +5,7 @@ import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
+import aicc.chat.service.AgentAuthService;
 import aicc.chat.service.TokenService;
 import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
@@ -25,7 +26,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 @RequestMapping("/api/agent")
 @Slf4j
-public class AgentChatController {
+public class ChatAgentController {
+    private final AgentAuthService agentAuthService;
 
     private final RoomRepository roomRepository;
     private final ChatRoutingStrategy routingStrategy;
@@ -38,17 +40,70 @@ public class AgentChatController {
 
     private static final String ONLINE_AGENTS_KEY = "chat:online:agents";
 
+
+    @PostMapping("/login")
+    // 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
+    public ResponseEntity<UserInfo> login(
+            @RequestParam String id,
+            @RequestParam String password) {
+        log.info("▶ 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
+        ResponseEntity<UserInfo> ret;
+        UserInfo userInfo = agentAuthService.login(id, password);
+        if (userInfo == null) {
+            log.warn("userInfo == null");
+            ret = ResponseEntity.status(401).build();
+        } else {
+            ret = ResponseEntity.ok(userInfo);
+        }
+        log.info("◀ 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 완료./api/agent > /login E");
+        return ret;
+    }
+
+    @GetMapping("/me")
+    // Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환
+    public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String token) {
+        log.info("▶ /api/agent > /me S. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 시작.");
+        ResponseEntity<UserInfo> ret;
+        if (token == null || !token.startsWith("Bearer ")) {
+            log.warn("token == null || !token.startsWith(\"Bearer \"))");
+            log.info("◀ Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
+            return ResponseEntity.status(401).build();
+        }
+
+        String actualToken = token.substring(7);
+        UserInfo userInfo = tokenService.validateToken(actualToken);
+        if (userInfo == null) {
+            log.warn("userInfo == null");
+            log.info("◀ Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
+            return ResponseEntity.status(401).build();
+        }
+
+        // 하트비트 - 온라인 상태 유지
+        agentAuthService.heartbeat(userInfo.getUserId());
+
+        log.info("◀ /api/agent > /me E. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료.");
+        return ResponseEntity.ok(userInfo);
+    }
+
+
+
+
+
+
     @GetMapping("/rooms")
     // 상담원에게 전체 상담방 목록을 반환
     public ResponseEntity<List<ChatRoom>> findAllRooms() {
-        log.debug("Agent request findAllRooms");
-        return ResponseEntity.ok(roomRepository.findAllRooms());
+        log.info("▶ Agent request findAllRooms./api/agent > /rooms S");
+        ResponseEntity<List<ChatRoom>> ret
+             = ResponseEntity.ok(roomRepository.findAllRooms());
+        log.info("◀ Agent request findAllRooms./api/agent > /rooms E");
+        return ret;
     }
 
     @GetMapping("/availability")
     // 상담원 가용성 확인: 로그인한 상담원이 있고 3개 미만의 상담을 하고 있는지 확인
     public ResponseEntity<Map<String, Object>> checkAgentAvailability() {
-        log.info("▶ checkAgentAvailability S");
+        log.info("▶ checkAgentAvailability S. /api/agent > /availability S");
 
         // 1. 온라인 상담원 목록 조회
         java.util.Set<String> onlineAgentKeys = redisTemplate.keys(ONLINE_AGENTS_KEY + ":*");
@@ -98,7 +153,7 @@ public class AgentChatController {
         log.info("Agent availability check - Online: {}, Available: {}, Room count: {}",
                  onlineAgentIds.size(), hasAvailableAgent, agentRoomCount);
 
-        log.info("◀ checkAgentAvailability E");
+        log.info("◀ checkAgentAvailability E. /api/agent > /availability E");
         return ResponseEntity.ok(Map.of(
             "available", hasAvailableAgent,
             "onlineAgentCount", onlineAgentIds.size(),

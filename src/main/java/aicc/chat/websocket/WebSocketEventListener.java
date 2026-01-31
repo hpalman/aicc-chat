@@ -34,7 +34,7 @@ public class WebSocketEventListener {
     private final RoomRepository roomRepository;
     private final WebSocketSessionService webSocketSessionService;
     private final MessageBroker messageBroker;
-
+static private boolean skip = true; 
 
     /*
     ㅁ WebSocket/STOMP 이벤트 종류
@@ -70,7 +70,7 @@ public class WebSocketEventListener {
         command         STOMP 명령 (예: CONNECT)
         message         전체 메시지 객체
         */
-    ) {
+    ) { if ( skip ) return;
         log.info("▶ WebSocket 연결 이벤트 시작.");
         log.info("ㅁㅁㅁ ▶ WebSocket onConnect: {}", event.getMessage().getHeaders());
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
@@ -153,14 +153,13 @@ public class WebSocketEventListener {
                ],
              simpSessionId=lxvx2g50
           }
-
          */
     }
 
     // 연결 완료
     @EventListener
     // 세션 연결 완료 시 로깅 및 Redis 세션 등록
-    public void onConnected(SessionConnectedEvent event) {
+    public void onConnected(SessionConnectedEvent event) { if ( skip ) return;
         log.info("▶ WebSocket 연결 완료 이벤트 시작. event.getMessage().getHeaders():{}", event.getMessage().getHeaders());
 
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
@@ -199,7 +198,7 @@ public class WebSocketEventListener {
 	    nativeHeaders   클라이언트가 SUBSCRIBE 시 보낸 커스텀 헤더
 	    messageHeaders  전체 메시지 헤더 맵
 	  */
-    ) {
+    ) { if ( skip ) return;
         log.info("▶ WebSocket 토픽 구독 이벤트 시작.");
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
@@ -223,7 +222,7 @@ public class WebSocketEventListener {
     // 구독 해제
     @EventListener
     // 토픽 구독 해제 이벤트 로깅
-    public void onUnsubscribe(SessionUnsubscribeEvent event) {
+    public void onUnsubscribe(SessionUnsubscribeEvent event) { if ( skip ) return;
         log.info("▶ WebSocket 토픽 구독 해제 처리 이벤트 시작.");
 
     	StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
@@ -251,7 +250,7 @@ public class WebSocketEventListener {
 		message         전체 STOMP 메시지 객체
 		nativeHeaders   연결 종료 시점에 포함된 헤더 (일반적으로 CONNECT 시 전달된 값과 동일)
 		*/
-    ) {
+    ) { if ( skip ) return;
         log.info("▶ WebSocket 연결 해제 이벤트 시작.");
 
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
