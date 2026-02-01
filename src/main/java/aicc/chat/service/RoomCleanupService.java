@@ -43,7 +43,7 @@ public class RoomCleanupService {
      */
     @Scheduled(fixedRateString = "${app.chat.cleanup.check-interval:60000}")
     public void cleanupIdleRooms() {
-        log.info("▼ cleanupIdleRooms. Starting idle room cleanup task... (timeout: {}ms, interval: {}ms)", idleTimeout, checkInterval);
+        log.info("▼ cleanupIdleRooms S. Starting idle room cleanup task... (timeout: {}ms, interval: {}ms)", idleTimeout, checkInterval);
         List<ChatRoom> allRooms = roomRepository.findAllRooms();
         long now = System.currentTimeMillis();
         boolean changed = false;
@@ -51,7 +51,7 @@ public class RoomCleanupService {
         for (ChatRoom room : allRooms) {
             long idleTime = now - room.getLastActivityAt();
             if (idleTime > idleTimeout) {
-                log.info("Cleaning up idle room: {} (Idle for {} ms, timeout: {} ms)",
+                log.info("▶ Cleaning up idle room: {} (Idle for {} ms, timeout: {} ms)",
                         room.getRoomId(), idleTime, idleTimeout);
 
                 // 1. 고객에게 자동 종료 알림 메시지 전송
@@ -71,6 +71,7 @@ public class RoomCleanupService {
             // 4. 상담원에게 채팅방 목록 업데이트 브로드캐스트
             roomUpdateBroadcaster.broadcastRoomList();
         }
+        log.info("▲ cleanupIdleRooms E.");
     }
 
     /**
@@ -96,17 +97,18 @@ public class RoomCleanupService {
             // WebSocket을 통해 고객에게 메시지 전송
             messageBroker.publish(timeoutMessage);
 
-            log.info("Timeout notification sent to room: {}", room.getRoomId());
+            log.info("▶ Timeout notification sent to room: {}", room.getRoomId());
         } catch (Exception e) {
             log.error("Failed to send timeout notification for room: {}", room.getRoomId(), e);
         }
+        log.info("▲ notifyRoomTimeout E.");
     }
 
     /**
      * 타임아웃된 채팅방 정보를 데이터베이스에 기록합니다.
      */
     private void saveRoomTimeoutToDatabase(ChatRoom room) {
-        log.info("▼ saveRoomTimeoutToDatabase. room:{}", room);
+        log.info("▼ saveRoomTimeoutToDatabase S. room:{}", room);
         try {
             LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
 
@@ -130,11 +132,12 @@ public class RoomCleanupService {
 
             chatHistoryService.saveChatHistory(timeoutHistory);
 
-            log.info("Timeout record saved to database for room: {}", room.getRoomId());
+            log.info("▶ Timeout record saved to database for room: {}", room.getRoomId());
         } catch (Exception e) {
-            log.error("Failed to save timeout record to database for room: {}", room.getRoomId(), e);
+            log.error("▶ Failed to save timeout record to database for room: {}", room.getRoomId(), e);
             // DB 저장 실패는 로그만 남기고 계속 진행 (채팅방은 정리되어야 함)
         }
+        log.info("▲ saveRoomTimeoutToDatabase E.");
     }
 }
 

@@ -14,14 +14,11 @@ import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.ChatSessionService;
 import aicc.chat.service.inteface.MessageBroker;
 import aicc.chat.service.inteface.RoomRepository;
-import aicc.chat.websocket.WebSocketAttributes;
-import aicc.chat.websocket.domain.WebSocketSessionAttribute;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
-import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -72,6 +69,30 @@ public class ChatCustomerController {
         log.info("◀ 기본 회사(default)로 고객 로그인 처리:loginDefault 완료 ");
         return ret;
     }
+    
+    @PostMapping("/logout")
+    // 고객 로그아웃 처리
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String token) {
+        log.info("▶ 고객 로그아웃 처리:logout 시작");
+        
+        if (token == null || !token.startsWith("Bearer ")) {
+            log.warn("token == null || !token.startsWith(\"Bearer \"))");
+            return ResponseEntity.status(401).build();
+        }
+
+        String actualToken = token.substring(7);
+        UserInfo userInfo = tokenService.validateToken(actualToken);
+        if (userInfo == null) {
+            log.warn("userInfo == null");
+            return ResponseEntity.status(401).build();
+        }
+
+        // Redis에서 온라인 고객 제거
+        customerAuthService.logout(userInfo.getUserId());
+
+        log.info("◀ 고객 로그아웃 처리:logout 완료");
+        return ResponseEntity.ok().build();
+    }
 
 
     @PostMapping("/chatbot")
@@ -98,6 +119,9 @@ public class ChatCustomerController {
             String newRoomId = "room-" + UUID.randomUUID().toString().substring(0, 8);
             ChatRoom room = roomRepository.createRoom(newRoomId, custInfo.getUserId()); // 룸 생성(Redis에 키 및 값들 넣음)
             roomRepository.addMember(newRoomId, custInfo.getUserId()); // 고객을 멤버로 추가
+            
+            // Redis에 고객의 roomId 업데이트
+            customerAuthService.updateRoomId(custInfo.getUserId(), newRoomId);
 
             // PostgreSQL에 세션 정보 저장
             try {
@@ -134,9 +158,10 @@ public class ChatCustomerController {
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         log.info("▶ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 시작");
         String sessionId = headerAccessor.getSessionId();
-        log.info("sessionId:{}, MessageType:{}", sessionId, message.getType().toString());
-    	WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);
-        log.info("attr:{}", attr);
+        log.info("sessionId:{}, MessageType:{}", sessionId, message.getType().toString()); // sessionId:xxfuatci, MessageType:LEAVE
+
+        //WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);
+        //log.info("attr:{}", attr);
 
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;
@@ -153,9 +178,12 @@ public class ChatCustomerController {
             userId = (String) sessionAttributes.get("userId");
 
             // 고객 전용 로직: 세션의 roomId와 userName으로 강제 고정
-            if (roomId != null) message.setRoomId(roomId);
-            if (userName != null) message.setSender(userName);
-            if (companyId != null) message.setCompanyId(companyId);
+            if (roomId != null)
+            	message.setRoomId(roomId);
+            if (userName != null)
+            	message.setSender(userName);
+            if (companyId != null)
+            	message.setCompanyId(companyId);
             message.setSenderRole(UserRole.CUSTOMER);
         }
 

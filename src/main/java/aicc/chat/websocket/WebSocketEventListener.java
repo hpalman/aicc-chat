@@ -4,14 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 import org.springframework.context.event.EventListener;
-import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.simp.stomp.StompCommand;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
-import org.springframework.messaging.support.GenericMessage;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.*;
 
@@ -19,12 +14,11 @@ import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
+import aicc.chat.service.CustomerAuthService;
 import aicc.chat.service.WebSocketSessionService;
 import aicc.chat.service.inteface.MessageBroker;
 import aicc.chat.service.inteface.RoomRepository;
 import aicc.chat.websocket.domain.WebSocketSessionAttribute;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Component
@@ -34,6 +28,7 @@ public class WebSocketEventListener {
     private final RoomRepository roomRepository;
     private final WebSocketSessionService webSocketSessionService;
     private final MessageBroker messageBroker;
+    private final CustomerAuthService customerAuthService;
 static private boolean skip = true; 
 
     /*
@@ -170,6 +165,12 @@ static private boolean skip = true;
             log.info("▶▶ Redis에 세션 정보 저장 시작. webSocketSessionService.registerSession call. sessionAttribute:{}", sessionAttribute);
             webSocketSessionService.registerSession(sessionAttribute.getSessionId(), sessionAttribute.getUserId(), sessionAttribute.getUserRole());
             log.info("◀◀ Redis에 세션 저장 저장 완료.");
+            
+            // 고객인 경우 sessionId 업데이트
+            if ("CUSTOMER".equals(sessionAttribute.getUserRole()) && sessionAttribute.getUserId() != null) {
+                customerAuthService.updateSessionId(sessionAttribute.getUserId(), sessionAttribute.getSessionId());
+                log.info("Customer {} sessionId updated in Redis", sessionAttribute.getUserId());
+            }
         } else {
             log.error("❌ Redis 세션 등록 실패 - sessionId 또는 userId가 null입니다.");
         }
@@ -277,14 +278,18 @@ static private boolean skip = true;
             log.error("❌ Redis 세션 제거 실패 - simpSessionId가 null입니다.");
         }
 
-        // 2. 고객이 연결 해제된 경우 상담원에게 알림
+        // 2. 고객이 연결 해제된 경우 상담원에게 알림 및 Redis에서 제거
         if ("CUSTOMER".equals(userRole) && roomId != null && userId != null) {
-            log.info("▶▶ 고객 연결 해제 알림 전송 시작...");
+            log.info("▶▶ 고객 연결 해제 처리 시작...");
             log.info("  - roomId: {}", roomId);
             log.info("  - userId: {}", userId);
             log.info("  - userName: {}", userName);
             
             try {
+                // Redis에서 고객 정보 제거
+                customerAuthService.logout(userId);
+                log.info("✅ Redis에서 고객 정보 제거 완료");
+                
                 // 채팅방 정보 조회
                 log.info("▶▶ 채팅방 정보:{} 조회", roomId);
                 ChatRoom room = roomRepository.findRoomById(roomId); // REDIS
@@ -309,7 +314,7 @@ static private boolean skip = true;
                     log.info("  ℹ️ 상담원이 배정되지 않은 방이거나 BOT 상담 중 - 알림 전송 생략");
                 }
             } catch (Exception e) {
-                log.error("❌ 고객 연결 해제 알림 전송 실패", e);
+                log.error("❌ 고객 연결 해제 처리 실패", e);
             }
         }
 

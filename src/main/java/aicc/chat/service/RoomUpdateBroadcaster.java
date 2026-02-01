@@ -1,6 +1,7 @@
 package aicc.chat.service;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,13 @@ public class RoomUpdateBroadcaster {
         if (rooms != null) {
             messagingTemplate.convertAndSend("/topic/rooms", rooms);
         }
+    }
+    
+    // /topic/agent-availability 채널을 통해 모든 고객에게 알림:
+    public void broadcastAgentLogin() {
+	 // MessageBroker 또는 별도 서비스에서
+    	messagingTemplate.convertAndSend("/topic/agent-availability", 
+	        Map.of("available", true, "timestamp", System.currentTimeMillis()));
     }
 }
 

@@ -10,4 +10,5 @@ public enum MessageType {
     INTERVENE, // 상담원 개입 알림
     CUSTOMER_DISCONNECTED, // 고객 연결 해제 알림 (상담원에게 전송)
     CUSTOMER_LEFT // 고객 퇴장 알림 (상담원에게 전송)
+    ,SYSTEM
 }

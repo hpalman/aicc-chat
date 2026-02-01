@@ -21,39 +21,41 @@ public class TokenService {
     private final ObjectMapper objectMapper;
 
     public String generateToken(UserInfo userInfo) {
-        log.info("▼ generateToken");
+        log.info("▼ generateToken S.");
         // UserInfo를 Base64 JSON 토큰으로 생성
         try {
             String json = objectMapper.writeValueAsString(userInfo);
             return Base64.getEncoder().encodeToString(json.getBytes());
         } catch (Exception e) {
-            log.error("Token generation failed", e);
+            log.error("▲ generateToken E.", e);
             return UUID.randomUUID().toString();
         }
     }
 
     public UserInfo validateToken(String token) {
-        log.info("▼ validateToken. token:{}", token);
+        log.info("▼ validateToken S. token:{}", token);
         // JWT 또는 Base64 토큰을 파싱해 UserInfo로 복원
-        if (token == null || token.isEmpty())
+        if (token == null || token.isEmpty()) {
+            log.warn("▲ validateToken E.");
             return null;
-
+        }
         try {
             // 1. JWT 토큰 처리 (ey... 로 시작)
             if (token.startsWith("ey") && token.contains(".")) {
-                log.info("[TokenService] JWT token detected");
+                log.info("▲ validateToken E. [TokenService] JWT token detected");
                 return parseJwtToken(token);
             }
 
-            log.info("[TokenService] Non-JWT token detected (Base64)");
+            log.info("▶ [TokenService] Non-JWT token detected (Base64)");
             // 2. 기존의 단순 Base64 JSON 토큰 처리
             byte[] decodedBytes = Base64.getDecoder().decode(token);
             String json = new String(decodedBytes);
             UserInfo userInfo = objectMapper.readValue(json, UserInfo.class);
             userInfo.setToken(token);
+            log.info("▲ validateToken E.");
             return userInfo;
         } catch (Exception e) {
-            log.warn("Invalid token provided: {}", token);
+            log.error("▲ validateToken E.", e);
             return null;
         }
     }
@@ -70,12 +72,12 @@ public class TokenService {
             Map<String, Object> payload = objectMapper.readValue(payloadBytes, Map.class);
 
             // 전체 payload 로깅
-            log.info("[TokenService] Full JWT payload: {}", payload);
+            log.info("▶ [TokenService] Full JWT payload: {}", payload);
 
             String userId = (String) payload.get("sub");
             String authorities = (String) payload.get("auth");
 
-            log.info("[TokenService] Parsing JWT - sub: {}, auth: {}", userId, authorities);
+            log.info("▶ [TokenService] Parsing JWT - sub: {}, auth: {}", userId, authorities);
 
             // principal 맵에서 이름과 로그인 ID 추출 시도
             String userName = userId;
@@ -83,7 +85,7 @@ public class TokenService {
             Map<String, Object> principal = (Map<String, Object>) payload.get("principal");
 
             if (principal != null) {
-                log.info("[TokenService] Principal object: {}", principal);
+                log.info("▶ [TokenService] Principal object: {}", principal);
 
                 if (principal.get("mbrNm") != null) {
                     userName = (String) principal.get("mbrNm");
@@ -92,24 +94,24 @@ public class TokenService {
                 // 로그인 ID 추출 시도 (여러 가능한 키 확인)
                 if (principal.get("lgnId") != null) {
                     loginId = (String) principal.get("lgnId");
-                    log.info("[TokenService] Found lgnId: {}", loginId);
+                    log.info("▶ [TokenService] Found lgnId: {}", loginId);
                 } else if (principal.get("lgn_id") != null) {
                     loginId = (String) principal.get("lgn_id");
-                    log.info("[TokenService] Found lgn_id: {}", loginId);
+                    log.info("▶ [TokenService] Found lgn_id: {}", loginId);
                 } else if (principal.get("loginId") != null) {
                     loginId = (String) principal.get("loginId");
-                    log.info("[TokenService] Found loginId: {}", loginId);
+                    log.info("▶ [TokenService] Found loginId: {}", loginId);
                 } else if (principal.get("username") != null) {
                     loginId = (String) principal.get("username");
-                    log.info("[TokenService] Found username: {}", loginId);
+                    log.info("▶ [TokenService] Found username: {}", loginId);
                 } else {
-                    log.warn("[TokenService] Could not find login ID in principal, using sub: {}", userId);
+                    log.warn("▶ [TokenService] Could not find login ID in principal, using sub: {}", userId);
                 }
             } else {
-                log.warn("[TokenService] Principal object is null");
+                log.warn("▶ [TokenService] Principal object is null");
             }
 
-            log.info("[TokenService] Final extracted - loginId: {}, userName: {}", loginId, userName);
+            log.info("▶ [TokenService] Final extracted - loginId: {}, userName: {}", loginId, userName);
 
             // 권한에 따라 역할 구분 (상담원 권한 키워드 체크)
             UserRole role = UserRole.CUSTOMER;
@@ -124,6 +126,7 @@ public class TokenService {
                 }
             }
 
+            log.info("▲ parseJwtToken E.");
             return UserInfo.builder()
                     .userId(loginId) // 로그인 ID를 userId로 사용
                     .userName(userName)
@@ -132,7 +135,7 @@ public class TokenService {
                     .token(token)
                     .build();
         } catch (Exception e) {
-            log.error("Failed to parse JWT token", e);
+            log.error("▲ parseJwtToken E. Failed to parse JWT token", e);
             return null;
         }
     }

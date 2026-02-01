@@ -1,5 +1,6 @@
 package aicc.chat.controller;
 
+import aicc.chat.consts.Constants;
 import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.UserInfo;
@@ -38,35 +39,55 @@ public class ChatAgentController {
     private final ChatHistoryService chatHistoryService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
-    private static final String ONLINE_AGENTS_KEY = "chat:online:agents";
-
-
     @PostMapping("/login")
     // 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
     public ResponseEntity<UserInfo> login(
-            @RequestParam String id,
+            @RequestParam(name="id") String id,
             @RequestParam String password) {
-        log.info("▶ 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
+        log.info("▼ login S. 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
         ResponseEntity<UserInfo> ret;
         UserInfo userInfo = agentAuthService.login(id, password);
         if (userInfo == null) {
-            log.warn("userInfo == null");
+            log.warn("▶ userInfo == null");
             ret = ResponseEntity.status(401).build();
         } else {
             ret = ResponseEntity.ok(userInfo);
         }
-        log.info("◀ 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 완료./api/agent > /login E");
+        log.info("▲ login E. 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 완료./api/agent > /login E");
         return ret;
     }
 
     @GetMapping("/me")
     // Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환
     public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String token) {
-        log.info("▶ /api/agent > /me S. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 시작.");
+        log.info("▼ getCurrentAgent E. /api/agent > /me S. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 시작.");
         ResponseEntity<UserInfo> ret;
         if (token == null || !token.startsWith("Bearer ")) {
+            log.info("◀ token == null || !token.startsWith(\"Bearer \")). Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
+            return ResponseEntity.status(401).build();
+        }
+
+        String actualToken = token.substring(7);
+        UserInfo userInfo = tokenService.validateToken(actualToken);
+        if (userInfo == null) {
+            log.info("▶ userInfo == null. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
+            return ResponseEntity.status(401).build();
+        }
+
+        // 하트비트 - 온라인 상태 유지
+        agentAuthService.heartbeat(userInfo.getUserId());
+
+        log.info("▲ getCurrentAgent E. /api/agent > /me E. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료.");
+        return ResponseEntity.ok(userInfo);
+    }
+
+    @PostMapping("/logout")
+    // 상담원 로그아웃 처리 및 고객에게 알림
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String token) {
+        log.info("▼ 상담원 로그아웃 처리:logout 시작./api/agent > /logout S");
+        
+        if (token == null || !token.startsWith("Bearer ")) {
             log.warn("token == null || !token.startsWith(\"Bearer \"))");
-            log.info("◀ Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
             return ResponseEntity.status(401).build();
         }
 
@@ -74,15 +95,27 @@ public class ChatAgentController {
         UserInfo userInfo = tokenService.validateToken(actualToken);
         if (userInfo == null) {
             log.warn("userInfo == null");
-            log.info("◀ Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
             return ResponseEntity.status(401).build();
         }
 
-        // 하트비트 - 온라인 상태 유지
-        agentAuthService.heartbeat(userInfo.getUserId());
+        // Redis에서 온라인 상담원 제거 (Hash 구조 전체 삭제)
+        String agentKey = Constants.ONLINE_AGENTS_KEY + ":" + userInfo.getUserId();
+        redisTemplate.delete(agentKey);
+        log.info("Agent {} ({}) removed from online list in Redis", userInfo.getUserId(), userInfo.getUserName());
 
-        log.info("◀ /api/agent > /me E. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료.");
-        return ResponseEntity.ok(userInfo);
+        // 상담원 로그아웃 알림 브로드캐스트
+        aicc.chat.domain.ChatMessage logoutMessage = aicc.chat.domain.ChatMessage.builder()
+            .roomId("SYSTEM_BROADCAST")
+            .sender("System")
+            .senderRole(UserRole.SYSTEM)
+            .message("AGENT_UNAVAILABLE")
+            .type(aicc.chat.domain.MessageType.SYSTEM)
+            .timestamp(java.time.LocalDateTime.now())
+            .build();
+        messageBroker.publish(logoutMessage);
+
+        log.info("▲ 상담원 로그아웃 처리:logout 완료./api/agent > /logout E");
+        return ResponseEntity.ok().build();
     }
 
 
@@ -93,34 +126,40 @@ public class ChatAgentController {
     @GetMapping("/rooms")
     // 상담원에게 전체 상담방 목록을 반환
     public ResponseEntity<List<ChatRoom>> findAllRooms() {
-        log.info("▶ Agent request findAllRooms./api/agent > /rooms S");
+        log.info("▼ Agent request findAllRooms./api/agent > /rooms S");
         ResponseEntity<List<ChatRoom>> ret
              = ResponseEntity.ok(roomRepository.findAllRooms());
-        log.info("◀ Agent request findAllRooms./api/agent > /rooms E");
+        log.info("▲ Agent request findAllRooms./api/agent > /rooms E");
         return ret;
     }
 
     @GetMapping("/availability")
     // 상담원 가용성 확인: 로그인한 상담원이 있고 3개 미만의 상담을 하고 있는지 확인
     public ResponseEntity<Map<String, Object>> checkAgentAvailability() {
-        log.info("▶ checkAgentAvailability S. /api/agent > /availability S");
+        log.info("▼ checkAgentAvailability S. /api/agent > /availability S");
 
-        // 1. 온라인 상담원 목록 조회
-        java.util.Set<String> onlineAgentKeys = redisTemplate.keys(ONLINE_AGENTS_KEY + ":*");
-        java.util.Set<String> onlineAgentIds = new java.util.HashSet<>();
+        // 1. 온라인 상담원 목록 조회 (Hash 구조)
+        java.util.Set<String> onlineAgentKeys = redisTemplate.keys(Constants.ONLINE_AGENTS_KEY + ":*");
+        java.util.Map<String, String> onlineAgents = new java.util.HashMap<>(); // agentId -> userName
 
         if (onlineAgentKeys != null) {
             for (String key : onlineAgentKeys) {
-                String agentId = key.substring((ONLINE_AGENTS_KEY + ":").length());
-                onlineAgentIds.add(agentId);
+                String agentId = key.substring((Constants.ONLINE_AGENTS_KEY + ":").length());
+                
+                // Hash에서 userName 조회
+                Object userNameObj = redisTemplate.opsForHash().get(key, "userName");
+                if (userNameObj != null) {
+                    String userName = userNameObj.toString();
+                    onlineAgents.put(agentId, userName);
+                }
             }
         }
 
-        log.info("Online agents: {}", onlineAgentIds);
+        log.info("Online agents: {} (count: {})", onlineAgents, onlineAgents.size());
 
         // 온라인 상담원이 없으면 즉시 불가 반환
-        if (onlineAgentIds.isEmpty()) {
-            log.info("No online agents available");
+        if (onlineAgents.isEmpty()) {
+            log.info("▲ checkAgentAvailability E. No online agents available");
             return ResponseEntity.ok(Map.of(
                 "available", false,
                 "onlineAgentCount", 0,
@@ -139,24 +178,22 @@ public class ChatAgentController {
             ));
 
         // 3. 온라인 상담원 중 3개 미만의 상담을 하고 있는 상담원이 있는지 확인
-        boolean hasAvailableAgent = onlineAgentIds.stream()
-            .anyMatch(agentId -> {
-                // 해당 상담원의 userName 조회 (Redis에서)
-                String agentName = redisTemplate.opsForValue().get(ONLINE_AGENTS_KEY + ":" + agentId);
-                if (agentName == null) return false;
-
+        boolean hasAvailableAgent = onlineAgents.values().stream()
+            .anyMatch(agentName -> {
                 // 현재 상담 개수 확인
                 long currentChats = agentRoomCount.getOrDefault(agentName, 0L);
-                return currentChats < 3;
+                boolean available = currentChats < 3;
+                log.info("▲ checkAgentAvailability E. Agent {} - current chats: {}, available: {}", agentName, currentChats, available);
+                return available;
             });
 
         log.info("Agent availability check - Online: {}, Available: {}, Room count: {}",
-                 onlineAgentIds.size(), hasAvailableAgent, agentRoomCount);
+                 onlineAgents.size(), hasAvailableAgent, agentRoomCount);
 
-        log.info("◀ checkAgentAvailability E. /api/agent > /availability E");
+        log.info("▲ checkAgentAvailability E. /api/agent > /availability E");
         return ResponseEntity.ok(Map.of(
             "available", hasAvailableAgent,
-            "onlineAgentCount", onlineAgentIds.size(),
+            "onlineAgentCount", onlineAgents.size(),
             "agentCount", agentRoomCount.size(),
             "agentRoomCount", agentRoomCount
         ));
@@ -168,7 +205,7 @@ public class ChatAgentController {
             @PathVariable("roomId") String roomId,
             @RequestHeader(value = "Authorization", required = false) String token) {
 
-        log.info("▶ findRoomById S. Agent request findRoomById: roomId={}", roomId);
+        log.info("▼ findRoomById S. Agent request findRoomById: roomId={}", roomId);
         // 토큰 체크 추가 (선택사항이지만 일관성을 위해)
         if (token != null && token.startsWith("Bearer ")) {
             String actualToken = token.substring(7);
@@ -177,10 +214,11 @@ public class ChatAgentController {
 
         ChatRoom room = roomRepository.findRoomById(roomId);
 
-        log.info("◀ findRoomById E. room:{}", room);
+        log.info("▲ findRoomById E. room:{}", room);
 
-        if (room == null)
+        if (room == null) {
             return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(room);
     }
 
@@ -285,6 +323,7 @@ public class ChatAgentController {
 
                 return ResponseEntity.ok().build();
             }
+ 
             return ResponseEntity.status(409).body("이미 다른 상담원(" + currentAgent + ")이 배정되었습니다.");
         }
     }
@@ -296,9 +335,9 @@ public class ChatAgentController {
             @RequestHeader(value = "Authorization", required = false) String token,
             @RequestParam(value = "force", required = false, defaultValue = "false") boolean force) {
 
-        log.info("▶ assignAgent S. roomId={}", roomId);
+        log.info("▼ assignAgent S. roomId={}", roomId);
         ResponseEntity<?> ret = _assignAgent(roomId, token, force );
-        log.info("◀ assignAgent E.");
+        log.info("▲ assignAgent E.");
         return ret;
     }
 
@@ -307,15 +346,21 @@ public class ChatAgentController {
     public ResponseEntity<?> deleteRoom(
             @PathVariable String roomId,
             @RequestHeader(value = "Authorization", required = false) String token) {
-
-        log.info("Agent request deleteRoom: roomId={}", roomId);
+        log.info("▼ deleteRoom S. Agent request deleteRoom: roomId={}", roomId);
+    	ResponseEntity<?> ret = _deleteRoom(roomId, token);
+        log.info("▲ deleteRoom E. ret:{}", ret);
+    	return ret;
+    }
+    public ResponseEntity<?> _deleteRoom(String roomId, String token) {
         if (token == null || !token.startsWith("Bearer ")) {
+            log.warn("token == null || !token.startsWith(\"Bearer \"))");
             return ResponseEntity.status(401).build();
         }
 
         String actualToken = token.substring(7);
         UserInfo userInfo = tokenService.validateToken(actualToken);
         if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
+            log.warn("상담원만 방을 종료할 수 있습니다.");
             return ResponseEntity.status(403).body("상담원만 방을 종료할 수 있습니다.");
         }
 
@@ -371,7 +416,7 @@ public class ChatAgentController {
             roomUpdateBroadcaster.broadcastRoomList();
             return ResponseEntity.ok().build();
         } catch (Exception e) {
-            log.error("Failed to close room", e);
+            log.error("▲ Failed to close room", e);
             return ResponseEntity.status(500).build();
         }
     }
@@ -424,7 +469,7 @@ public class ChatAgentController {
 
         roomRepository.updateLastActivity(message.getRoomId());
         routingStrategy.handleMessage(message.getRoomId(), message);
-        log.info("◀ onAgentMessage E.");
+        log.info("▲ onAgentMessage E.");
     }
 }
 

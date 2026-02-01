@@ -172,8 +172,21 @@
         // 하트비트 중단
         stopHeartbeat();
         
-        sessionStorage.removeItem("AGENT_TOKEN");
-        window.location.reload();
+        // 서버에 로그아웃 알림 (고객에게 상담원 로그아웃 브로드캐스트)
+        fetch('/api/agent/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        })
+        .then(() => {
+            console.log('로그아웃 알림 전송 완료');
+        })
+        .catch(err => {
+            console.error('로그아웃 알림 전송 실패:', err);
+        })
+        .finally(() => {
+            sessionStorage.removeItem("AGENT_TOKEN");
+            window.location.reload();
+        });
     }
 
     function connectWebSocket() {
@@ -324,9 +337,12 @@
         `;
     }
 
-    function closeConsultation(roomId, status) {
-        const msg = status === 'CLOSED' ? "방을 목록에서 완전히 삭제하시겠습니까?" : "상담을 종료하시겠습니까?";
-        if (!confirm(msg)) return;
+    function closeConsultation(roomId, status, skipConfirm = false) {
+        if (!skipConfirm) {
+            const msg = (status === 'CLOSED') ? "방을 목록에서 완전히 삭제하시겠습니까?" : "상담을 종료하시겠습니까?";
+            if (!confirm(msg))
+			return;
+        }
 
         fetch(`/api/agent/rooms/${roomId}`, {
             method: 'DELETE',
@@ -335,8 +351,8 @@
         .then(res => {
             if (res.ok) {
                 alert("상담이 종료되었습니다.");
-                // 탭 닫기
-                closeTab(roomId);
+                // 탭 닫기 (확인창 없이)
+                closeTabInternal(roomId);
                 loadRooms();
             } else {
                 alert("상담 종료에 실패했습니다.");
@@ -408,18 +424,32 @@
 
     // 탭 닫기 (상담 종료)
     function closeTab(roomId) {
-        if (!openTabs[roomId]) return;
+        if (!openTabs[roomId])
+		return;
         
         const room = openTabs[roomId];
         const isMyRoom = room.status === 'AGENT' && room.assignedAgent === nickname;
         
         // 내 상담방이면 종료 확인
         if (isMyRoom && room.status !== 'CLOSED') {
-            closeConsultation(roomId, room.status);
+            if (!confirm("상담을 종료하시겠습니까?")) {
+                return;
+            }
+            // 확인을 받았으므로 closeConsultation에서는 확인창 건너뛰기
+            closeConsultation(roomId, room.status, true);
             return;
         }
         
         // 탭만 닫기
+        closeTabInternal(roomId);
+    }
+    
+    // 탭 닫기 내부 로직 (확인창 없이 실제 탭 닫기 처리)
+    function closeTabInternal(roomId) {
+        if (!openTabs[roomId])
+		return;
+        
+        // 탭 제거
         delete openTabs[roomId];
         tabOrder = tabOrder.filter(id => id !== roomId);
         

@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
 
+import aicc.chat.consts.Constants;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.service.inteface.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class RedisRoomRepository implements RoomRepository {
 
     private final StringRedisTemplate redisTemplate;
     // Redis 키 구성: roomId별 멤버/상태/메타데이터, 그리고 전체 roomId 인덱스
-    private static final String ROOM_KEY_PREFIX = "chat:room:"; // set of members
+    private static final String ROOM_KEY_PREFIX = "chat:room:"; // room metadata (Hash)
     private static final String CHAT_ROOMS_KEY  = "chat:rooms"; // set of roomIds
 
     @Override
@@ -46,14 +46,17 @@ public class RedisRoomRepository implements RoomRepository {
         long now = System.currentTimeMillis();
         // roomId를 전체 인덱스(Set)에 등록
         redisTemplate.opsForSet().add(CHAT_ROOMS_KEY, roomId); // chat:rooms, room-c7db3f46
-        // 방 이름은 별도 문자열 키로 저장(옵션)
+        
+        // Hash 구조로 메타데이터 저장
+        String roomKey = ROOM_KEY_PREFIX + roomId;
         if (name != null) {
-            redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":name", name); // chat:room:{roomId}:name, cust01
+            redisTemplate.opsForHash().put(roomKey, "name", name);
         }
-        log.info("▶▶▶ {} {}", ROOM_KEY_PREFIX + roomId + ":createdAt", String.valueOf(now) );
-
-        redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":createdAt", String.valueOf(now));
-        updateLastActivity(roomId);
+        redisTemplate.opsForHash().put(roomKey, "createdAt", String.valueOf(now));
+        redisTemplate.opsForHash().put(roomKey, "lastActivity", String.valueOf(now));
+        redisTemplate.opsForHash().put(roomKey, "mode", "BOT");
+        
+        log.info("▶▶▶ {} {}", roomKey + ":createdAt", String.valueOf(now));
 
         ChatRoom chatRoom =
           ChatRoom.builder()
@@ -73,16 +76,17 @@ public class RedisRoomRepository implements RoomRepository {
         log.info("▶ findRoomById. roomId:{}", roomId);
 
     	// [findRoomById] Redis의 분산 키들을 조회해 ChatRoom으로 합성. roomId에 해당하는 멤버/상태/메타 정보를 조합해 ChatRoom으로 복원
-        Set<String> members = Optional.ofNullable(redisTemplate.opsForSet().members(ROOM_KEY_PREFIX + roomId + ":mems")) // members
+        // 변경: room:{roomId}:mems → room:mems:{roomId}
+        Set<String> members = Optional.ofNullable(redisTemplate.opsForSet().members(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId))
                 .orElse(Collections.emptySet());
 
-        ValueOperations<String, String> ofv = redisTemplate.opsForValue();
-
-        String assignedAgent   = ofv.get(ROOM_KEY_PREFIX + roomId + ":assignedAgent");
-        String createdAtStr    = ofv.get(ROOM_KEY_PREFIX + roomId + ":createdAt");
-        String lastActivityStr = ofv.get(ROOM_KEY_PREFIX + roomId + ":lastActivity");
-        String status          = ofv.get(ROOM_KEY_PREFIX + roomId + ":mode");
-        String name            = ofv.get(ROOM_KEY_PREFIX + roomId + ":name");
+        // Hash에서 메타데이터 조회
+        String roomKey = ROOM_KEY_PREFIX + roomId;
+        String assignedAgent   = (String) redisTemplate.opsForHash().get(roomKey, "assignedAgent");
+        String createdAtStr    = (String) redisTemplate.opsForHash().get(roomKey, "createdAt");
+        String lastActivityStr = (String) redisTemplate.opsForHash().get(roomKey, "lastActivity");
+        String status          = (String) redisTemplate.opsForHash().get(roomKey, "mode");
+        String name            = (String) redisTemplate.opsForHash().get(roomKey, "name");
 
         long createdAt = createdAtStr != null ? Long.parseLong(createdAtStr) : 0;
         long lastActivityAt = lastActivityStr != null ? Long.parseLong(lastActivityStr) : 0;
@@ -106,8 +110,9 @@ public class RedisRoomRepository implements RoomRepository {
 
         // [addMember] 방 멤버 Set에 추가 + roomId 인덱스 유지
         // 멤버는 Set으로 관리(중복 방지)
-        redisTemplate.opsForSet().add(ROOM_KEY_PREFIX + roomId + ":mems", memberId); // members chat:room:room-a3a3a779, cust01
-        redisTemplate.opsForSet().add(CHAT_ROOMS_KEY, roomId); // chat:rooms, room-a3a3a779
+        // 변경: room:{roomId}:mems → room:mems:{roomId}
+        redisTemplate.opsForSet().add(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId, memberId);
+        redisTemplate.opsForSet().add(CHAT_ROOMS_KEY, roomId);
     }
 
     @Override
@@ -115,7 +120,8 @@ public class RedisRoomRepository implements RoomRepository {
         log.info("▼ removeMember. roomId:{}, memberId:{}", roomId, memberId);
 
         // [removeMember] 방 멤버 Set에서 제거
-        redisTemplate.opsForSet().remove(ROOM_KEY_PREFIX + roomId + ":mems", memberId); // members "chat:room:"
+        // 변경: room:{roomId}:mems → room:mems:{roomId}
+        redisTemplate.opsForSet().remove(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId, memberId);
     }
 
     @Override
@@ -124,10 +130,11 @@ public class RedisRoomRepository implements RoomRepository {
 
         // [removeMemberFromAll] 인덱스의 모든 roomId를 순회하며 해당 멤버 제거
         // 멤버가 들어간 모든 방에서 제거 (Set 전체 순회)
-        Set<String> roomIds = Optional.ofNullable(redisTemplate.opsForSet().members(CHAT_ROOMS_KEY)) // chat:rooms
+        // 변경: room:{roomId}:mems → room:mems:{roomId}
+        Set<String> roomIds = Optional.ofNullable(redisTemplate.opsForSet().members(CHAT_ROOMS_KEY))
                 .orElse(Collections.emptySet());
         for (String roomId : roomIds) {
-            redisTemplate.opsForSet().remove(ROOM_KEY_PREFIX + roomId + ":mems", memberId); // members chat:room:
+            redisTemplate.opsForSet().remove(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId, memberId);
         }
     }
 
@@ -156,7 +163,7 @@ public class RedisRoomRepository implements RoomRepository {
         // [setRoutingMode] 방의 라우팅 상태 저장
         // 방 상태(BOT/WAITING/AGENT/CLOSED 등) 저장
         if (roomId != null && mode != null) {
-            redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":mode", mode);
+            redisTemplate.opsForHash().put(ROOM_KEY_PREFIX + roomId, "mode", mode);
         }
     }
 
@@ -165,7 +172,7 @@ public class RedisRoomRepository implements RoomRepository {
         log.info("▶▶▶ roomId:{}", roomId);
 
         // [getRoutingMode] 방의 라우팅 상태 조회
-        return roomId != null ? redisTemplate.opsForValue().get(ROOM_KEY_PREFIX + roomId + ":mode") : null;
+        return roomId != null ? (String) redisTemplate.opsForHash().get(ROOM_KEY_PREFIX + roomId, "mode") : null;
     }
 
     @Override
@@ -173,12 +180,13 @@ public class RedisRoomRepository implements RoomRepository {
         log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName);
         // [setAssignedAgent] 방에 배정된 상담원 저장 또는 삭제
         if (roomId != null) {
+            String roomKey = ROOM_KEY_PREFIX + roomId;
             if (agentName != null) {
                 // 상담원 배정
-                redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":assignedAgent", agentName);
+                redisTemplate.opsForHash().put(roomKey, "assignedAgent", agentName);
             } else {
-                // agentName이 null이면 키 삭제 (상담원 배정 해제)
-                redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":assignedAgent");
+                // agentName이 null이면 필드 삭제 (상담원 배정 해제)
+                redisTemplate.opsForHash().delete(roomKey, "assignedAgent");
             }
         }
     }
@@ -188,7 +196,7 @@ public class RedisRoomRepository implements RoomRepository {
         log.info("▶▶▶ roomId:{}", roomId );
 
         // [getAssignedAgent] 방에 배정된 상담원 조회
-        return roomId != null ? redisTemplate.opsForValue().get(ROOM_KEY_PREFIX + roomId + ":assignedAgent") : null;
+        return roomId != null ? (String) redisTemplate.opsForHash().get(ROOM_KEY_PREFIX + roomId, "assignedAgent") : null;
     }
 
     @Override
@@ -197,8 +205,9 @@ public class RedisRoomRepository implements RoomRepository {
 
         // [assignAgent] 이미 배정된 경우 실패, 최초 배정만 성공
         if (roomId == null || agentName == null) return false;
-        // NX(setIfAbsent)로 최초 배정만 허용(원자적)
-        Boolean success = redisTemplate.opsForValue().setIfAbsent(ROOM_KEY_PREFIX + roomId + ":assignedAgent", agentName);
+        // Hash의 putIfAbsent로 최초 배정만 허용(원자적)
+        String roomKey = ROOM_KEY_PREFIX + roomId;
+        Boolean success = redisTemplate.opsForHash().putIfAbsent(roomKey, "assignedAgent", agentName);
         if (Boolean.TRUE.equals(success)) {
             // 배정 성공 시 모드도 AGENT로 변경
             setRoutingMode(roomId, "AGENT");
@@ -215,7 +224,7 @@ public class RedisRoomRepository implements RoomRepository {
         // [updateLastActivity] 방의 마지막 활동 시간 갱신
         // 마지막 활동 시간 갱신(밀리초)
         if (roomId != null) {
-            redisTemplate.opsForValue().set(ROOM_KEY_PREFIX + roomId + ":lastActivity", String.valueOf(System.currentTimeMillis()));
+            redisTemplate.opsForHash().put(ROOM_KEY_PREFIX + roomId, "lastActivity", String.valueOf(System.currentTimeMillis()));
         }
     }
 
@@ -226,15 +235,13 @@ public class RedisRoomRepository implements RoomRepository {
         // [deleteRoom] roomId 인덱스와 관련 메타 키 삭제
         // 방 관련 키 일괄 삭제(인덱스 + 멤버/메타)
         redisTemplate.opsForSet().remove(CHAT_ROOMS_KEY, roomId); // chat:rooms
-        b = redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":mems"); // members chat:room: roomId
-        if ( !b ) { log.error("delete failed."); }
-        b = redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":name");
-        if ( !b ) { log.error("delete failed."); }
-        b = redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":mode");
-        if ( !b ) { log.error("delete failed."); }
-        b = redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":assignedAgent");
-        if ( !b ) { log.error("delete failed."); }
-        b = redisTemplate.delete(ROOM_KEY_PREFIX + roomId + ":lastActivity");
-        if ( !b ) { log.error("delete failed."); }
+        
+        // 변경: room:{roomId}:mems → room:mems:{roomId}
+        b = redisTemplate.delete(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId);
+        if ( !b ) { log.error("delete room:mems:{} failed.", roomId); }
+        
+        // Hash 키 삭제 (name, mode, assignedAgent, lastActivity, createdAt 등 모든 필드 포함)
+        b = redisTemplate.delete(ROOM_KEY_PREFIX + roomId);
+        if ( !b ) { log.error("delete chat:room:{} hash failed.", roomId); }
     }
 }

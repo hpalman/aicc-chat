@@ -57,7 +57,24 @@ public class RedisOnlyConfig {
             try {
                 String body = new String(message.getBody(), StandardCharsets.UTF_8);
                 ChatMessage chatMessage = objectMapper.readValue(body, ChatMessage.class);
-                messagingTemplate.convertAndSend("/topic/room/" + chatMessage.getRoomId(), chatMessage);
+                
+                // 시스템 브로드캐스트 메시지 처리 (상담원 로그인/로그아웃 알림)
+                if ("SYSTEM_BROADCAST".equals(chatMessage.getRoomId())) {
+                    log.info("System broadcast message received: {}", chatMessage.getMessage());
+                    
+                    // 상담원 가용 여부 결정
+                    boolean available = "AGENT_AVAILABLE".equals(chatMessage.getMessage());
+                    
+                    messagingTemplate.convertAndSend("/topic/agent-availability", 
+                        java.util.Map.of(
+                            "available", available, 
+                            "message", chatMessage.getMessage(),
+                            "timestamp", System.currentTimeMillis()
+                        ));
+                } else {
+                    // 일반 채팅 메시지는 해당 방으로 전송
+                    messagingTemplate.convertAndSend("/topic/room/" + chatMessage.getRoomId(), chatMessage);
+                }
             } catch (Exception e) {
                 log.error("Redis Subscribe Error", e);
             }
