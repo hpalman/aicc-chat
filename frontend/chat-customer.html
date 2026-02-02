@@ -24,7 +24,7 @@
 
 <div class="container chat-container">
     <h3 class="text-center mb-4">고객 상담 채팅</h3>
-    
+
     <!-- 로그인 폼 -->
     <div id="login-form">
         <h4 class="mb-3">로그인</h4>
@@ -91,9 +91,9 @@
     window.onload = function() {
         const token = sessionStorage.getItem("AUTH_TOKEN");
         console.log('토큰 확인: [' + token + ']');
-        
+
         if (token) {
-            fetch('/api/me', {
+            fetch('/api/agent/me', {
                 headers: { 'Authorization': 'Bearer ' + token }
             })
             .then(res => {
@@ -142,29 +142,31 @@
             }
         */
         fetch(`/api/customer/apt001/login?id=${id}&password=${pw}`, { method: 'POST' })
-            .then(response => {
+            .then(res => {
                 // HTTP 상태 코드 체크
-                if (!response.ok) {
+                if (!res.ok) {
                     // 4xx, 5xx 에러 처리
-                    if (response.status === 401) {
+                    if (res.status === 401) {
                         throw new Error('아이디 또는 비밀번호가 올바르지 않습니다.');
-                    } else if (response.status === 500) {
+                    } else if (res.status === 409) {
+                            throw new Error('중복 로그인');
+                    } else if (res.status === 500) {
                         throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-                    } else if (response.status === 404) {
+                    } else if (res.status === 404) {
                         throw new Error('로그인 서비스를 찾을 수 없습니다.');
                     } else {
-                        throw new Error(`로그인 실패 (상태 코드: ${response.status})`);
+                        throw new Error(`로그인 실패 (상태 코드: ${res.status})`);
                     }
-                    throw new Error(`로그인 실패 (상태 코드: ${response.status})`);
+                    throw new Error(`로그인 실패 (상태 코드: ${res.status})`);
                 }
-                return response.json();
+                return res.json();
             })
             .then(user => {
                 // 응답 데이터 검증
                 if (!user) {
                     throw new Error('로그인 응답이 올바르지 않습니다.');
                 }
-                
+
                 if (!user.token) {
                     throw new Error('인증 토큰을 받지 못했습니다.');
                 }
@@ -183,9 +185,9 @@
         currentUserId = user.userId; // 사용자 ID 저장
         authToken = user.token;
 // 연결 전 토큰 저장
-localStorage.setItem('authToken', authToken);
-localStorage.setItem('user.userName', user.userName);
-localStorage.setItem('user.userId', user.userId);
+//localStorage.setItem('authToken', authToken);
+//localStorage.setItem('user.userName', user.userName);
+//localStorage.setItem('user.userId', user.userId);
 
         console.log('ㅁ onLoginSuccess> nickname >[' + nickname + ']');
         console.log('ㅁ onLoginSuccess> authToken >[' + authToken + ']');
@@ -205,6 +207,30 @@ localStorage.setItem('user.userId', user.userId);
         //if (!confirm("로그아웃 하시겠습니까?")) {
         //    return;
         //}
+
+        const authToken = sessionStorage.getItem("AUTH_TOKEN");
+        if ( (authToken ?? '').length === 0 ) {
+            window.location.reload();
+            return;
+        }
+
+        // 서버에 로그아웃 알림 (고객에게 상담원 로그아웃 브로드캐스트)
+        fetch('/api/customer/logout', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        })
+        .then(() => {
+            console.log('로그아웃 알림 전송 완료');
+        })
+        .catch(err => {
+            console.error('로그아웃 알림 전송 실패:', err);
+        })
+        .finally(() => {
+            sessionStorage.removeItem("AGENT_TOKEN");
+            window.location.reload();
+            return;
+        });
+
 
         console.log("로그아웃 시작...");
 
@@ -230,9 +256,9 @@ localStorage.setItem('user.userId', user.userId);
         console.log("세션 스토리지 정리 완료");
 
         // 3. 로컬 스토리지 정리
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user.userName');
-        localStorage.removeItem('user.userId');
+        //localStorage.removeItem('authToken');
+        //localStorage.removeItem('user.userName');
+        //localStorage.removeItem('user.userId');
         console.log("로컬 스토리지 정리 완료");
 
         // 4. 전역 변수 초기화
@@ -245,11 +271,11 @@ localStorage.setItem('user.userId', user.userId);
         document.getElementById("chat-page").style.display = "none";
         document.getElementById("connect-form").style.display = "none";
         document.getElementById("login-form").style.display = "block";
-        
+
         // 6. 입력 필드 초기화
 //      document.getElementById("nickname").value = "";
 //      document.getElementById("roomName").value = "";
-        
+
         console.log("로그아웃 완료");
         // alert("로그아웃 되었습니다.");
     }
@@ -264,9 +290,11 @@ localStorage.setItem('user.userId', user.userId);
 
         // 1. 방 생성 및 봇 초기화 API 호출
         // 허:2026-01-27) 별도의 http(s) api로 채팅방생성시 장점(명확한 RESTful, 권권한/인증,비즈니스로직분리,멀터서버환경)
-        fetch(`/api/customer/chatbot`, { 
+        fetch(`/api/customer/chatbot`, {
             method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + authToken }
+            headers: { 'Authorization': 'Bearer ' + authToken,
+            	       'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomName: roomName})
         })
             .then(res => {
                 if (!res.ok) {
@@ -291,7 +319,7 @@ localStorage.setItem('user.userId', user.userId);
                 }
                 console.log("상담방 생성 완료:", room);
                 currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
-                
+
                 updateHandoffButtons(room.status);
                 connect();
             })
@@ -331,7 +359,7 @@ localStorage.setItem('user.userId', user.userId);
     function checkAgentAvailability() {
         const handoffBtn = document.getElementById("handoffBtn");
         const cancelBtn = document.getElementById("cancelHandoffBtn");
-        
+
         fetch('/api/agent/availability')
             .then(res => res.json())
             .then(data => {
@@ -363,7 +391,7 @@ localStorage.setItem('user.userId', user.userId);
     function connect() {
         // 토큰과 roomId를 쿼리 파라미터로 전달
         console.log('WebSocket 연결 시작 - authToken[' + authToken + '], currentRoomId[' + currentRoomId +']');
-        
+
         try {
             const socket = new SockJS(`/ws-chat?token=${authToken}&roomId=${currentRoomId}`);
             stompClient = Stomp.over(socket);
@@ -371,11 +399,11 @@ localStorage.setItem('user.userId', user.userId);
             // 연결 성공 콜백
             stompClient.connect({}, function (frame) {
                 console.log('WebSocket 연결 성공: ' + frame);
-                
+
                 // UI 전환
                 document.getElementById("connect-form").style.display = "none";
                 document.getElementById("chat-page").style.display = "block";
-                
+
                 // 방 제목과 roomId 표시
                 document.getElementById("room-title").innerText = document.getElementById("roomName").value || "상담 중";
                 document.getElementById("room-id").innerText = `방 ID: ${currentRoomId}`;
@@ -394,7 +422,7 @@ localStorage.setItem('user.userId', user.userId);
                     // 즉시 가용성 체크
                     checkAgentAvailability();
                 });
-								
+
                 //// // 3. 입장 메시지 전송 - 허:2026.01.27) UI에서 보낼 것이 아니고, 서버에서 CLIENT로 보내는 것으로 변경해야 해서 주석처리
                 //// stompClient.send("/app/customer/chat", {}, JSON.stringify({
                 ////     roomId: currentRoomId,
@@ -402,15 +430,15 @@ localStorage.setItem('user.userId', user.userId);
                 ////     type: 'JOIN',
                 ////     message: nickname + "님이 입장하셨습니다."
                 //// }));
-                //// 
+                ////
                 //// // 4. 상담원 가용성 주기적 체크 시작 (30초마다)
                 //// startAvailabilityCheck();
-                
+
             }, function(error) {
                 // 연결 실패 콜백
                 console.error('WebSocket 연결 실패:', error);
                 alert('채팅 서버 연결에 실패했습니다.\n\n' + (error.headers?.message || '네트워크 상태를 확인해주세요.'));
-                
+
                 // 연결 폼으로 되돌리기
                 document.getElementById("chat-page").style.display = "none";
                 document.getElementById("connect-form").style.display = "block";
@@ -419,7 +447,7 @@ localStorage.setItem('user.userId', user.userId);
         } catch (err) {
             console.error('WebSocket 초기화 오류:', err);
             alert('채팅 연결 초기화에 실패했습니다.\n다시 시도해주세요.');
-            
+
             // 연결 폼으로 되돌리기
             document.getElementById("chat-page").style.display = "none";
             document.getElementById("connect-form").style.display = "block";
@@ -430,24 +458,70 @@ localStorage.setItem('user.userId', user.userId);
     function disconnect() {
         // 가용성 체크 중단
         stopAvailabilityCheck();
-        
-        if (stompClient !== null) {
-            stompClient.send("/app/customer/chat", {}, JSON.stringify({
-                roomId: currentRoomId,
-                sender: nickname,
-                type: 'LEAVE',
-                message: nickname + "님이 나갔습니다."
-            }));
-            stompClient.disconnect();
-            stompClient = null;
+
+        // 확인 메시지
+        if (!confirm("상담을 종료하시겠습니까?")) {
+            return;
         }
-        
-        // 2. 상담 종료 시 토큰은 유지하고 방 정보만 초기화하여 상담 신청 화면으로 이동
-        currentRoomId = null;
-        document.getElementById("chat-box").innerHTML = "";
-        document.getElementById("chat-page").style.display = "none";
-        document.getElementById("connect-form").style.display = "block";
-//      document.getElementById("roomName").value = "";
+
+        const authToken = sessionStorage.getItem("AUTH_TOKEN");
+        if (!authToken) {
+            alert("인증 토큰이 없습니다. 다시 로그인해주세요.");
+            return;
+        }
+
+        // 1. 서버 API 호출하여 상담 종료 처리
+        fetch('/api/customer/chatend', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + authToken,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                    sessionStorage.removeItem("AUTH_TOKEN");
+                    window.location.reload();
+                    throw new Error('Unauthorized');
+                } else if (response.status === 404) {
+                    // 활성화된 상담방이 없는 경우 (이미 종료됨)
+                    console.log("활성화된 상담방이 없습니다.");
+                } else {
+                    throw new Error(`상담 종료 실패 (상태 코드: ${response.status})`);
+                }
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("상담 종료 완료:", data);
+        })
+        .catch(err => {
+            console.error("상담 종료 API 호출 오류:", err);
+            if (err.message !== 'Unauthorized') {
+                alert("상담 종료 처리 중 오류가 발생했습니다. 웹소켓 연결만 종료합니다.");
+            }
+        })
+        .finally(() => {
+            // 2. WebSocket 연결 종료
+            if (stompClient !== null) {
+                try {
+                    stompClient.disconnect();
+                    console.log("WebSocket 연결 종료됨");
+                } catch (err) {
+                    console.error("WebSocket 종료 중 오류:", err);
+                }
+                stompClient = null;
+            }
+
+            // 3. UI 초기화 및 상담 신청 화면으로 이동
+            currentRoomId = null;
+            document.getElementById("chat-box").innerHTML = "";
+            document.getElementById("chat-page").style.display = "none";
+            document.getElementById("connect-form").style.display = "block";
+//          document.getElementById("roomName").value = "";
+        });
     }
 
     /**
@@ -456,12 +530,12 @@ localStorage.setItem('user.userId', user.userId);
     function startAvailabilityCheck() {
         // 즉시 한 번 체크
         checkAgentAvailability();
-        
+
         // 30초마다 체크
         availabilityCheckInterval = setInterval(() => {
             checkAgentAvailability();
         }, 30000);
-        
+
         console.log('상담원 가용성 주기적 체크 시작 (30초 간격)');
     }
 
@@ -505,7 +579,7 @@ localStorage.setItem('user.userId', user.userId);
     function sendMessage() {
         const messageInput = document.getElementById("message");
         const messageContent = messageInput.value.trim();
-        
+
         if(messageContent && stompClient && currentRoomId) {
             const chatMessage = {
                 roomId: currentRoomId,
@@ -528,7 +602,7 @@ localStorage.setItem('user.userId', user.userId);
             }
             // Shift + Enter는 기본 동작(줄바꿈) 허용
         }
-        
+
         // 높이 자동 조절
         setTimeout(() => {
             input.style.height = 'auto';
@@ -544,36 +618,36 @@ localStorage.setItem('user.userId', user.userId);
         if (!timestamp) {
             return getCurrentTimestamp(); // fallback to client time
         }
-        
+
         try {
             let date;
-            
+
             // 서버에서 배열 형식으로 온 경우 (예: [2026, 1, 26, 14, 30, 45])
             if (Array.isArray(timestamp)) {
                 const [year, month, day, hour, minute, second] = timestamp;
                 date = new Date(year, month - 1, day, hour, minute, second);
-            } 
+            }
             // ISO 문자열 형식인 경우 (예: "2026-01-26T14:30:45")
             else if (typeof timestamp === 'string') {
                 date = new Date(timestamp);
             } else {
                 return getCurrentTimestamp(); // fallback
             }
-            
+
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
             const seconds = String(date.getSeconds()).padStart(2, '0');
-            
+
             return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         } catch (e) {
             console.error('Failed to format timestamp:', timestamp, e);
             return getCurrentTimestamp(); // fallback to client time
         }
     }
-    
+
     /**
      * 클라이언트 현재 시간을 "YYYY-MM-DD HH:mm:ss" 형식으로 반환 (fallback용)
      */
@@ -585,25 +659,25 @@ localStorage.setItem('user.userId', user.userId);
         const hours = String(now.getHours()).padStart(2, '0');
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
-        
+
         return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
     function showMessage(message) {
         const chatBox = document.getElementById("chat-box");
         const div = document.createElement("div");
-        
+
         // 서버에서 받은 타임스탬프 사용 (없으면 클라이언트 시간 사용)
         const timestamp = formatTimestamp(message.timestamp);
 
         if (message.type === 'JOIN' || message.type === 'LEAVE') {
             div.className = "system";
             div.innerText = `[${timestamp}] ${message.message}`;
-            
+
             // 상담 종료(LEAVE) 시 버튼 상태 초기화
             if (message.type === 'LEAVE') {
                 updateHandoffButtons('CLOSED');
-                
+
                 // 서버에서 자동 종료 메시지를 받은 경우 (타임아웃)
                 if (message.sender === 'System' && message.message.includes("자동 종료")) {
                     // 메시지를 표시한 후 3초 뒤에 자동으로 연결 해제
@@ -612,14 +686,14 @@ localStorage.setItem('user.userId', user.userId);
                             stompClient.disconnect();
                             stompClient = null;
                         }
-                        
+
                         // UI 초기화 (disconnect() 함수의 일부 로직 재사용)
                         currentRoomId = null;
                         document.getElementById("chat-box").innerHTML = "";
                         document.getElementById("chat-page").style.display = "none";
                         document.getElementById("connect-form").style.display = "block";
 //                      document.getElementById("roomName").value = "";
-                        
+
                         // 사용자에게 알림
                         alert("장시간 대화가 없어 상담이 종료되었습니다.");
                     }, 3000); // 3초 후 자동 종료
@@ -631,7 +705,7 @@ localStorage.setItem('user.userId', user.userId);
             div.innerHTML = `<div class="fw-bold" style="font-size:12px; margin-bottom:2px;">${message.sender}</div>
                              <div class="content">${message.message}</div>
                              <div class="timestamp">${timestamp}</div>`;
-            
+
             // 시스템 메시지로 상담원 연결 확인
             if (message.sender === 'System' && message.message.includes("상담원과 연결되었습니다.")) {
                 updateHandoffButtons('AGENT');
@@ -645,7 +719,7 @@ localStorage.setItem('user.userId', user.userId);
                 updateHandoffButtons('BOT');
             }
         }
-        
+
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
     }

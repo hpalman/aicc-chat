@@ -1,10 +1,14 @@
 ---
-name: aicc-chat-rule
 description: This is a new rule
+alwaysApply: false
 ---
 
 # Overview
 
 Insert overview text here. The agent will only see this should they choose to apply the rule.
 
-. cursor의 답변 결과는 정리해 doc/ai-qa 폴더 아래에 년월일시분초 태그를 붙여서 .md 파일로 저장
+## 답변 결과 저장 규칙
+
+Cursor의 답변 결과는 정리하여 `doc/ai-qa` 폴더 아래에 년월일시분초 태그를 붙여서 `.md` 파일로 저장하시오.
+
+예시: `doc/ai-qa/20250202103045_답변제목.md`

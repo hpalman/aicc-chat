@@ -28,8 +28,9 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 방 상태에 따라 상담원/봇 라우팅으로 위임
     public void handleMessage(String roomId, ChatMessage message) {
-        log.info("※※※※※ ▶ DynamicRoutingStrategy handleMessage 시작 ▶▶▶▶▶▶▶▶▶▶");
-    	log.info("※※※※※ ▶ roomId:{}, message:{}", roomId, message);
+    log.info("▼ handleMessage S. roomId:{}, message:{}", roomId, message);
+        //log.info("※※※※※ ▶ DynamicRoutingStrategy handleMessage 시작 ▶▶▶▶▶▶▶▶▶▶");
+    	//log.info("※※※※※ ▶ roomId:{}, message:{}", roomId, message);
         // 활동 시간 업데이트
         roomRepository.updateLastActivity(roomId); // REDIS
 
@@ -37,15 +38,15 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
         if (aicc.chat.domain.MessageType.LEAVE.equals(message.getType())) {
             log.info("Room {} is being closed due to LEAVE message", roomId);
             roomRepository.setRoutingMode(roomId, MODE_CLOSED);
-            roomUpdateBroadcaster.broadcastRoomList();
+            roomUpdateBroadcaster.broadcastRoomList(); // Pub
         }
 
-        String mode = roomRepository.getRoutingMode(roomId); // REDIS
-        if (mode == null) {
-            mode = MODE_BOT;
+        String routingMode = roomRepository.getRoutingMode(roomId); // REDIS
+        if (routingMode == null) {
+            routingMode = MODE_BOT;
         }
 
-        log.debug("Dynamic routing for room: {}, current mode: {}", roomId, mode);
+        log.debug("Dynamic routing for room: {}, current routingMode: {}", roomId, routingMode);
 
         // 1. 상담원(AGENT 역할)이 보낸 메시지인 경우
         if (UserRole.AGENT.equals(message.getSenderRole())) {
@@ -55,15 +56,17 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
         }
 
         // 2. 고객 또는 기타 메시지 처리
-        if (MODE_AGENT.equalsIgnoreCase(mode)) {
+        if (MODE_AGENT.equalsIgnoreCase(routingMode)) {
             agentRoutingStrategy.handleMessage(roomId, message);
-        } else if (MODE_WAITING.equalsIgnoreCase(mode)) {
+        } else if (MODE_WAITING.equalsIgnoreCase(routingMode)) {
             // 대기 중일 때는 상담원 브로커에도 전달하고 (상담원 화면용), 봇은 응답하지 않음
             agentRoutingStrategy.handleMessage(roomId, message);
         } else {
             miChatRoutingStrategy.handleMessage(roomId, message);
         }
-        log.info("※※※※※ ◀ DynamicRoutingStrategy handleMessage 종료 ◀◀◀◀◀◀◀◀◀◀");
+        /// log.info("※※※※※ ◀ DynamicRoutingStrategy handleMessage 종료 ◀◀◀◀◀◀◀◀◀◀");
+
+        log.info("▲ handleMessage E.");
     }
 
     @Override

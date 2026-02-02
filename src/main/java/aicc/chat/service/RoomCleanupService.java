@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -32,16 +31,43 @@ public class RoomCleanupService {
     private final ChatSessionService chatSessionService;
 
     @Value("${app.chat.cleanup.idle-timeout:600000}")
-    private long idleTimeout; // 유휴 타임아웃 (기본값: 10분)
+    private volatile long idleTimeout; // 유휴 타임아웃 (기본값: 10분)
 
     @Value("${app.chat.cleanup.check-interval:60000}")
-    private long checkInterval; // 정리 작업 주기 (기본값: 1분)
+    private volatile long checkInterval; // 정리 작업 주기 (기본값: 1분)
+
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    public long getCheckInterval() {
+        return checkInterval;
+    }
+
+    /**
+     * 유휴 타임아웃 시간을 동적으로 설정합니다.
+     *
+     * @param idleTimeout 유휴 타임아웃 시간 (밀리초)
+     */
+    public void setIdleTimeout(long idleTimeout) {
+        this.idleTimeout = idleTimeout;
+        log.info("Idle timeout set to: {} ms", idleTimeout);
+    }
+
+    /**
+     * 정리 작업 실행 주기를 동적으로 설정합니다.
+     *
+     * @param checkInterval 정리 작업 실행 주기 (밀리초)
+     */
+    public void setCheckInterval(long checkInterval) {
+        this.checkInterval = checkInterval;
+        log.info("Check interval set to: {} ms", checkInterval);
+    }
 
     /**
      * 일정 시간 동안 활동이 없는 채팅방을 정리합니다.
-     * 실행 주기는 application.yml의 app.chat.cleanup.check-interval로 설정됩니다.
+     * 실행 주기는 RoomCleanupSchedulerManager에서 API로 제어됩니다.
      */
-    @Scheduled(fixedRateString = "${app.chat.cleanup.check-interval:60000}")
     public void cleanupIdleRooms() {
         log.info("▼ cleanupIdleRooms S. Starting idle room cleanup task... (timeout: {}ms, interval: {}ms)", idleTimeout, checkInterval);
         List<ChatRoom> allRooms = roomRepository.findAllRooms();
@@ -113,10 +139,10 @@ public class RoomCleanupService {
             LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
 
             // 1. 채팅 세션 상태를 CLOSED로 업데이트
-            chatSessionService.updateSessionStatus(room.getRoomId(), "CLOSED");
+            chatSessionService.updateSessionStatus(room.getRoomId(), "CLOSED"); // DB
 
             // 2. 세션 종료 시간 기록
-            chatSessionService.endSession(room.getRoomId());
+            chatSessionService.endSession(room.getRoomId()); // DB
 
             // 3. 채팅 이력에 타임아웃 메시지 저장
             ChatHistory timeoutHistory = ChatHistory.builder()
@@ -130,7 +156,7 @@ public class RoomCleanupService {
                     .createdAt(now) // 서버 타임스탬프 사용
                     .build();
 
-            chatHistoryService.saveChatHistory(timeoutHistory);
+            chatHistoryService.saveChatHistory(timeoutHistory); // DB
 
             log.info("▶ Timeout record saved to database for room: {}", room.getRoomId());
         } catch (Exception e) {

@@ -17,5 +17,6 @@ public class UserInfo {
     private String token;
     private String roomId;
     private String companyId;
+    private int    status;
 }
 

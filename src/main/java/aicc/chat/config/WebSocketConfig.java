@@ -97,7 +97,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     // 핸드셰이크 완료 후 별도 처리 없음
                     public void afterHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
                                              @NonNull WebSocketHandler wsHandler, @Nullable Exception exception) {
-                        log.info("▼ afterHandshake ▲");
+                        log.info("▼ afterHandshake");
                     }
                 })
                 .withSockJS() // SockJS 사용

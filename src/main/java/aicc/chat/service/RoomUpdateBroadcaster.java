@@ -20,17 +20,18 @@ public class RoomUpdateBroadcaster {
 
     public void broadcastRoomList() {
         log.info("▼ broadcastRoomList");
-        // 전체 방 목록을 구독자에게 브로드캐스트
+        // 전체 방 목록을 구독자(상담사)에게 브로드캐스트
         List<ChatRoom> rooms = roomRepository.findAllRooms();
         if (rooms != null) {
             messagingTemplate.convertAndSend("/topic/rooms", rooms);
         }
     }
-    
+
     // /topic/agent-availability 채널을 통해 모든 고객에게 알림:
+    @SuppressWarnings("null")
     public void broadcastAgentLogin() {
 	 // MessageBroker 또는 별도 서비스에서
-    	messagingTemplate.convertAndSend("/topic/agent-availability", 
+    	messagingTemplate.convertAndSend("/topic/agent-availability",
 	        Map.of("available", true, "timestamp", System.currentTimeMillis()));
     }
 }

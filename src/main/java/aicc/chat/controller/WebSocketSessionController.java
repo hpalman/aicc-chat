@@ -28,7 +28,7 @@ public class WebSocketSessionController {
      */
     @GetMapping("/all")
     public ResponseEntity<Map<String, Object>> getAllSessions() {
-        log.info("▶ 전체 세션 조회 요청");
+        log.info("▼ getAllSessions S. 전체 세션 조회 요청");
 
         Set<String> sessions = webSocketSessionService.getAllActiveSessions();
         long totalCount = webSocketSessionService.getTotalSessionCount();
@@ -37,7 +37,7 @@ public class WebSocketSessionController {
         response.put("totalCount", totalCount);
         response.put("sessions", sessions);
 
-        log.info("◀ 전체 활성 세션: {} 개", totalCount);
+        log.info("▲ getAllSessions E. 전체 활성 세션: {} 개", totalCount);
         return ResponseEntity.ok(response);
     }
 
@@ -48,7 +48,7 @@ public class WebSocketSessionController {
      */
     @GetMapping("/{sessionId}")
     public ResponseEntity<Map<String, Object>> getSessionInfo(@PathVariable String sessionId) {
-        log.info("▼ 세션 정보 조회 - sessionId: {}", sessionId);
+        log.info("▼ getSessionInfo S. 세션 정보 조회 S. sessionId: {}", sessionId);
 
         String userId = webSocketSessionService.getUserIdBySessionId(sessionId);
         String userRole = webSocketSessionService.getUserRoleBySessionId(sessionId);
@@ -62,6 +62,8 @@ public class WebSocketSessionController {
         response.put("userId", userId);
         response.put("userRole", userRole);
 
+        log.info("▲ getSessionInfo E. 세션 정보 조회.", response);
+
         return ResponseEntity.ok(response);
     }
 
@@ -72,7 +74,7 @@ public class WebSocketSessionController {
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<Map<String, Object>> getUserSessions(@PathVariable String userId) {
-        log.info("▼ 사용자 세션 조회 - userId: {}", userId);
+        log.info("▼ getUserSessions S. 사용자 세션 조회. userId: {}", userId);
 
         Set<String> sessions = webSocketSessionService.getSessionIdsByUserId(userId);
         boolean isOnline = webSocketSessionService.isUserOnline(userId);
@@ -82,6 +84,8 @@ public class WebSocketSessionController {
         response.put("isOnline", isOnline);
         response.put("sessionCount", sessions.size());
         response.put("sessions", sessions);
+
+        log.info("▲ getUserSessions E. 사용자 세션 조회.");
 
         return ResponseEntity.ok(response);
     }
@@ -93,7 +97,7 @@ public class WebSocketSessionController {
      */
     @GetMapping("/user/{userId}/online")
     public ResponseEntity<Map<String, Object>> checkUserOnline(@PathVariable String userId) {
-        log.info("▼ 사용자 온라인 확인 - userId: {}", userId);
+        log.info("▼ checkUserOnline S. 사용자 온라인 확인. userId: {}", userId);
 
         boolean isOnline = webSocketSessionService.isUserOnline(userId);
         Set<String> sessions = webSocketSessionService.getSessionIdsByUserId(userId);
@@ -103,6 +107,7 @@ public class WebSocketSessionController {
         response.put("isOnline", isOnline);
         response.put("sessionCount", sessions.size());
 
+        log.info("▲ checkUserOnline E. 사용자 온라인 확인.");
         return ResponseEntity.ok(response);
     }
 
@@ -113,7 +118,7 @@ public class WebSocketSessionController {
      */
     @PostMapping("/{sessionId}/refresh")
     public ResponseEntity<Map<String, Object>> refreshSession(@PathVariable String sessionId) {
-        log.info("▼ 세션 TTL 갱신 - sessionId: {}", sessionId);
+        log.info("▼ refreshSession S. 세션 TTL 갱신 - sessionId: {}", sessionId);
 
         String userId = webSocketSessionService.getUserIdBySessionId(sessionId);
         if (userId == null) {
@@ -127,6 +132,7 @@ public class WebSocketSessionController {
         response.put("userId", userId);
         response.put("refreshed", true);
 
+        log.info("▲ refreshSession E. 세션 TTL 갱신");
         return ResponseEntity.ok(response);
     }
 
@@ -137,13 +143,15 @@ public class WebSocketSessionController {
      */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> getSessionStats() {
-        log.info("▼ 세션 통계 조회 요청");
+        log.info("▼ getSessionStats S. 세션 통계 조회 요청");
 
         long totalSessions = webSocketSessionService.getTotalSessionCount();
 
         Map<String, Object> response = new HashMap<>();
         response.put("totalActiveSessions", totalSessions);
         response.put("timestamp", System.currentTimeMillis());
+
+        log.info("▲ getSessionStats E.");
 
         return ResponseEntity.ok(response);
     }

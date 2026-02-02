@@ -11,8 +11,8 @@ public class Constants {
 	 *   - lastHeartbeat: 마지막 하트비트 시간 (ISO-8601)
 	 *   - sessionId: WebSocket 세션 ID (optional)
 	 */
-	public static final String ONLINE_AGENTS_KEY = "chat:agents";
-	
+	public static final String ONLINE_AGENTS_KEY = "chat:user-agents";
+
 	/**
 	 * Redis Hash 구조로 온라인 고객 정보 저장
 	 * Key: chat:customers:{userId}
@@ -24,12 +24,12 @@ public class Constants {
 	 *   - sessionId: WebSocket 세션 ID
 	 *   - companyId: 회사 ID
 	 */
-	public static final String ONLINE_CUSTOMERS_KEY = "chat:customers";
-	
+	public static final String ONLINE_CUSTOMERS_KEY = "chat:user-customers";
+
 	/**
 	 * Redis Set 구조로 채팅방 멤버 정보 저장
 	 * Key: room:mems:{roomId}
 	 * Set Members: userId1, userId2, ...
 	 */
-	public static final String ROOM_MEMBERS_KEY_PREFIX = "chat:members:";
+	public static final String ROOM_MEMBERS_KEY_PREFIX = "chat:room-member:";
 }

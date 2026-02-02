@@ -109,10 +109,10 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                                 .companyId(message.getCompanyId())
                                 .createdAt(now) // 서버 타임스탬프 사용
                                 .build();
-                        chatHistoryService.saveChatHistory(chatHistory);
+                        chatHistoryService.saveChatHistory(chatHistory); // DB
 
                         // 세션 마지막 활동 시간 업데이트
-                        chatSessionService.updateLastActivity(roomId);
+                        chatSessionService.updateLastActivity(roomId);  // DB
                     } catch (Exception e) {
                         log.error("Failed to save bot message to DB: roomId={}", roomId, e);
                         // DB 저장 실패해도 채팅은 계속 진행
@@ -151,7 +151,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                     .messageType("TALK")
                     .createdAt(now) // 서버 타임스탬프 사용
                     .build();
-            chatHistoryService.saveChatHistory(chatHistory);
+            chatHistoryService.saveChatHistory(chatHistory); // DB
         } catch (Exception e) {
             log.error("Failed to save welcome message to DB: roomId={}", room.getRoomId(), e);
             // DB 저장 실패해도 채팅은 계속 진행
@@ -161,7 +161,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     private void switchToAgentMode(String roomId) {
         log.info("▼ switchToAgentMode. roomId:{}", roomId);
         // 상담원 연결 요청 처리: WAITING 전환 및 알림 발송
-        log.info("Switching room {} to WAITING mode", roomId);
+        log.info("Switching room {} to WAITING 모드", roomId);
         roomRepository.setRoutingMode(roomId, "WAITING");
         roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
 
@@ -180,7 +180,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
         // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
         try {
-            chatSessionService.updateSessionStatus(roomId, "WAITING");
+            chatSessionService.updateSessionStatus(roomId, "WAITING"); // DB
 
             ChatHistory chatHistory = ChatHistory.builder()
                     .roomId(roomId)
@@ -191,7 +191,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                     .messageType("TALK")
                     .createdAt(now) // 서버 타임스탬프 사용
                     .build();
-            chatHistoryService.saveChatHistory(chatHistory);
+            chatHistoryService.saveChatHistory(chatHistory); // DB
         } catch (Exception e) {
             log.error("Failed to save handoff message to DB: roomId={}", roomId, e);
         }
@@ -200,7 +200,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     private void cancelAgentMode(String roomId) {
         log.info("▼ cancelAgentMode, roomId:{}", roomId);
         // 상담원 연결 요청 취소 처리: BOT 복귀 및 알림 발송
-        log.info("Canceling agent request for room {}, switching back to BOT mode", roomId);
+        log.info("Canceling agent request for room {}, switching back to BOT 모드", roomId);
         roomRepository.setRoutingMode(roomId, "BOT");
         roomUpdateBroadcaster.broadcastRoomList();
 
@@ -218,7 +218,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
         // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
         try {
-            chatSessionService.updateSessionStatus(roomId, "BOT");
+            chatSessionService.updateSessionStatus(roomId, "BOT"); // DB
 
             ChatHistory chatHistory = ChatHistory.builder()
                     .roomId(roomId)
@@ -229,7 +229,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                     .messageType("TALK")
                     .createdAt(now) // 서버 타임스탬프 사용
                     .build();
-            chatHistoryService.saveChatHistory(chatHistory);
+            chatHistoryService.saveChatHistory(chatHistory); // DB
         } catch (Exception e) {
             log.error("Failed to save cancel handoff message to DB: roomId={}", roomId, e);
         }

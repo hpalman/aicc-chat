@@ -1,5 +1,6 @@
 package aicc.chat.controller;
 
+import aicc.chat.consts.Constants;
 import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
@@ -22,8 +23,10 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequiredArgsConstructor
@@ -52,7 +55,11 @@ public class ChatCustomerController {
         if (userInfo == null) {
             ret = ResponseEntity.status(401).build();
         } else {
-            ret = ResponseEntity.ok(userInfo);
+            if ( userInfo.getStatus() != 0 ) {
+                ret = ResponseEntity.status(409).build();
+            } else {
+                ret = ResponseEntity.ok(userInfo);
+            }
         }
         log.info("◀ 회사별 고객 로그인 처리:login 완료 ");
         return ret;
@@ -69,12 +76,12 @@ public class ChatCustomerController {
         log.info("◀ 기본 회사(default)로 고객 로그인 처리:loginDefault 완료 ");
         return ret;
     }
-    
+
     @PostMapping("/logout")
     // 고객 로그아웃 처리
     public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String token) {
         log.info("▶ 고객 로그아웃 처리:logout 시작");
-        
+
         if (token == null || !token.startsWith("Bearer ")) {
             log.warn("token == null || !token.startsWith(\"Bearer \"))");
             return ResponseEntity.status(401).build();
@@ -97,7 +104,8 @@ public class ChatCustomerController {
 
     @PostMapping("/chatbot")
     // 고객의 챗봇 상담방을 생성하고 세션/목록을 갱신
-    public ResponseEntity<ChatRoom> createRoomWithBot(@RequestHeader(value = "Authorization", required = false) String token) {
+    public ResponseEntity<ChatRoom> createRoomWithBot(@RequestHeader(value = "Authorization", required = false) String token,
+            @RequestBody ChatRoom requestBody) {
         ResponseEntity<ChatRoom> ret;
 
         log.info("▶ 고객의 챗봇 상담방을 생성하고 세션/목록을 갱신:createRoomWithBot 시작");
@@ -115,11 +123,14 @@ public class ChatCustomerController {
                 ret = ResponseEntity.status(401).build();
                 break;
             }
+String roomName = requestBody.getRoomName();
+            customerAuthService.setChatInitInfo(custInfo);
 
             String newRoomId = "room-" + UUID.randomUUID().toString().substring(0, 8);
-            ChatRoom room = roomRepository.createRoom(newRoomId, custInfo.getUserId()); // 룸 생성(Redis에 키 및 값들 넣음)
+            ChatRoom room = roomRepository.createRoom(newRoomId, roomName /* custInfo.getUserId() */); // 룸 생성(Redis에 키 및 값들 넣음)
+
             roomRepository.addMember(newRoomId, custInfo.getUserId()); // 고객을 멤버로 추가
-            
+
             // Redis에 고객의 roomId 업데이트
             customerAuthService.updateRoomId(custInfo.getUserId(), newRoomId);
 
@@ -127,7 +138,7 @@ public class ChatCustomerController {
             try {
                 ChatSession chatSession = ChatSession.builder()
                         .roomId(newRoomId)
-                        .roomName(custInfo.getUserId())
+                        .roomName(roomName /*=배송문의 custInfo.getUserId() */)
                         .customerId(custInfo.getUserId())
                         .customerName(custInfo.getUserName())
                         .status("BOT")
@@ -135,7 +146,7 @@ public class ChatCustomerController {
                         .startedAt(LocalDateTime.now())
                         .lastActivityAt(LocalDateTime.now())
                         .build();
-                chatSessionService.createChatSession(chatSession);
+                chatSessionService.createChatSession(chatSession); // DB
                 log.info("Chat session saved to DB: roomId={}", newRoomId);
             } catch (Exception e) {
                 log.error("Failed to save chat session to DB: roomId={}", newRoomId, e);
@@ -149,6 +160,7 @@ public class ChatCustomerController {
         log.info("◀ 고객의 챗봇 상담방을 생성하고 세션/목록을 갱신:createRoomWithBot 완료 ");
         return ret;
     }
+
 /*
     ["SEND\ndestination:/app/customer/chat\ncontent-length:107\n\n{\"roomId\":\"room-dba1f913\",\"sender\":\"홍길철\",\"type\":\"LEAVE\",\"message\":\"홍길철님이 나갔습니다.\"}\u0000"]
     StompHeaderAccessor [headers={simpMessageType=MESSAGE, stompCommand=SEND, nativeHeaders={destination=[/app/customer/chat], content-length=[107]}, simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-6c736bd7, companyId=apt001, org.springframework.messaging.simp.SimpAttributes.COMPLETED=true, userEmail=cust01@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@11a9323d, lookupDestination=/customer/chat, simpSessionId=mlgk5gek, simpDestination=/app/customer/chat}]
@@ -244,6 +256,118 @@ public class ChatCustomerController {
         roomRepository.updateLastActivity(message.getRoomId()); // REDIS
         routingStrategy.handleMessage(message.getRoomId(), message);
         log.info("◀ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 완료 ");
+    }
+
+    @PostMapping("/chatend")
+    // 고객의 상담 종료 처리
+    public ResponseEntity<?> endChat(@RequestHeader(value = "Authorization", required = false) String token) {
+        log.info("▼ endChat S. Customer request endChat");
+        ResponseEntity<?> ret;
+
+        if (token == null || !token.startsWith("Bearer ")) {
+            log.warn("▲ endChat E. token == null || !token.startsWith(\"Bearer \")");
+            return ResponseEntity.status(401).build();
+        }
+
+        String actualToken = token.substring(7);
+        UserInfo userInfo = tokenService.validateToken(actualToken);
+        if (userInfo == null) {
+            log.warn("▲ endChat E. userInfo == null");
+            return ResponseEntity.status(401).build();
+        }
+String userId    = userInfo.getUserId();
+String companyId = userInfo.getCompanyId();
+String userName  = userInfo.getUserName();
+
+        // 고객의 현재 roomId 조회
+        String roomId = customerAuthService.getRoomId(userId);
+        if (roomId == null) {
+            log.info("▲ endChat E. roomId == null. 활성화된 상담방이 없습니다.");
+            return ResponseEntity.status(404).body("활성화된 상담방이 없습니다.");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        try {
+            ChatRoom room = roomRepository.findRoomById(roomId);
+            if (room == null) {
+                log.info("▲ endChat E. Room not found: roomId={}", roomId);
+                return ResponseEntity.status(404).body("상담방을 찾을 수 없습니다.");
+            }
+
+            // 채팅방 상태를 CLOSED로 변경
+            roomRepository.setRoutingMode(roomId, "CLOSED");
+
+            // 고객과 상담원에게 종료 메시지 전송
+            ChatMessage endMessage = ChatMessage.builder()
+                    .roomId(roomId)
+                    .sender("System")
+                    .senderRole(UserRole.SYSTEM)
+                    .message("고객이 상담을 종료했습니다.")
+                    .type(MessageType.LEAVE)
+                    .timestamp(now)
+                    .companyId(companyId)
+                    .build();
+            messageBroker.publish(endMessage);
+
+            // 상담원이 배정된 경우 상담원에게도 알림
+            if (room.getAssignedAgent() != null) {
+                ChatMessage agentNotice = ChatMessage.builder()
+                        .roomId(roomId)
+                        .sender("System")
+                        .senderRole(UserRole.SYSTEM)
+                        .message(userName + " 고객이 상담을 종료했습니다.")
+                        .type(MessageType.CUSTOMER_LEFT)
+                        .timestamp(now)
+                        .companyId(companyId)
+                        .build();
+                messageBroker.publish(agentNotice);
+            }
+
+            // PostgreSQL에 세션 종료 기록
+            chatSessionService.updateSessionStatus(roomId, "CLOSED"); // DB
+            chatSessionService.endSession(roomId); // DB
+
+            // 종료 메시지를 이력에 저장
+            ChatHistory chatHistory = ChatHistory.builder()
+                    .roomId(roomId)
+                    .senderId("system")
+                    .senderName("System")
+                    .senderRole("SYSTEM")
+                    .message("고객이 상담을 종료했습니다.")
+                    .messageType("LEAVE")
+                    .companyId(companyId)
+                    .createdAt(now)
+                    .build();
+            chatHistoryService.saveChatHistory(chatHistory); // DB
+
+            // Redis에서 채팅방 관련 모든 키 삭제
+            // 1. chat:rooms에서 roomId 제거
+            // 2. chat:room-info:{roomId} Hash 삭제
+            // 3. chat:room-member:{roomId} Set 삭제
+            //roomRepository.deleteRoom(roomId);
+            //log.info("✅ Redis room keys deleted: roomId={}", roomId);
+
+            // Redis에서 고객의 roomId 제거 및 고객 정보 삭제
+            // chat:user-customers:{userId} Hash 삭제
+            //customerAuthService.updateRoomId(userId, null);
+            customerAuthService.deleteCustomer(userId, roomId);
+
+            customerAuthService.logout(userId);
+            log.info("✅ Redis customer keys deleted: userId={}", userId);
+
+            // 상담원에게 채팅방 목록 업데이트 브로드캐스트
+            roomUpdateBroadcaster.broadcastRoomList();
+
+            ret = ResponseEntity.ok(Map.of("message", "상담이 종료되었습니다.", "roomId", roomId));
+            log.info("✅ Customer chat ended successfully: roomId={}, userId={}", roomId, userId);
+        } catch (Exception e) {
+            log.error("❌ Failed to end customer chat: roomId={}", roomId, e);
+            ret = ResponseEntity.status(500).body("상담 종료 처리 중 오류가 발생했습니다.");
+        }
+
+        log.info("▲ endChat E. ret:{}", ret);
+        return ret;
     }
 }
 
