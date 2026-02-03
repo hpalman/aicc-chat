@@ -5,9 +5,9 @@ import aicc.chat.domain.ChatRoom;
 
 public interface RoomRepository {
     // 이름으로 새 방 생성(내부에서 roomId 생성)
-    ChatRoom createRoom(String name);
+    // ChatRoom createRoom(String name);
     // 지정한 roomId로 방 생성
-    ChatRoom createRoom(String roomId, String name); // ID 지정 생성 추가
+    ChatRoom createRoom(String roomId, String name, String creatorId); // ID 지정 생성 추가
     // roomId로 방 조회
     ChatRoom findRoomById(String roomId);
     // 방에 멤버 추가

@@ -16,6 +16,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class ChatRoom {
+    private String      creatorId; // 생성자ID(고객ID가 된다)
     private String      roomId;
     private String      roomName;
     private Set<String> members;

@@ -7,6 +7,7 @@ import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
 import aicc.chat.service.AgentAuthService;
+import aicc.chat.service.ChatAgentService;
 import aicc.chat.service.TokenService;
 import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +30,8 @@ import java.util.Map;
 @RequestMapping("/api/agent")
 @Slf4j
 public class ChatAgentController {
+    private final ChatAgentService chatAgentService;
+
     private final AgentAuthService agentAuthService;
 
     private final RoomRepository roomRepository;
@@ -63,40 +67,38 @@ public class ChatAgentController {
 
     @GetMapping("/me")
     // Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환
-    public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String token) {
-        log.info("▼ getCurrentAgent E. /api/agent > /me S. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 시작.");
+    public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
+        log.info("▼ getCurrentAgent E. Uri:{} S.", ServletUriComponentsBuilder.fromCurrentRequest().toUriString());
         //ResponseEntity<UserInfo> ret;
-        if (token == null || !token.startsWith("Bearer ")) {
-            log.info("◀ token == null || !token.startsWith(\"Bearer \")). Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
             return ResponseEntity.status(401).build();
         }
 
-        String actualToken = token.substring(7);
-        UserInfo userInfo = tokenService.validateToken(actualToken);
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null) {
-            log.info("▶ userInfo == null. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료 ");
+            log.warn("▶ userInfo == null.");
             return ResponseEntity.status(401).build();
         }
 
         // 하트비트 - 온라인 상태 유지. 다른 방식으로 처리할 필요가 있음. 여기서는 토큰만 확인하는 것으로 일을 해야 함
         // agentAuthService.heartbeat(userInfo.getUserId());
 
-        log.info("▲ getCurrentAgent E. /api/agent > /me E. Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환:getCurrentAgent 완료.");
+        log.info("▲ getCurrentAgent E. Uri:{} E. userInfo:{}", ServletUriComponentsBuilder.fromCurrentRequest().toUriString(), userInfo);
         return ResponseEntity.ok(userInfo);
     }
 
     @PostMapping("/logout")
     // 상담원 로그아웃 처리 및 고객에게 알림
-    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String token) {
+    public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
         log.info("▼ 상담원 로그아웃 처리:logout 시작./api/agent > /logout S");
 
-        if (token == null || !token.startsWith("Bearer ")) {
-            log.warn("token == null || !token.startsWith(\"Bearer \"))");
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
             return ResponseEntity.status(401).build();
         }
 
-        String actualToken = token.substring(7);
-        UserInfo userInfo = tokenService.validateToken(actualToken);
+        //String actualToken = token.substring(7);
+        //UserInfo userInfo = tokenService.validateToken(actualToken);
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null) {
             log.warn("userInfo == null");
             return ResponseEntity.status(401).build();
@@ -133,70 +135,17 @@ public class ChatAgentController {
         return ret;
     }
 
+    /**
+     * 상담원 가용성 확인: 로그인한 상담사가 있고 3개 미만의 상담을 하고 있는지 확인
+     * @return
+     */
     @GetMapping("/availability")
-    // 상담원 가용성 확인: 로그인한 상담원이 있고 3개 미만의 상담을 하고 있는지 확인
-    public ResponseEntity<Map<String, Object>> checkAgentAvailability() {
-        log.info("▼ checkAgentAvailability S. /api/agent > /availability S");
-
-        // 1. 온라인 상담원 목록 조회 (Hash 구조)
-        java.util.Set<String> onlineAgentKeys = redisTemplate.keys(Constants.ONLINE_AGENTS_KEY + ":*");
-        java.util.Map<String, String> onlineAgents = new java.util.HashMap<>(); // agentId -> userName
-
-        if (onlineAgentKeys != null) {
-            for (String key : onlineAgentKeys) {
-                String agentId = key.substring((Constants.ONLINE_AGENTS_KEY + ":").length());
-
-                // Hash에서 userName 조회
-                Object userNameObj = redisTemplate.opsForHash().get(key, "userName");
-                if (userNameObj != null) {
-                    String userName = userNameObj.toString();
-                    onlineAgents.put(agentId, userName);
-                }
-            }
-        }
-
-        log.info("Online agents: {} (count: {})", onlineAgents, onlineAgents.size());
-
-        // 온라인 상담원이 없으면 즉시 불가 반환
-        if (onlineAgents.isEmpty()) {
-            log.info("▲ checkAgentAvailability E. No online agents available");
-            return ResponseEntity.ok(Map.of(
-                "available", false,
-                "onlineAgentCount", 0,
-                "agentCount", 0,
-                "agentRoomCount", java.util.Collections.emptyMap()
-            ));
-        }
-
-        // 2. 상담원이 배정된 방 개수 세기
-        List<ChatRoom> allRooms = roomRepository.findAllRooms();
-        java.util.Map<String, Long> agentRoomCount = allRooms.stream()
-            .filter(room -> "AGENT".equals(room.getStatus()) && room.getAssignedAgent() != null)
-            .collect(java.util.stream.Collectors.groupingBy(
-                ChatRoom::getAssignedAgent,
-                java.util.stream.Collectors.counting()
-            ));
-
-        // 3. 온라인 상담원 중 3개 미만의 상담을 하고 있는 상담원이 있는지 확인
-        boolean hasAvailableAgent = onlineAgents.values().stream()
-            .anyMatch(agentName -> {
-                // 현재 상담 개수 확인
-                long currentChats = agentRoomCount.getOrDefault(agentName, 0L);
-                boolean available = currentChats < 3;
-                log.info("▲ checkAgentAvailability E. Agent {} - current chats: {}, available: {}", agentName, currentChats, available);
-                return available;
-            });
-
-        log.info("Agent availability check - Online: {}, Available: {}, Room count: {}",
-                 onlineAgents.size(), hasAvailableAgent, agentRoomCount);
-
-        log.info("▲ checkAgentAvailability E. /api/agent > /availability E");
-        return ResponseEntity.ok(Map.of(
-            "available", hasAvailableAgent,
-            "onlineAgentCount", onlineAgents.size(),
-            "agentCount", agentRoomCount.size(),
-            "agentRoomCount", agentRoomCount
-        ));
+    public ResponseEntity<Map<String, Object>> availability() {
+        log.info("▼ checkAgentAvailability S. Uri:{} S", ServletUriComponentsBuilder.fromCurrentRequest().toUriString() );
+        Map<String, Object> map
+            = chatAgentService.checkAgentAvailability();
+        log.info("▲ checkAgentAvailability E. map:{}", map);
+        return ResponseEntity.ok(map);
     }
 
     /* 특정 상담방 상세 정보를 조회
@@ -206,13 +155,12 @@ public class ChatAgentController {
     @GetMapping("/rooms/{roomId}")
     public ResponseEntity<ChatRoom> findRoomById(
             @PathVariable("roomId") String roomId,
-            @RequestHeader(value = "Authorization", required = false) String token) {
+            @RequestHeader(value = "Authorization", required = false) String bearerToken) {
 
         log.info("▼ findRoomById S. Agent request findRoomById: roomId={}", roomId);
         // 토큰 체크 추가 (선택사항이지만 일관성을 위해)
-        if (token != null && token.startsWith("Bearer ")) {
-            String actualToken = token.substring(7);
-            tokenService.validateToken(actualToken);
+        if ( tokenService.isValidBearerToken(bearerToken) ) {
+            tokenService.parseToken(bearerToken);
         }
 
         ChatRoom room = roomRepository.findRoomById(roomId);
@@ -228,15 +176,15 @@ public class ChatAgentController {
     // 상담원을 방에 배정하고 상태/이력을 갱신
     private ResponseEntity<?> _assignAgent(
             String roomId,
-            String token,
+            String bearerToken,
             boolean force) {
-        if (token == null || !token.startsWith("Bearer ")) {
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
             log.warn("token == null || !token.startsWith(\"Bearer\")) ");
             return ResponseEntity.status(401).build();
         }
 
-        String actualToken = token.substring(7);
-        UserInfo userInfo = tokenService.validateToken(actualToken);
+        //String actualToken = token.substring(7);
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
             log.warn("(userInfo == null || userInfo.getRole() != UserRole.AGENT");
             return ResponseEntity.status(403).body("상담원만 배정 가능합니다.");
@@ -354,14 +302,12 @@ public class ChatAgentController {
         log.info("▲ deleteRoom E. ret:{}", ret);
     	return ret;
     }
-    public ResponseEntity<?> _deleteRoom(String roomId, String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            log.warn("token == null || !token.startsWith(\"Bearer \"))");
+    public ResponseEntity<?> _deleteRoom(String roomId, String bearerToken) {
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
             return ResponseEntity.status(401).build();
         }
 
-        String actualToken = token.substring(7);
-        UserInfo userInfo = tokenService.validateToken(actualToken);
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
             log.warn("상담원만 방을 종료할 수 있습니다.");
             return ResponseEntity.status(403).body("상담원만 방을 종료할 수 있습니다.");

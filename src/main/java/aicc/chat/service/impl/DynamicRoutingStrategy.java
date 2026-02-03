@@ -69,14 +69,18 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
         log.info("▲ handleMessage E.");
     }
 
+    /**
+     * 방 생성 시 초기 모드 설정 및 봇 초기화 호출
+     */
     @Override
-    // 방 생성 시 초기 모드 설정 및 봇 초기화 호출
     public void onRoomCreated(ChatRoom room) {
         // 방 생성 시 초기 모드는 BOT
-        log.info("※※※※※ ▶ DynamicRoutingStrategy onRoomCreated ▶▶▶▶▶▶▶▶▶▶");
-        roomRepository.setRoutingMode(room.getRoomId(), MODE_BOT);
-        miChatRoutingStrategy.onRoomCreated(room);
-        log.info("※※※※※ ◀ DynamicRoutingStrategy onRoomCreated 종료 ◀◀◀◀◀◀◀◀◀◀");
+        log.info("▼ onRoomCreated S. room:{} MODE_BOT", room);
+        roomRepository.setRoutingMode(room.getRoomId(), MODE_BOT); // chat:room-info:{roomId} routingMode:MODE_BOT
+
+        miChatRoutingStrategy.onRoomCreated(room); // room에 환영 메시지 발송
+
+        log.info("▲ onRoomCreated E.");
     }
 }
 

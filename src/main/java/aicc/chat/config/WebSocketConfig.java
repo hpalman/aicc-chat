@@ -55,7 +55,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     // WebSocket/STOMP 엔드포인트 및 핸드셰이크 인터셉터 등록
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
-        log.info("▶ registerStompEndpoints (/ws-chat, *) S");
+        log.info("▼ registerStompEndpoints (/ws-chat, *) S");
 
         registry.addEndpoint("/ws-chat") // 고객/상담사/관리자 공통 WebSocket endpoint
                 .setAllowedOriginPatterns("*")
@@ -64,32 +64,45 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     // 핸드셰이크 시 토큰/roomId를 읽어 세션 속성에 저장
                     public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
                                                  @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) {
-                        log.info("▶ beforeHandshake S");
-                        if (request instanceof ServletServerHttpRequest) {
-                            HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
-                            String token = servletRequest.getParameter("token");
-                            String roomId = servletRequest.getParameter("roomId"); // roomId 파라미터 추가
-                            if (token != null) {
-                                UserInfo userInfo = tokenService.validateToken(token);
-                                if (userInfo != null) {
-                                    log.debug("WebSocket Handshake - User: {}, RequestRoom: {}, Company: {}",
-                                        userInfo.getUserId(), roomId, userInfo.getCompanyId());
+                        log.info("▼ beforeHandshake S");
 
-                                    attributes.put("userId", userInfo.getUserId());
-                                    attributes.put("userName", userInfo.getUserName());
-                                    attributes.put("userRole", userInfo.getRole());
-                                    if (userInfo.getEmail() != null) attributes.put("userEmail", userInfo.getEmail());
-
-                                    // 1. 토큰에 roomId가 있으면 사용 (주로 상담원 등 고정된 경우)
-                                    // 2. 파라미터로 roomId가 전달되면 사용 (주로 고객이 상담 시작 시 생성한 경우)
-                                    String finalRoomId = (userInfo.getRoomId() != null) ? userInfo.getRoomId() : roomId;
-                                    if (finalRoomId != null) attributes.put("roomId", finalRoomId);
-
-                                    if (userInfo.getCompanyId() != null) attributes.put("companyId", userInfo.getCompanyId());
-                                }
-                            }
+                        if ( request instanceof ServletServerHttpRequest == false) {
+                            return false;
                         }
-                        log.info("◀ beforeHandshake E");
+
+                        HttpServletRequest servletRequest = ((ServletServerHttpRequest) request).getServletRequest();
+                        String token  = servletRequest.getParameter("token" );
+                        String roomId = servletRequest.getParameter("roomId"); // roomId 파라미터 추가
+                        if (token == null || token.length() == 0) {
+                            log.warn("▶ token == null");
+                            return false;
+                        }
+                        UserInfo userInfo = tokenService.parseToken("Bearer " + token);
+                        if (userInfo == null) {
+                            log.warn("▶ userInfo == null. token:{}",token);
+                            return false;
+                        }
+
+                        log.debug("▶ WebSocket Handshake - User: {}, RequestRoom: {}, Company: {}",
+                            userInfo.getUserId(), roomId, userInfo.getCompanyId());
+
+                        attributes.put("userId"  , userInfo.getUserId()  );
+                        attributes.put("userName", userInfo.getUserName());
+                        attributes.put("userRole", userInfo.getRole()    );
+                        if (userInfo.getEmail() != null) attributes.put("userEmail", userInfo.getEmail());
+
+                        // 1. 토큰에 roomId가 있으면 사용 (주로 상담원 등 고정된 경우)
+                        // 2. 파라미터로 roomId가 전달되면 사용 (주로 고객이 상담 시작 시 생성한 경우)
+                        String finalRoomId = (userInfo.getRoomId() != null) ? userInfo.getRoomId() : roomId;
+                        if (finalRoomId != null) {
+                            attributes.put("roomId", finalRoomId);
+                        }
+
+                        if (userInfo.getCompanyId() != null) {
+                            attributes.put("companyId", userInfo.getCompanyId());
+                        }
+
+                        log.info("▲ beforeHandshake E");
                         return true;
                     }
 
@@ -97,19 +110,19 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                     // 핸드셰이크 완료 후 별도 처리 없음
                     public void afterHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response,
                                              @NonNull WebSocketHandler wsHandler, @Nullable Exception exception) {
-                        log.info("▼ afterHandshake");
+                        log.info("▶ afterHandshake ◀");
                     }
                 })
                 .withSockJS() // SockJS 사용
                 .setSessionCookieNeeded(false);
-        log.info("◀ registerStompEndpoints E");
+        log.info("▲ registerStompEndpoints E");
     }
 
     @Override
     // 인바운드 채널 인터셉터를 추가할 때 사용 (현재 미사용)
     public void configureClientInboundChannel(ChannelRegistration registration) {
         //registration.interceptors(stompHandler);
-        log.info("▼ configureClientInboundChannel ▲");
+        log.info("▶ configureClientInboundChannel ◀");
     }
 
 

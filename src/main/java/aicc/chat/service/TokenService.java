@@ -4,12 +4,14 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
+import aicc.chat.util.UtilString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -32,36 +34,62 @@ public class TokenService {
         }
     }
 
-    public UserInfo validateToken(String token) {
-        log.info("▼ validateToken S. token:{}", token);
+    /**
+     * Bearer 헤드가 붙은 토큰의 실 토큰이 유효한지 확인
+     * @param bearerToken값 "Bearer "로 시작함
+     * @return
+     */
+    public boolean isValidBearerToken(String bearerToken) {
+        if ( bearerToken != null && bearerToken.length() > 0 && bearerToken.startsWith("Bearer ")) {
+            return true;
+        }
+        log.warn("§ Not Valid bearerToken:{}", bearerToken);
+        return false;
+    }
+
+    /**
+     * Bearer 헤드가 붙은 토큰의 실 토큰이 유효한지 확인하여 토큰에서 UserInfo 분석하여 반환
+     * @param token
+     * @return
+     */
+    public UserInfo parseToken(String bearerToken) {
+        String actualToken = bearerToken.substring(7);
+        log.info("▼ parseToken S. bearerToken:{}, actualToken:{}", UtilString.emitToken(bearerToken), UtilString.emitToken(actualToken));
+        UserInfo userInfo = _parseToken(actualToken);
+        log.info("▲ parseToken E. userInfo:{}", userInfo);
+        return userInfo;
+    }
+
+    private UserInfo _parseToken(String token) {
+        // log.info("▶ validateToken S. token:{}", token);
         // JWT 또는 Base64 토큰을 파싱해 UserInfo로 복원
         if (token == null || token.isEmpty()) {
-            log.warn("▲ validateToken E.");
+            log.warn("§ validateToken E.");
             return null;
         }
         try {
             // 1. JWT 토큰 처리 (ey... 로 시작)
             if (token.startsWith("ey") && token.contains(".")) {
-                log.info("▲ validateToken E. [TokenService] JWT token detected");
+                log.info("§ _parseToken. [TokenService] JWT token detected");
                 return parseJwtToken(token);
             }
 
-            log.info("▶ [TokenService] Non-JWT token detected (Base64)");
+            log.info("§ [TokenService] Non-JWT token detected (Base64)");
             // 2. 기존의 단순 Base64 JSON 토큰 처리
             byte[] decodedBytes = Base64.getDecoder().decode(token);
             String json = new String(decodedBytes);
             UserInfo userInfo = objectMapper.readValue(json, UserInfo.class);
             userInfo.setToken(token);
-            log.info("▲ validateToken E.");
+
             return userInfo;
         } catch (Exception e) {
-            log.error("▲ validateToken E.", e);
+            log.error("§ _parseToken error.", e);
             return null;
         }
     }
 
     private UserInfo parseJwtToken(String token) {
-        log.info("▼ parseJwtToken. token:{}", token);
+        log.info("▼ parseJwtToken. token:{}", UtilString.emitToken(token));
         // JWT payload에서 사용자 정보를 추출해 UserInfo로 변환
         try {
             String[] parts = token.split("\\.");

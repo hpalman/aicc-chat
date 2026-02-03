@@ -125,8 +125,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 방 생성 시 환영 메시지 전송 및 이력 저장
     public void onRoomCreated(ChatRoom room) {
-        log.info("▼ onRoomCreated. room:{}",room);
-        log.info("New room created for MiChat workflow: {}", room.getRoomId());
+        log.info("▼ onRoomCreated S. room:{}",room);
 
         LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
 
@@ -140,29 +139,30 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .build();
         messageBroker.publish(welcome);
 
-        // PostgreSQL에 환영 메시지 저장
-        try {
-            ChatHistory chatHistory = ChatHistory.builder()
-                    .roomId(room.getRoomId())
-                    .senderId("BOT")
-                    .senderName("Bot")
-                    .senderRole("BOT")
-                    .message(welcome.getMessage())
-                    .messageType("TALK")
-                    .createdAt(now) // 서버 타임스탬프 사용
-                    .build();
-            chatHistoryService.saveChatHistory(chatHistory); // DB
-        } catch (Exception e) {
-            log.error("Failed to save welcome message to DB: roomId={}", room.getRoomId(), e);
-            // DB 저장 실패해도 채팅은 계속 진행
-        }
+        // @TODO: DB저장 임시 막음
+        // // PostgreSQL에 환영 메시지 저장
+        // try {
+        //     ChatHistory chatHistory = ChatHistory.builder()
+        //             .roomId(room.getRoomId())
+        //             .senderId("BOT")
+        //             .senderName("Bot")
+        //             .senderRole("BOT")
+        //             .message(welcome.getMessage())
+        //             .messageType("TALK")
+        //             .createdAt(now) // 서버 타임스탬프 사용
+        //             .build();
+        //     chatHistoryService.saveChatHistory(chatHistory); // DB
+        // } catch (Exception e) {
+        //     log.error("Failed to save welcome message to DB: roomId={}", room.getRoomId(), e);
+        //     // DB 저장 실패해도 채팅은 계속 진행
+        // }
+        log.info("▲ onRoomCreated E.");
     }
 
     private void switchToAgentMode(String roomId) {
-        log.info("▼ switchToAgentMode. roomId:{}", roomId);
+        log.info("▼ switchToAgentMode S. roomId:{} WAITING", roomId);
         // 상담원 연결 요청 처리: WAITING 전환 및 알림 발송
-        log.info("Switching room {} to WAITING 모드", roomId);
-        roomRepository.setRoutingMode(roomId, "WAITING");
+        roomRepository.setRoutingMode(roomId, "WAITING"); // chat:room-info:{roomId} mode
         roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
 
         LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
@@ -178,23 +178,25 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .build();
         messageBroker.publish(notice);
 
-        // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
-        try {
-            chatSessionService.updateSessionStatus(roomId, "WAITING"); // DB
-
-            ChatHistory chatHistory = ChatHistory.builder()
-                    .roomId(roomId)
-                    .senderId("SYSTEM")
-                    .senderName("System")
-                    .senderRole("SYSTEM")
-                    .message(notice.getMessage())
-                    .messageType("TALK")
-                    .createdAt(now) // 서버 타임스탬프 사용
-                    .build();
-            chatHistoryService.saveChatHistory(chatHistory); // DB
-        } catch (Exception e) {
-            log.error("Failed to save handoff message to DB: roomId={}", roomId, e);
-        }
+        // @TODO: DB저장 임시 막음
+        // // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
+        // try {
+        //     chatSessionService.updateSessionStatus(roomId, "WAITING"); // DB
+        //
+        //     ChatHistory chatHistory = ChatHistory.builder()
+        //             .roomId(roomId)
+        //             .senderId("SYSTEM")
+        //             .senderName("System")
+        //             .senderRole("SYSTEM")
+        //             .message(notice.getMessage())
+        //             .messageType("TALK")
+        //             .createdAt(now) // 서버 타임스탬프 사용
+        //             .build();
+        //     chatHistoryService.saveChatHistory(chatHistory); // DB
+        // } catch (Exception e) {
+        //     log.error("Failed to save handoff message to DB: roomId={}", roomId, e);
+        // }
+        log.info("▲ switchToAgentMode E.");
     }
 
     private void cancelAgentMode(String roomId) {
