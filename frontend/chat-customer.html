@@ -290,7 +290,7 @@
 
         // 1. 방 생성 및 봇 초기화 API 호출
         // 허:2026-01-27) 별도의 http(s) api로 채팅방생성시 장점(명확한 RESTful, 권권한/인증,비즈니스로직분리,멀터서버환경)
-        fetch(`/api/customer/chatbot`, {
+        fetch(`/api/customer/chat-start`, {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + authToken,
             	       'Content-Type': 'application/json' },
@@ -298,7 +298,10 @@
         })
             .then(res => {
                 if (!res.ok) {
-                    if (res.status === 401) {
+					if (res.status === 409) {
+					    alert("동일 유저가 이미 채팅방에 있습니다. 다시 로그인해주세요.");
+					    throw new Error('Unauthorized');
+					} else if (res.status === 401) {
                         alert("세션이 만료되었습니다. 다시 로그인해주세요.");
                         sessionStorage.removeItem("AUTH_TOKEN");
                         window.location.reload();
@@ -471,7 +474,7 @@
         }
 
         // 1. 서버 API 호출하여 상담 종료 처리
-        fetch('/api/customer/chatend', {
+        fetch('/api/customer/chat-end', {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + authToken,

@@ -38,4 +38,8 @@ public interface RoomRepository {
 
     // chat:rooms의 Set에 Member로서 roomid가 존재하는지 검사
     boolean existRoomsMember(String roomId);
+
+
+    // user-customers:{userId} 존재하는 지 검사
+    boolean existCustomer(String userId);
 }

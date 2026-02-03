@@ -48,7 +48,7 @@ public class RedisRoomRepository implements RoomRepository {
         redisTemplate.opsForSet().add(CHAT_ROOMS_KEY, roomId); // chat:rooms, room-c7db3f46
 
         // Hash 구조로 메타데이터 저장
-        String roomKey = ROOM_KEY_PREFIX + roomId;
+        String roomKey = ROOM_KEY_PREFIX + roomId; // chat:room-info:{roomId}"
         if (name != null) {
             redisTemplate.opsForHash().put(roomKey, "name", name);
         }
@@ -77,11 +77,11 @@ public class RedisRoomRepository implements RoomRepository {
 
     	// [findRoomById] Redis의 분산 키들을 조회해 ChatRoom으로 합성. roomId에 해당하는 멤버/상태/메타 정보를 조합해 ChatRoom으로 복원
         // 변경: room:{roomId}:mems → room:mems:{roomId}
-        Set<String> members = Optional.ofNullable(redisTemplate.opsForSet().members(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId))
+        Set<String> members = Optional.ofNullable(redisTemplate.opsForSet().members(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId)) // "chat:room-member:"
                 .orElse(Collections.emptySet());
 
         // Hash에서 메타데이터 조회
-        String roomKey = ROOM_KEY_PREFIX + roomId;
+        String roomKey = ROOM_KEY_PREFIX + roomId; // "chat:room-info:"
         String assignedAgent   = (String) redisTemplate.opsForHash().get(roomKey, "assignedAgent");
         String createdAtStr    = (String) redisTemplate.opsForHash().get(roomKey, "createdAt");
         String lastActivityStr = (String) redisTemplate.opsForHash().get(roomKey, "lastActivity");
@@ -111,8 +111,8 @@ public class RedisRoomRepository implements RoomRepository {
         // [addMember] 방 멤버 Set에 추가 + roomId 인덱스 유지
         // 멤버는 Set으로 관리(중복 방지)
         // 변경: room:{roomId}:mems → room:mems:{roomId}
-        redisTemplate.opsForSet().add(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId, memberId);
-        redisTemplate.opsForSet().add(CHAT_ROOMS_KEY, roomId);
+        redisTemplate.opsForSet().add(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId, memberId); // chat:room-member:
+        redisTemplate.opsForSet().add(CHAT_ROOMS_KEY, roomId); // "chat:rooms"
     }
 
     @Override
@@ -259,6 +259,18 @@ public class RedisRoomRepository implements RoomRepository {
         // redisTemplate.opsForSet().add(Constants.ROOM_MEMBERS_KEY_PREFIX + roomId, memberId);
         //redisTemplate.opsForSet().roomId..add(CHAT_ROOMS_KEY, roomId);
         return false;
+    }
+
+    @Override
+    // user-customers:{userId} 존재하는 지 검사
+    public boolean existCustomer(String userId) {
+        String customerKey = Constants.ONLINE_CUSTOMERS_KEY + ":" + userId; // "chat:user-customers"
+        Boolean exists = redisTemplate.hasKey(customerKey);
+        if ( exists ) { // 이미 존재함
+            return true;
+        }
+    	
+    	return false;
     }
 
 }
