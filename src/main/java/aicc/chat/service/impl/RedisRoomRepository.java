@@ -169,11 +169,12 @@ redisTemplate.opsForHash().putAll(roomInfoKey, roomInfo);
         // Set<String> roomIds = Optional.ofNullable(redisTemplate.opsForSet().members(CHAT_ROOMS_KEY))
         //         .orElse(Collections.emptySet());
         // @TODO 운여환경에서는 다른 방식. 즉 SCAN 방식으로 바꾸라고 AI가 그런다.
-        Set<String> keys = redisTemplate.keys(Constants.ROOM_INFO_KEY_PREFIX + "*"); // ex. "user:*"
-        for (String key : keys) {
-            System.out.println(key);
-        }
-        return keys;
+        Set<String> keys = redisTemplate.keys(Constants.ROOM_INFO_KEY_PREFIX + "*"); // chat:room-info: ex. "user:*"
+
+        // 접두사 제거 후 room-... 부분만 추출
+        return keys.stream()
+        		.map(k -> k.replace(Constants.ROOM_INFO_KEY_PREFIX, "")) // "chat:room-info:"
+        		.collect(Collectors.toSet());        
     }
 
     @Override
@@ -261,13 +262,12 @@ redisTemplate.opsForHash().putAll(roomInfoKey, roomInfo);
 
     @Override
     public void updateLastActivity(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId );
+        log.info("▼ updateLastActivity S. roomId:{}", roomId );
 
-        // [updateLastActivity] 방의 마지막 활동 시간 갱신
-        // 마지막 활동 시간 갱신(밀리초)
-        if (roomId != null) {
-            redisTemplate.opsForHash().put(Constants.ROOM_INFO_KEY_PREFIX + roomId, "lastActivity", String.valueOf(System.currentTimeMillis()));
-        }
+        // 방의 마지막 활동 시간 갱신(밀리초)
+        redisTemplate.opsForHash().put(Constants.ROOM_INFO_KEY_PREFIX + roomId, "lastActivity", String.valueOf(System.currentTimeMillis())); // "chat:room-info:{roomId}"
+
+        log.info("▲ updateLastActivity E.");
     }
 
     @Override

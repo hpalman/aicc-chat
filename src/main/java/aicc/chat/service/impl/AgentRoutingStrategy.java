@@ -18,9 +18,10 @@ public class AgentRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 상담원 메시지를 중계하여 구독자에게 전파
     public void handleMessage(String roomId, ChatMessage message) {
-        log.info("▼ Agent routing for room: {}", roomId);
+        log.info("▼ handleMessage S. Agent routing for room: {}, message:{}", roomId, message);
         message.setRoomId(roomId);
         messageBroker.publish(message);
+        log.info("▲ handleMessage E");
     }
 }
 

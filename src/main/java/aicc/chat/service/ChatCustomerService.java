@@ -227,13 +227,14 @@ public class ChatCustomerService {
 
     // 고객 메시지를 받아 이력 저장 후 라우팅
     public void customerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("▶ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 시작");
+        log.info("▼ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 시작");
         String sessionId = headerAccessor.getSessionId();
-        log.info("sessionId:{}, MessageType:{}", sessionId, message.getType().toString()); // sessionId:xxfuatci, MessageType:LEAVE
+        log.info("▶ sessionId:{}, MessageType:{}", sessionId, message.getType().toString()); // sessionId:xxfuatci, MessageType:LEAVE
 
         //WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);
         //log.info("attr:{}", attr);
 
+        // {userName=홍길철, userId=cust01, roomId=room-823880d7, companyId=apt001, userEmail=cust01@example.com, userRole=CUSTOMER}
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
         String userId = null;
 
@@ -243,8 +244,8 @@ public class ChatCustomerService {
 // userId
 // roomId
         if (sessionAttributes != null) {
-            String roomId = (String) sessionAttributes.get("roomId");
-            String userName = (String) sessionAttributes.get("userName");
+            String roomId    = (String) sessionAttributes.get("roomId");
+            String userName  = (String) sessionAttributes.get("userName");
             String companyId = (String) sessionAttributes.get("companyId");
             userId = (String) sessionAttributes.get("userId");
 
@@ -258,7 +259,7 @@ public class ChatCustomerService {
             message.setSenderRole(UserRole.CUSTOMER);
         }
 
-        log.debug("Customer message received for room: {} at {}", message.getRoomId(), message.getTimestamp());
+        log.debug("▶ Customer message received for room: {} at {}", message.getRoomId(), message.getTimestamp());
 
         // 고객이 LEAVE 메시지를 보낸 경우 상담원에게 알림
         if (MessageType.LEAVE.equals(message.getType())) {
@@ -291,29 +292,30 @@ public class ChatCustomerService {
             }
         }
 
-        // PostgreSQL에 채팅 이력 저장
-        try {
-            ChatHistory chatHistory = ChatHistory.builder()
-                    .roomId(message.getRoomId())
-                    .senderId(userId != null ? userId : message.getSender())
-                    .senderName(message.getSender())
-                    .senderRole(message.getSenderRole().name())
-                    .message(message.getMessage())
-                    .messageType(message.getType().name())
-                    .companyId(message.getCompanyId())
-                    .createdAt(message.getTimestamp()) // 서버 타임스탬프 사용
-                    .build();
-            chatHistoryService.saveChatHistory(chatHistory); // DB
+        // @TODO: 임시 DB 저장 막음
+        // // PostgreSQL에 채팅 이력 저장
+        // try {
+        //     ChatHistory chatHistory = ChatHistory.builder()
+        //             .roomId(message.getRoomId())
+        //             .senderId(userId != null ? userId : message.getSender())
+        //             .senderName(message.getSender())
+        //             .senderRole(message.getSenderRole().name())
+        //             .message(message.getMessage())
+        //             .messageType(message.getType().name())
+        //             .companyId(message.getCompanyId())
+        //             .createdAt(message.getTimestamp()) // 서버 타임스탬프 사용
+        //             .build();
+        //     chatHistoryService.saveChatHistory(chatHistory); // DB
+        // 
+        //     // 세션의 마지막 활동 시간 DB 업데이트
+        //     chatSessionService.updateLastActivity(message.getRoomId()); // DB
+        // } catch (Exception e) {
+        //     log.error("Failed to save chat history to DB: roomId={}", message.getRoomId(), e);
+        //     // DB 저장 실패해도 채팅은 계속 진행
+        // }
 
-            // 세션의 마지막 활동 시간 DB 업데이트
-            chatSessionService.updateLastActivity(message.getRoomId()); // DB
-        } catch (Exception e) {
-            log.error("Failed to save chat history to DB: roomId={}", message.getRoomId(), e);
-            // DB 저장 실패해도 채팅은 계속 진행
-        }
-
-        roomRepository.updateLastActivity(message.getRoomId()); // REDIS
-        routingStrategy.handleMessage(message.getRoomId(), message);
-        log.info("◀ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 완료 ");
+        roomRepository.updateLastActivity(message.getRoomId()); // REDIS. chat:room-info:{roomId}의 lastActivity 값 설정
+        routingStrategy.handleMessage(message.getRoomId(), message); // Pub
+        log.info("▲ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 완료 ");
     }
 }

@@ -1,4 +1,4 @@
-package aicc.chat.dto;
+package aicc.chat.domain.redis;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

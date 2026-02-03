@@ -1,4 +1,4 @@
-package aicc.chat.domain;
+package aicc.chat.domain.redis;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

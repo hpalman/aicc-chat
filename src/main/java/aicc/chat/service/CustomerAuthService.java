@@ -1,11 +1,11 @@
 package aicc.chat.service;
 
 import aicc.chat.consts.Constants;
-import aicc.chat.domain.RoomInfo;
 import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.UserAccount;
-import aicc.chat.dto.UserCustomer;
+import aicc.chat.domain.redis.RoomInfo;
+import aicc.chat.domain.redis.UserCustomer;
 import aicc.chat.mapper.UserAccountMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -133,8 +133,6 @@ String newRoomId = newRoomId(userId);
         ObjectMapper mapper = new ObjectMapper();
 
 
-
-
         // Redis에서 채팅방 관련 모든 키 삭제
         // 1. chat:rooms에서 roomId 제거
         // 2. chat:room-info:{roomId} Hash 삭제
@@ -188,12 +186,12 @@ String roomId = userCustomer.getRoomId();
             }
             // 삭제
             if ( delete ) {
-                redisTemplate.delete(roomMemberKey);
-                log.info("▶ roomMemberKey:{} 삭제", roomMemberKey);
+                redisTemplate.delete(roomInfoKey);
+                log.info("▶ roomMemberKey:{} 삭제", roomInfoKey);
             }
+            log.info("Customer {} removed from online list in Redis", userId);
         }
 
-        log.info("Customer {} removed from online list in Redis", userId);
         log.info("◀ logout E");
     }
 
