@@ -8,10 +8,8 @@
 | /api/agent/status/{status} | [상담사 상태 변경](#api_agent_status_status) |  |
 | /api/agent/availability    | [상담사 가용성 조회](#api_agent_availability) |  |
 
-
  
 ## 고객용 API
-- [api/customer/chat-end 고객 상담 종료](#api-customer-chat-end)
 
 | api                        | 이름                                             | 설명                                      |
 |----------------------------|------------------------------------------------|-----------------------------------------|

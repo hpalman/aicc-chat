@@ -12,3 +12,6 @@ bin/
 #
 *.log
 log/
+#
+# .idea
+.idea/

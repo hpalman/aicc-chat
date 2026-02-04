@@ -141,7 +141,7 @@
                 "companyId":"apt001"
             }
         */
-        fetch(`/api/customer/apt001/login?id=${id}&password=${pw}`, { method: 'POST' })
+        fetch(`/api/customer/apt001/login?id=${id}&pw=${pw}`, { method: 'POST' })
             .then(res => {
                 // HTTP 상태 코드 체크
                 if (!res.ok) {

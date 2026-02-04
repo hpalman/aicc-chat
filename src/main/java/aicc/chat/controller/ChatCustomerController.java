@@ -53,10 +53,10 @@ public class ChatCustomerController {
     public ResponseEntity<UserInfo> login(
             @PathVariable String companyId,
             @RequestParam String id,
-            @RequestParam String password) {
+            @RequestParam String pw) {
         log.info("▶ 회사별 고객 로그인 처리:login 시작");
         ResponseEntity<UserInfo> ret;
-        UserInfo userInfo = customerAuthService.login(id, password, companyId);
+        UserInfo userInfo = customerAuthService.login(id, pw, companyId);
         if (userInfo == null) {
             ret = ResponseEntity.status(401).build();
         } else {
@@ -67,18 +67,6 @@ public class ChatCustomerController {
             }
         }
         log.info("◀ 회사별 고객 로그인 처리:login 완료 ");
-        return ret;
-    }
-
-    @PostMapping("/login")
-    // 기본 회사(default)로 고객 로그인 처리
-    public ResponseEntity<UserInfo> loginDefault(
-            @RequestParam String id,
-            @RequestParam String password) {
-        ResponseEntity<UserInfo> ret;
-        log.info("▶ 기본 회사(default)로 고객 로그인 처리:loginDefault 시작");
-        ret = login("default", id, password);
-        log.info("◀ 기본 회사(default)로 고객 로그인 처리:loginDefault 완료 ");
         return ret;
     }
 
@@ -150,7 +138,7 @@ public class ChatCustomerController {
     @MessageMapping("/customer/chat")
     // 고객 메시지를 받아 이력 저장 후 라우팅
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("▼ onCustomerMessage S. 고객 메시지 처리. S");
+        log.info("▼ onCustomerMessage S. 고객 메시지 처리. S. message:{}",message);
 
         chatCustomerService.customerMessage(message, headerAccessor);
 

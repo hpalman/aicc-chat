@@ -37,9 +37,9 @@ public class CustomerAuthService {
     private final UserAccountMapper userAccountMapper;
     private final StringRedisTemplate redisTemplate;
 
-    private UserInfo _login(String id, String password, String companyId) {
+    private UserInfo _login(String id, String pw, String companyId) {
         log.info("▼ _login S. userAccountMapper.selectCustomerByLogin call");
-        UserAccount account = userAccountMapper.selectCustomerByLogin(id, password, companyId);
+        UserAccount account = userAccountMapper.selectCustomerByLogin(id, pw, companyId);
         if (account == null) {
             return null;
         }
@@ -80,10 +80,10 @@ String userId = account.getUserId();
         return userInfo;
 
     }
-    public UserInfo login(String id, String password, String companyId) {
+    public UserInfo login(String id, String pw, String companyId) {
         // 고객 로그인 후 토큰을 생성해 반환
-        log.info("▼ login S. id:{}, password:{}, companyId:{}", id, password, companyId);
-        UserInfo userInfo = _login(id, password, companyId);
+        log.info("▼ login S. id:{}, pw:{}, companyId:{}", id, pw, companyId);
+        UserInfo userInfo = _login(id, pw, companyId);
         /* 여기서 만들면 안될 거 같음
         if (userInfo != null) {
             setUserCustomers(userInfo);

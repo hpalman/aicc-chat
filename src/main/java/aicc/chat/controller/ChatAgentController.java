@@ -51,10 +51,10 @@ public class ChatAgentController {
     // 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
     public ResponseEntity<UserInfo> login(
             @RequestParam String id,
-            @RequestParam String password) {
+            @RequestParam String pw) {
         log.info("▼ login S. 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
         ResponseEntity<UserInfo> ret;
-        UserInfo userInfo = agentAuthService.login(id, password);
+        UserInfo userInfo = agentAuthService.login(id, pw);
         if (userInfo == null) {
             log.warn("▶ userInfo == null");
             ret = ResponseEntity.status(401).build();
@@ -88,6 +88,28 @@ public class ChatAgentController {
         // agentAuthService.heartbeat(userInfo.getUserId());
 
         log.info("▲ getCurrentAgent E. Uri:{} E. userInfo:{}", UtilString.getUriPath(), userInfo);
+        return ResponseEntity.ok(userInfo);
+    }
+
+    @GetMapping("/heartbeat")
+    // 
+    public ResponseEntity<UserInfo> heartbeat(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
+        log.info("▼ heartbeat E. Uri:{} S.", UtilString.getUriPath());
+
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
+            return ResponseEntity.status(401).build();
+        }
+
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        if (userInfo == null) {
+            log.warn("▶ userInfo == null.");
+            return ResponseEntity.status(401).build();
+        }
+
+        // 하트비트 - 온라인 상태 유지. 다른 방식으로 처리할 필요가 있음. 여기서는 토큰만 확인하는 것으로 일을 해야 함
+        // agentAuthService.heartbeat(userInfo.getUserId());
+
+        log.info("▲ heartbeat E. Uri:{} E. userInfo:{}", UtilString.getUriPath(), userInfo);
         return ResponseEntity.ok(userInfo);
     }
 

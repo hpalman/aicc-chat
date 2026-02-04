@@ -140,7 +140,7 @@
         const pw = document.getElementById("loginPw").value;
 
         // 상담원 전용 로그인 API 호출
-        fetch(`/api/agent/login?id=${id}&password=${pw}`, { method: 'POST' })
+        fetch(`/api/agent/login?id=${id}&pw=${pw}`, { method: 'POST' })
             .then(res => {
                 if ( res.status == 401) {
                     alert("인증 정보가 잘못되었습니다.");
@@ -166,7 +166,8 @@
             headers: { 'Authorization': 'Bearer ' + token }
         })
         .then(res => {
-            if (res.ok) return res.json();
+            if (res.ok)
+				 return res.json();
             throw new Error();
         })
         .then(user => {
@@ -247,7 +248,7 @@
      * 하트비트 전송
      */
     function sendHeartbeat() {
-        fetch('/api/agent/me', {
+        fetch('/api/agent/heartbeat', {
             headers: { 'Authorization': 'Bearer ' + authToken }
         })
         .then(res => {
@@ -823,7 +824,8 @@
             throw new Error();
         })
         .then(stat => {
-            console.log(stat);
+			console.log(stat);
+			return alert( JSON.stringify(stat));
         })
         .catch(err => {
             console.error('STAT 오류:', err);

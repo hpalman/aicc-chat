@@ -30,13 +30,13 @@ public class AgentAuthService {
     private final aicc.chat.service.inteface.MessageBroker messageBroker;
     private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
 
-    public UserInfo login(String id, String password) {
+    public UserInfo login(String id, String pw) {
         // 상담원 로그인 후 토큰을 생성해 반환
         log.info("▼ login S. Attempting agent login via API: {}", agentLoginApiUrl);
 
-        UserAccount account = userAccountMapper.selectAgentByLogin(id, password); // DB
+        UserAccount account = userAccountMapper.selectAgentByLogin(id, pw); // DB
         if (account == null) {
-            log.info("▶ account == null. id:{}, password:{}", id, password);
+            log.info("▶ account == null. id:{}, pw:{}", id, pw);
             return null;
         }
 
