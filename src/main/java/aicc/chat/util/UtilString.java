@@ -1,5 +1,9 @@
 package aicc.chat.util;
 
+import java.net.URI;
+
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 public class UtilString {
     public static String left(String s, int length) {
         if (s == null || s.length() < length) return s;
@@ -30,5 +34,32 @@ public class UtilString {
      */
     public static String emitToken(String str) {
         return left(str,15) + "..." + right(str, 5);
+    }
+
+    public static void appendNameValue(StringBuilder sb, String name, String value) {
+        if ( value != null) {
+            if ( sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append( String.format("%s='%s'", name, value) );
+        }
+    }
+    public static void appendNameValue(StringBuilder sb, String name, Integer value) {
+        if ( value != null) {
+            if ( sb.length() > 0) {
+                sb.append(",");
+            }
+            sb.append( String.format("%s=%d", name, value) );
+        }
+    }
+
+    /**
+     * UtilString.getUriPath
+     * @return
+     */
+    public static String getUriPath() {
+        String fullUrl = ServletUriComponentsBuilder.fromCurrentRequest().toUriString();
+        URI uri = URI.create(fullUrl);
+        return uri.getPath();  // "/api/v1/users/123"
     }
 }

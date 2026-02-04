@@ -20,6 +20,7 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Slf4j
 @Configuration
@@ -37,6 +38,7 @@ public class RedisOnlyConfig {
         return message -> {
             try {
                 String msg = objectMapper.writeValueAsString(message);
+                log.info("▷ chat.topic > msg:{}", msg);
                 redisTemplate.convertAndSend("chat.topic", msg);
             } catch (Exception e) {
                 log.error("Redis Publish Error", e);
@@ -80,14 +82,14 @@ public class RedisOnlyConfig {
                     log.info("System broadcast message received: {}", chatMessage.getMessage());
 
                     // 상담원 가용 여부 결정
-                    boolean available = "AGENT_AVAILABLE".equals(chatMessage.getMessage());
+                    boolean available = "AGENT_STATUS".equals(chatMessage.getMessage());
 
-                    messagingTemplate.convertAndSend("/topic/agent-availability",
-                        java.util.Map.of(
-                            "available", available,
-                            "message", chatMessage.getMessage(),
-                            "timestamp", System.currentTimeMillis()
-                        ));
+                    Map<String, Object> map = Map.of(
+                        "available", available,
+                        "message", chatMessage.getMessage(),
+                        "timestamp", System.currentTimeMillis()
+                    );
+                    messagingTemplate.convertAndSend("/topic/agent-availability", map);
                 } else {
                     // 일반 채팅 메시지는 해당 방으로 전송
                     messagingTemplate.convertAndSend("/topic/room/" + chatMessage.getRoomId(), chatMessage);

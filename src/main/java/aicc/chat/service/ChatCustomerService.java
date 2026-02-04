@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -69,36 +70,40 @@ public class ChatCustomerService {
     private final CustomerAuthService   customerAuthService;
 
 
-    // 고객의 상담 종료 처리
-    public ResponseEntity<?> _chatEnd(String bearerToken) {
+    /**
+     * 고객의 상담 종료 처리
+     * @param bearerToken
+     * @return
+     */
+    public ResponseEntity<?> _chatEnd(String bearerToken, Object _roomId) {
         if ( !tokenService.isValidBearerToken(bearerToken) ) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null) {
-            log.warn("▶ userInfo == null");
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String userId    = userInfo.getUserId();
-        String companyId = userInfo.getCompanyId();
-        String userName  = userInfo.getUserName();
+        String userId     = userInfo.getUserId();
+        String companyId  = userInfo.getCompanyId();
+        String userName   = userInfo.getUserName();
 
-        String roomId = customerAuthService.getRoomId(userId); // REDIS. chat:user-customer:{userId} 고객의 현재 roomId 조회
-        if (roomId == null) {
+        //String yourRoomId = userInfo.getRoomId(); // 토큰에 실린 roomId
+        String roomId = _roomId.toString(); // customerAuthService.getRoomId(userId); // REDIS. chat:user-customer:{userId} 고객의 현재 roomId 조회
+        if (_roomId == null) {
             log.info("▶ userId:{}, roomId == null. 활성화된 상담방이 없습니다.", userId);
-            return ResponseEntity.status(404).body("활성화된 상담방이 없습니다.");
+            return ResponseEntity.ok(Map.of("code",-1, "message", "활성화된 상담방이 없습니다.", "userId",userId));
         }
 
         ChatRoom room = roomRepository.findRoomById(roomId); // REDIS. chat:room-info:{roomId}
         if (room == null) {
             log.info("▶ Room not found: roomId={}", roomId);
-            return ResponseEntity.status(404).body("상담방을 찾을 수 없습니다.");
+            return ResponseEntity.ok(Map.of("code",-1, "message", "상담방을 찾을 수 없습니다.", "roomId", roomId));
         }
 
         // 채팅방 상태를 CLOSED로 변경
-        roomRepository.setRoutingMode(roomId, "CLOSED"); // REDIS.  "chat:room-info:{roomId}
+        roomRepository.setRoutingMode(roomId, "CLOSED"); // REDIS.  "chat:room-info:{roomId} { routingMode CLOSED }
 
         // 고객과 상담원에게 종료 메시지 전송
         LocalDateTime now = LocalDateTime.now();
@@ -152,7 +157,7 @@ public class ChatCustomerService {
         roomUpdateBroadcaster.broadcastRoomList(); // WebSocket MSG. /topic/rooms의 모든 목록을 전파
 
         log.info("▶ Customer chat ended successfully: roomId={}, userId={}", roomId, userId);
-        return ResponseEntity.ok(Map.of("message", "상담이 종료되었습니다.", "roomId", roomId));
+        return ResponseEntity.ok(Map.of("code",0, "message", "상담이 종료되었습니다.", "roomId", roomId));
     }
 
 
@@ -183,7 +188,7 @@ public class ChatCustomerService {
         //    return ResponseEntity.status(409).build();
         //}
 
-        String newRoomId = customerAuthService.newRoomId(userId);
+        String newRoomId = customerAuthService.newRoomId(userId); // ROOM ID 생성
 
         customerAuthService.setUserCustomers(custInfo, newRoomId); // Constants.USER_CUSTOMER_KEY : "chat:user-customer:{custId}" 해시값 넣음
 
@@ -306,7 +311,7 @@ public class ChatCustomerService {
         //             .createdAt(message.getTimestamp()) // 서버 타임스탬프 사용
         //             .build();
         //     chatHistoryService.saveChatHistory(chatHistory); // DB
-        // 
+        //
         //     // 세션의 마지막 활동 시간 DB 업데이트
         //     chatSessionService.updateLastActivity(message.getRoomId()); // DB
         // } catch (Exception e) {

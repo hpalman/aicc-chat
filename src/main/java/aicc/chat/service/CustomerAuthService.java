@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -54,10 +55,10 @@ public class CustomerAuthService {
 
 
 String userId = account.getUserId();
-String newRoomId = newRoomId(userId);
+//String newRoomId = newRoomId(userId);
 
         UserInfo userInfo = UserInfo.builder()
-                .roomId(newRoomId)
+                // .roomId(newRoomId)
                 .userId(userId)
                 .userName(account.getUserName())
                 .role(role)
@@ -250,13 +251,11 @@ String roomId = userCustomer.getRoomId();
     public String getRoomId(String userId) {
         log.info("▶ getRoomId S. userId:{}", userId);
         String customerKey = Constants.USER_CUSTOMER_KEY + ":" + userId; // chat:user-customer:{userId}
-        Object roomId = redisTemplate.opsForHash().get(customerKey, "roomId");
-        String result = roomId != null ? roomId.toString() : null;
-        log.info("Customer {} roomId: {}", userId, result);
-        log.info("◀ getRoomId E");
-        return result;
+        Object object = redisTemplate.opsForHash().get(customerKey, "roomId");
+        String roomId = (object == null) ? null : object.toString();
+        log.info("◀ getRoomId E. userId:{}, roomId:{}, customerKey:{}", userId, roomId, customerKey);
+        return roomId;
     }
-
 
     /**
      * 고유한 방ID를 생성

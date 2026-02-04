@@ -11,7 +11,7 @@ public class Constants {
 	 *   - lastHeartbeat: 마지막 하트비트 시간 (ISO-8601)
 	 *   - sessionId: WebSocket 세션 ID (optional)
 	 */
-	public static final String ONLINE_AGENTS_KEY = "chat:user-agent";
+	public static final String USER_AGENT_KEY = "chat:user-agent";
 
 	/**
 	 * Redis Hash 구조로 온라인 고객 정보 저장

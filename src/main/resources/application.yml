@@ -55,10 +55,13 @@ spring:
       idle-timeout: 600000
       max-lifetime: 1800000
 
+# 전역 설정으로 모든 JSON 출력을 pretty하게
+  jackson:
+    serialization:
+      indent-output: true
+
 # MyBatis 설정 (MyBatisConfig.java에서 처리)
 # SQL 로그는 MyBatisSqlLogger 인터셉터가 출력합니다.
-
-
 mybatis:
   configuration:
     log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl

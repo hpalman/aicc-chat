@@ -61,12 +61,14 @@ public class AgentAuthService {
         userInfo.setToken(tokenService.generateToken(userInfo));
 
         // Redis에 온라인 상담원 등록 (Hash 구조, 10분 TTL)
-        String agentKey = Constants.ONLINE_AGENTS_KEY + ":" + account.getUserId(); // chat:user-agents:{agentId}
+        String agentKey = Constants.USER_AGENT_KEY + ":" + account.getUserId(); // chat:user-agents:{agentId}
         java.util.Map<String, String> agentInfo = new java.util.HashMap<>();
         agentInfo.put("userName"     , account.getUserName());
         agentInfo.put("userId"       , account.getUserId());
         agentInfo.put("loginTime"    , LocalDateTime.now().toString());
         agentInfo.put("lastHeartbeat", LocalDateTime.now().toString());
+
+        agentInfo.put("agentStatus"  , "WORKING");
 
         log.info("▶ opsForHash().putAll > agentKey:{}, agentInfo:{}", agentKey, agentInfo);
         Boolean exists = redisTemplate.hasKey(agentKey);
@@ -84,7 +86,7 @@ public class AgentAuthService {
             .roomId("SYSTEM_BROADCAST")
             .sender("System")
             .senderRole(UserRole.SYSTEM)
-            .message("AGENT_AVAILABLE")
+            .message("AGENT_STATUS") // AGENT 상태가 변경되면 웹소켓으로 전달
             .type(MessageType.SYSTEM)
             .timestamp(LocalDateTime.now())
             .build());
@@ -99,7 +101,7 @@ public class AgentAuthService {
      * 상담원 하트비트 - 온라인 상태 유지
      */
     public void heartbeat(String userId) {
-        String agentKey = Constants.ONLINE_AGENTS_KEY + ":" + userId;
+        String agentKey = Constants.USER_AGENT_KEY + ":" + userId;
         log.info("▼ heartbeat. userId:{}, agentKey:{}", userId,agentKey);
 
         // Hash 구조에서 lastHeartbeat 필드 업데이트

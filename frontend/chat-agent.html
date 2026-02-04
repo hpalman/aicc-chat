@@ -71,6 +71,12 @@
             <h5 class="mb-0">상담 목록</h5>
             <button class="btn btn-sm btn-outline-secondary" onclick="logout()">로그아웃</button>
         </div>
+        <div class="d-flex justify-content-between align-items-center mb-3" style="border: 1px dashed red;">
+            <button class="btn btn-sm btn-outline-secondary" onclick="setAgentStatus('WAITING')">대기</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="setAgentStatus('WORKING')">대기종료</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="getAgentStatus()">상태</button>
+        </div>
+
         <div class="mb-3">
             <small class="text-muted">접속 상담원:</small>
             <strong id="displayAgentName"></strong>
@@ -774,6 +780,56 @@
         chatBox.appendChild(div);
         chatBox.scrollTop = chatBox.scrollHeight;
     }
+
+    /**
+      상담사(나)의 상태 변경. WAITING:대기, WORKING:업무중(자동배분금지)
+    */
+    function setAgentStatus(stat) {
+    	switch ( stat ) {
+    	    case "WAITING": // 대기중(자동배분가능)
+    	    case "WORKING": // 업무중(자동배분금지)
+    	        break;
+    	    default:
+    	    	return alert('잘못된 상태값:' + stat);
+        }
+
+        fetch(`/api/agent/status/${stat}`, {
+        	method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + authToken,
+                       'Content-Type': 'application/json' }
+        })
+        .then(res => {
+            if (res.ok) return res.json();
+            throw new Error();
+        })
+        .then(result => {
+            console.log(result);
+        })
+        .catch(err => {
+        	console.error('STAT 오류:', err);
+        });
+    }
+
+    // 상담사 자신의 현재 상태 조회
+    function getAgentStatus() {
+        fetch('/api/agent/status', {
+            method: 'GET',
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        })
+        .then(res => {
+            if (res.ok)
+            	return res.json();
+            console.log(res.status);
+            throw new Error();
+        })
+        .then(stat => {
+            console.log(stat);
+        })
+        .catch(err => {
+            console.error('STAT 오류:', err);
+        });
+    }
+
 </script>
 </body>
 </html>

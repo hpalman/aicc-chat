@@ -13,8 +13,12 @@ import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.ChatSessionService;
 import aicc.chat.service.inteface.RoomRepository;
+import aicc.chat.util.UtilString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -68,8 +72,8 @@ public class ChatAgentController {
     @GetMapping("/me")
     // Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환
     public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
-        log.info("▼ getCurrentAgent E. Uri:{} S.", ServletUriComponentsBuilder.fromCurrentRequest().toUriString());
-        //ResponseEntity<UserInfo> ret;
+        log.info("▼ getCurrentAgent E. Uri:{} S.", UtilString.getUriPath());
+
         if ( !tokenService.isValidBearerToken(bearerToken) ) {
             return ResponseEntity.status(401).build();
         }
@@ -83,47 +87,22 @@ public class ChatAgentController {
         // 하트비트 - 온라인 상태 유지. 다른 방식으로 처리할 필요가 있음. 여기서는 토큰만 확인하는 것으로 일을 해야 함
         // agentAuthService.heartbeat(userInfo.getUserId());
 
-        log.info("▲ getCurrentAgent E. Uri:{} E. userInfo:{}", ServletUriComponentsBuilder.fromCurrentRequest().toUriString(), userInfo);
+        log.info("▲ getCurrentAgent E. Uri:{} E. userInfo:{}", UtilString.getUriPath(), userInfo);
         return ResponseEntity.ok(userInfo);
     }
 
+    /**
+     * 상담사 로그아웃
+     * @param bearerToken
+     * @return
+     */
     @PostMapping("/logout")
-    // 상담원 로그아웃 처리 및 고객에게 알림
     public ResponseEntity<?> logout(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
-        log.info("▼ 상담원 로그아웃 처리:logout 시작./api/agent > /logout S");
-
-        if ( !tokenService.isValidBearerToken(bearerToken) ) {
-            return ResponseEntity.status(401).build();
-        }
-
-        //String actualToken = token.substring(7);
-        //UserInfo userInfo = tokenService.validateToken(actualToken);
-        UserInfo userInfo = tokenService.parseToken(bearerToken);
-        if (userInfo == null) {
-            log.warn("userInfo == null");
-            return ResponseEntity.status(401).build();
-        }
-
-        // Redis에서 온라인 상담원 제거 (Hash 구조 전체 삭제)
-        String agentKey = Constants.ONLINE_AGENTS_KEY + ":" + userInfo.getUserId();
-        redisTemplate.delete(agentKey);
-        log.info("Agent {} ({}) removed from online list in Redis", userInfo.getUserId(), userInfo.getUserName());
-
-        // 상담원 로그아웃 알림 브로드캐스트
-        ChatMessage logoutMessage = ChatMessage.builder()
-            .roomId("SYSTEM_BROADCAST")
-            .sender("System")
-            .senderRole(UserRole.SYSTEM)
-            .message("AGENT_UNAVAILABLE")
-            .type(aicc.chat.domain.MessageType.SYSTEM)
-            .timestamp(java.time.LocalDateTime.now())
-            .build();
-        messageBroker.publish(logoutMessage);
-
-        log.info("▲ 상담원 로그아웃 처리:logout 완료./api/agent > /logout E");
-        return ResponseEntity.ok().build();
+        log.info("▼ logout S. 상담사 로그아웃. path:{}", UtilString.getUriPath());
+        HttpStatus status = chatAgentService.logout(bearerToken);
+        log.info("▼ logout E. 상담사 로그아웃. status:{}", status);
+        return ResponseEntity.status(HttpStatusCode.valueOf(status.value())).build();
     }
-
 
     @GetMapping("/rooms")
     // 상담원에게 전체 상담방 목록을 반환
@@ -373,7 +352,7 @@ public class ChatAgentController {
     @MessageMapping("/agent/chat")
     // 상담원 채팅 메시지를 받아 이력 저장 후 라우팅
     public void onAgentMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-// 방이 있는지 체크 필요
+        // 방이 있는지 체크 필요
 
         log.info("▶ onAgentMessage S");
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
@@ -434,6 +413,36 @@ public class ChatAgentController {
         roomRepository.updateLastActivity(roomId); // REDIS VALUE
         routingStrategy.handleMessage(roomId, message);
         log.info("▲ onAgentMessage E.");
+    }
+
+
+    @PostMapping("/status/{status}")
+    public ResponseEntity<?> setAgentStatus(
+            @RequestHeader(value = "Authorization", required = false) String bearerToken,
+            @PathVariable String status
+    ) {
+        log.info("▼ setAgentStatus S. token:{}, status:{}", UtilString.leftRight(bearerToken,15,5), status);
+
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        String agentId = userInfo.getUserId();
+        Boolean ret = chatAgentService.setAgentStatus(agentId, status);
+
+        log.info("▲ setAgentStatus E. ret:{}, agentId:{}, status:{}", ret, agentId, status);
+        return ResponseEntity.ok(Map.of("code", (ret == true) ? 0 : -1, "agentId",agentId, "status",status));
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<?> getAgentStatus(
+            @RequestHeader(value = "Authorization", required = false) String bearerToken
+    ) {
+        log.info("▼ getAgentStatus S. token:{}", UtilString.leftRight(bearerToken,15,5));
+
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        String agentId = userInfo.getUserId();
+        Map<?,?> map = chatAgentService.getAgentStatus(agentId);
+
+        log.info("▲ getAgentStatus E. {}", map);
+        return ResponseEntity.ok(map);
     }
 }
 

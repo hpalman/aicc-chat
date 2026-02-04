@@ -19,6 +19,10 @@ import aicc.chat.util.UtilString;
 //import aicc.chat.service.inteface.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Map;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
@@ -116,16 +120,24 @@ public class ChatCustomerController {
         return ret;
     }
 
+    /**
+     * 고객의 상담 종료 처리
+     * @param token
+     * @return
+     */
     @PostMapping("/chat-end")
-    // 고객의 상담 종료 처리
-    public ResponseEntity<?> chatEnd(@RequestHeader(value = "Authorization", required = false) String token) {
-        log.info("▼ chatEnd S. token:{}", UtilString.leftRight(token,15,5));
+    public ResponseEntity<?> chatEnd(@RequestHeader(value = "Authorization", required = false) String token,
+            @RequestBody Map<String,Object> body) {
+
+        Object roomId = body.get("roomId");
+        log.info("▼ chatEnd S. token:{}, roomId:{}", UtilString.leftRight(token,15,5), roomId);
+
         ResponseEntity<?> ret;
         try {
-            ret = chatCustomerService._chatEnd(token);
+            ret = chatCustomerService._chatEnd(token, roomId);
         } catch (Exception e) {
-            log.error("▼ chatEnd ❌. error.", e);
-            ret = ResponseEntity.status(500).body("상담 종료 처리 중 오류가 발생했습니다.");
+            log.error("❌ chatEnd error.", e);
+            ret = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
         log.warn("▲ chatEnd E.");
         return ret;

@@ -479,7 +479,8 @@
             headers: {
                 'Authorization': 'Bearer ' + authToken,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ roomId: currentRoomId})
         })
         .then(response => {
             if (!response.ok) {
