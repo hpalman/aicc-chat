@@ -52,8 +52,11 @@ public class ChatCustomerController {
     // 회사별 고객 로그인 처리
     public ResponseEntity<UserInfo> login(
             @PathVariable String companyId,
-            @RequestParam String id,
-            @RequestParam String pw) {
+            @RequestBody Map<String,String> body
+    ) {
+        String id = body.get("id");
+        String pw = body.get("pw");
+
         log.info("▶ 회사별 고객 로그인 처리:login 시작");
         ResponseEntity<UserInfo> ret;
         UserInfo userInfo = customerAuthService.login(id, pw, companyId);
@@ -131,17 +134,36 @@ public class ChatCustomerController {
         return ret;
     }
 
+    // 최근 채팅 정보
+    @GetMapping("/chat-lastinfo")
+    public ResponseEntity<?> chatLastInfo(@RequestHeader(value = "Authorization", required = false) String token) {
+        log.info("▼ chatLastInfo S. token:{}", UtilString.leftRight(token,15,5));
+
+        ResponseEntity<?> ret;
+        try {
+            ret = chatCustomerService.chatLastInfo(token);
+        } catch (Exception e) {
+            log.error("❌ chatLastInfo error.", e);
+            ret = ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
+        log.warn("▲ chatLastInfo E. {}", ret);
+        return ret;
+    }
+
 /*
     ["SEND\ndestination:/app/customer/chat\ncontent-length:107\n\n{\"roomId\":\"room-dba1f913\",\"sender\":\"홍길철\",\"type\":\"LEAVE\",\"message\":\"홍길철님이 나갔습니다.\"}\u0000"]
     StompHeaderAccessor [headers={simpMessageType=MESSAGE, stompCommand=SEND, nativeHeaders={destination=[/app/customer/chat], content-length=[107]}, simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-6c736bd7, companyId=apt001, org.springframework.messaging.simp.SimpAttributes.COMPLETED=true, userEmail=cust01@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@11a9323d, lookupDestination=/customer/chat, simpSessionId=mlgk5gek, simpDestination=/app/customer/chat}]
 */
+    /**
+     * 고객 메시지를 받아 이력 저장 후 라우팅
+     * @param message
+     * @param headerAccessor
+     */
     @MessageMapping("/customer/chat")
-    // 고객 메시지를 받아 이력 저장 후 라우팅
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("▼ onCustomerMessage S. 고객 메시지 처리. S. message:{}",message);
-
+        log.info("▼ onCustomerMessage S. 고객 메시지 처리. S");
         chatCustomerService.customerMessage(message, headerAccessor);
-
         log.info("▼ onCustomerMessage E. 고객 메시지 처리. E");
     }
 

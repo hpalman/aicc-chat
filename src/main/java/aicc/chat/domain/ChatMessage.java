@@ -10,11 +10,13 @@ import java.time.LocalDateTime;
 @Builder
 @ToString
 public class ChatMessage {
-    private String roomId;
-    private String sender;
-    private UserRole senderRole; // CUSTOMER, AGENT, BOT, SYSTEM
-    private String message;
-    private MessageType type;
-    private String companyId;
+    private String        roomId;
+    private String        sender;
+    private UserRole      senderRole; // CUSTOMER, AGENT, BOT, SYSTEM
+    private String        message;
+    private MessageType   type;
+    private String        companyId;
     private LocalDateTime timestamp; // 메시지 발행 시간 (서버에서 설정)
+
+    private String        targetTopic; // 2026.02.05 허) 발행 토픽명
 }

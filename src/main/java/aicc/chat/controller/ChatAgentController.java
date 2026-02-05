@@ -3,6 +3,7 @@ package aicc.chat.controller;
 import aicc.chat.consts.Constants;
 import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
+import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
@@ -50,11 +51,16 @@ public class ChatAgentController {
     @PostMapping("/login")
     // 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
     public ResponseEntity<UserInfo> login(
+            @RequestBody Map<String,String> body/*
             @RequestParam String id,
-            @RequestParam String pw) {
+            @RequestParam String pw */) {
+        String id = body.get("id");
+        String pw = body.get("pw");
+        String status = body.get("status");
+
         log.info("▼ login S. 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
         ResponseEntity<UserInfo> ret;
-        UserInfo userInfo = agentAuthService.login(id, pw);
+        UserInfo userInfo = agentAuthService.login(id, pw, status);
         if (userInfo == null) {
             log.warn("▶ userInfo == null");
             ret = ResponseEntity.status(401).build();
@@ -92,7 +98,7 @@ public class ChatAgentController {
     }
 
     @GetMapping("/heartbeat")
-    // 
+    //
     public ResponseEntity<UserInfo> heartbeat(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
         log.info("▼ heartbeat E. Uri:{} S.", UtilString.getUriPath());
 
@@ -200,7 +206,7 @@ public class ChatAgentController {
                     .sender("System")
                     .senderRole(UserRole.SYSTEM)
                     .message(userInfo.getUserName() + " 상담원과 연결되었습니다.")
-                    .type(aicc.chat.domain.MessageType.TALK)
+                    .type(MessageType.TALK)
                     .timestamp(now) // 서버 타임스탬프 설정
                     .build();
 
@@ -248,7 +254,7 @@ public class ChatAgentController {
                         .sender("System")
                         .senderRole(UserRole.SYSTEM)
                         .message(userInfo.getUserName() + " 상담원이 상담에 개입했습니다.")
-                        .type(aicc.chat.domain.MessageType.INTERVENE)
+                        .type(MessageType.INTERVENE)
                         .timestamp(now)
                         .build();
 
@@ -333,7 +339,7 @@ public class ChatAgentController {
                         .sender("System")
                         .senderRole(UserRole.BOT)
                         .message("상담원과의 상담이 종료되었습니다. 다시 챗봇과 대화하실 수 있습니다.")
-                        .type(aicc.chat.domain.MessageType.TALK)
+                        .type(MessageType.TALK)
                         .timestamp(now) // 서버 타임스탬프 설정
                         .build();
 

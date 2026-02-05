@@ -140,7 +140,13 @@
         const pw = document.getElementById("loginPw").value;
 
         // 상담원 전용 로그인 API 호출
-        fetch(`/api/agent/login?id=${id}&pw=${pw}`, { method: 'POST' })
+        fetch(`/api/agent/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ "id":id, "pw":pw, "status":"NONE" })
+            })
             .then(res => {
                 if ( res.status == 401) {
                     alert("인증 정보가 잘못되었습니다.");
@@ -782,14 +788,24 @@
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
+    let subscriptionCustomerwaiting = null;
     /**
       상담사(나)의 상태 변경. WAITING:대기, WORKING:업무중(자동배분금지)
     */
     function setAgentStatus(stat) {
     	switch ( stat ) {
     	    case "WAITING": // 대기중(자동배분가능)
-    	    case "WORKING": // 업무중(자동배분금지)
+                subscriptionCustomerwaiting = stompClient.subscribe('/topic/customerwaiting', function (message) { // [상담원 연결] 시 자동 연결 푸시 구독
+                    const mesg = JSON.parse(message.body);
+                    console.log("mesg", mesg);
+                });
     	        break;
+    	    case "WORKING": // 업무중(자동배분금지)
+    	        if ( subscriptionCustomerwaiting != null ) {
+                    subscriptionCustomerwaiting.unsubscribe(); // [상담원 연결] 시 자동 연결 푸시 구독 해제
+    	        }
+    	        subscriptionCustomerwaiting = null;
+    	       break;
     	    default:
     	    	return alert('잘못된 상태값:' + stat);
         }

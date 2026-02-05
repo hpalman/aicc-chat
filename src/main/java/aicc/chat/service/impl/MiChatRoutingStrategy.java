@@ -41,6 +41,8 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
         // 2. 상담원 연결 요청(HANDOFF)인 경우
         if (MessageType.HANDOFF.equals(message.getType())) {
+            // @TODO: 대기중인 상담원에게 자동 연결 처리 필요
+
             switchToAgentMode(roomId);
             return;
         }
@@ -96,27 +98,27 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                             .timestamp(now) // 서버 타임스탬프 설정
                             .build();
                     messageBroker.publish(botMessage);
-
-                    // PostgreSQL에 BOT 응답 저장
-                    try {
-                        ChatHistory chatHistory = ChatHistory.builder()
-                                .roomId(roomId)
-                                .senderId("BOT")
-                                .senderName("Bot")
-                                .senderRole("BOT")
-                                .message(responseText)
-                                .messageType("TALK")
-                                .companyId(message.getCompanyId())
-                                .createdAt(now) // 서버 타임스탬프 사용
-                                .build();
-                        chatHistoryService.saveChatHistory(chatHistory); // DB
-
-                        // 세션 마지막 활동 시간 업데이트
-                        chatSessionService.updateLastActivity(roomId);  // DB
-                    } catch (Exception e) {
-                        log.error("Failed to save bot message to DB: roomId={}", roomId, e);
-                        // DB 저장 실패해도 채팅은 계속 진행
-                    }
+                    // @TODO: 잠시 DB 저장로직 막음
+                    // // PostgreSQL에 BOT 응답 저장
+                    // try {
+                    //     ChatHistory chatHistory = ChatHistory.builder()
+                    //             .roomId(roomId)
+                    //             .senderId("BOT")
+                    //             .senderName("Bot")
+                    //             .senderRole("BOT")
+                    //             .message(responseText)
+                    //             .messageType("TALK")
+                    //             .companyId(message.getCompanyId())
+                    //             .createdAt(now) // 서버 타임스탬프 사용
+                    //             .build();
+                    //     chatHistoryService.saveChatHistory(chatHistory); // DB
+                    //
+                    //     // 세션 마지막 활동 시간 업데이트
+                    //     chatSessionService.updateLastActivity(roomId);  // DB
+                    // } catch (Exception e) {
+                    //     log.error("Failed to save bot message to DB: roomId={}", roomId, e);
+                    //     // DB 저장 실패해도 채팅은 계속 진행
+                    // }
                 }
             }
         );

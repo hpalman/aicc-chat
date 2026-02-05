@@ -68,15 +68,21 @@ public class RedisOnlyConfig {
         return container;
     }
 
+    // redis-cli PUBLISH chat.topic '{"roomId":"SYSTEM_BROADCAST","sender":"System","senderRole":"SYSTEM","message":"공지사항입니다.","type":"TALK","companyId":"apt001"}'
     @Bean
     // Redis 메시지를 STOMP 토픽으로 중계하는 리스너 어댑터
-    public MessageListenerAdapter listenerAdapter() {
+    MessageListenerAdapter listenerAdapter() {
         log.info("▶ listenerAdapter.");
         return new MessageListenerAdapter((MessageListener) (message, pattern) -> {
             try {
                 String body = new String(message.getBody(), StandardCharsets.UTF_8);
                 ChatMessage chatMessage = objectMapper.readValue(body, ChatMessage.class);
 
+                String targetTopic = chatMessage.getTargetTopic();
+                if ( null != targetTopic ) {
+                    // redis-cli PUBLISH chat.topic '{"roomId":"SYSTEM_BROADCAST","sender":"System","senderRole":"SYSTEM","message":"공지사항입니다.","type":"TALK","companyId":"apt001", "targetTopic":"/topic/customerwaiting" }'                    
+                    messagingTemplate.convertAndSend(targetTopic, chatMessage);
+                } else
                 // 시스템 브로드캐스트 메시지 처리 (상담원 로그인/로그아웃 알림)
                 if ("SYSTEM_BROADCAST".equals(chatMessage.getRoomId())) {
                     log.info("System broadcast message received: {}", chatMessage.getMessage());
@@ -103,7 +109,7 @@ public class RedisOnlyConfig {
     @Bean
     // 스케줄러 제어 메시지를 처리하는 리스너 어댑터
     @ConditionalOnProperty(name = "app.chat.cleanup.enabled", havingValue = "true", matchIfMissing = true)
-    public MessageListenerAdapter schedulerListenerAdapter(SchedulerControlService schedulerControlService) {
+    /* public */ MessageListenerAdapter schedulerListenerAdapter(SchedulerControlService schedulerControlService) {
         return new MessageListenerAdapter((MessageListener) (message, pattern) -> {
             try {
                 String body = new String(message.getBody(), StandardCharsets.UTF_8);

@@ -30,7 +30,7 @@ public class AgentAuthService {
     private final aicc.chat.service.inteface.MessageBroker messageBroker;
     private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
 
-    public UserInfo login(String id, String pw) {
+    public UserInfo login(String id, String pw, String status) {
         // 상담원 로그인 후 토큰을 생성해 반환
         log.info("▼ login S. Attempting agent login via API: {}", agentLoginApiUrl);
 
@@ -68,7 +68,7 @@ public class AgentAuthService {
         agentInfo.put("loginTime"    , LocalDateTime.now().toString());
         agentInfo.put("lastHeartbeat", LocalDateTime.now().toString());
 
-        agentInfo.put("agentStatus"  , "WORKING");
+        agentInfo.put("agentStatus"  , status); // 상담사 초기 상태. NONE WORKING"WORKING"
 
         log.info("▶ opsForHash().putAll > agentKey:{}, agentInfo:{}", agentKey, agentInfo);
         Boolean exists = redisTemplate.hasKey(agentKey);

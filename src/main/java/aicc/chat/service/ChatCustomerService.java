@@ -8,6 +8,8 @@ import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
 import aicc.chat.domain.persistence.UserAccount;
+import aicc.chat.domain.redis.RoomInfo;
+import aicc.chat.domain.redis.UserCustomer;
 import aicc.chat.mapper.UserAccountMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,12 +40,15 @@ import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.ChatSessionService;
 import aicc.chat.service.inteface.MessageBroker;
 import aicc.chat.service.inteface.RoomRepository;
+import aicc.chat.util.UtilString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -69,6 +74,7 @@ public class ChatCustomerService {
     private final MessageBroker         messageBroker;
     private final CustomerAuthService   customerAuthService;
 
+    private final ObjectMapper mapper; // 자동 주입됨
 
     /**
      * 고객의 상담 종료 처리
@@ -171,7 +177,7 @@ public class ChatCustomerService {
      * @param requestBody
      * @return
      */
-    public  ResponseEntity<ChatRoom> _chatStart(String bearerToken,ChatRoom requestBody) {
+    public  ResponseEntity<ChatRoom> _chatStart(String bearerToken,ChatRoom chatRoom) {
         if ( !tokenService.isValidBearerToken(bearerToken) ) {
             return ResponseEntity.status(401).build();
         }
@@ -182,13 +188,18 @@ public class ChatCustomerService {
         }
 
         String userId   = custInfo.getUserId();
-        String roomName = requestBody.getRoomName();
+        String roomName = chatRoom.getRoomName();
         // @TODO: 잠시 막음
         //if ( roomRepository.existCustomer(userId) ) {
         //    return ResponseEntity.status(409).build();
         //}
 
-        String newRoomId = customerAuthService.newRoomId(userId); // ROOM ID 생성
+        String newRoomId;
+        if ( UtilString.isNotEmpty(chatRoom.getRoomId()) ) {
+            newRoomId = chatRoom.getRoomId();
+        } else {
+            newRoomId = customerAuthService.newRoomId(userId); // ROOM ID 생성
+        }
 
         customerAuthService.setUserCustomers(custInfo, newRoomId); // Constants.USER_CUSTOMER_KEY : "chat:user-customer:{custId}" 해시값 넣음
 
@@ -232,9 +243,7 @@ public class ChatCustomerService {
 
     // 고객 메시지를 받아 이력 저장 후 라우팅
     public void customerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("▼ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 시작");
-        String sessionId = headerAccessor.getSessionId();
-        log.info("▶ sessionId:{}, MessageType:{}", sessionId, message.getType().toString()); // sessionId:xxfuatci, MessageType:LEAVE
+        log.info("▼ customerMessage S. message>{},headerAccessor>{}", message,headerAccessor);
 
         //WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);
         //log.info("attr:{}", attr);
@@ -245,9 +254,7 @@ public class ChatCustomerService {
 
         // 서버에서 메시지 수신 시간 설정
         message.setTimestamp(LocalDateTime.now());
-// 세션id
-// userId
-// roomId
+
         if (sessionAttributes != null) {
             String roomId    = (String) sessionAttributes.get("roomId");
             String userName  = (String) sessionAttributes.get("userName");
@@ -320,7 +327,69 @@ public class ChatCustomerService {
         // }
 
         roomRepository.updateLastActivity(message.getRoomId()); // REDIS. chat:room-info:{roomId}의 lastActivity 값 설정
+        log.info("   >>> customerMessage>handleMessage S");
         routingStrategy.handleMessage(message.getRoomId(), message); // Pub
-        log.info("▲ 고객 메시지를 받아 이력 저장 후 라우팅:onCustomerMessage 완료 ");
+        log.info("   <<< customerMessage>handleMessage E");
+        log.info("▲ customerMessage E.");
+    }
+
+    /**
+     * 고객의 마지막 채팅 정보 - 이전 연결 끊김을 이어서 하기 위함
+     * @param
+     * @return
+     */
+    public ResponseEntity<?> chatLastInfo(String bearerToken) {
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        if (userInfo == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // 1. chat:user-customer:{userId}의 정보
+        String userCustomerKey = Constants.USER_CUSTOMER_KEY + ":" + userInfo.getUserId(); // chat:user-customer:{userId}
+        if ( !redisTemplate.hasKey(userCustomerKey) ) {
+            return ResponseEntity.ok("{}");
+        }
+
+        Map<Object, Object> map1 = redisTemplate.opsForHash().entries(userCustomerKey);
+        UserCustomer userCustomer = mapper.convertValue(map1, UserCustomer.class);
+
+        if ( UtilString.isEmpty(userCustomer.getRoomId())) {
+            return ResponseEntity.ok("{}");
+        }
+
+        // 2. chat:room-info:{roomId} 정보
+        String roomInfoKey = Constants.ROOM_INFO_KEY_PREFIX + userCustomer.getRoomId();
+        if ( !redisTemplate.hasKey(roomInfoKey) ) {
+            return ResponseEntity.ok("{}");
+        }
+
+        Map<Object, Object> map2 = redisTemplate.opsForHash().entries(roomInfoKey);
+        do {
+            if ( map2.containsKey("routingMode") ) {
+                String routingMode = String.valueOf( map2.get("routingMode") );
+                if ( !"CLOSED".equals(routingMode)) {
+                    break;
+                }
+            }
+            return ResponseEntity.ok("{}");
+        } while (false );
+
+        RoomInfo roomInfo = mapper.convertValue(map2, RoomInfo.class);
+
+        roomInfo.getRoutingMode();
+        roomInfo.getCreatorId();
+        roomInfo.getName();
+
+        userCustomer.getRoomId();
+
+        // 새로운 맵에 합치기
+        Map<Object, Object> result = new HashMap<>(map1);
+        result.putAll(map2);
+
+        return ResponseEntity.ok(result);//.build();
     }
 }

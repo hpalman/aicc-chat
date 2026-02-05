@@ -2,13 +2,14 @@
 # api 목차
 ## 상담사용 API
 
-| api                        | 이름                                    | 설명                                      |
-|----------------------------|---------------------------------------|-----------------------------------------|
-| /api/agent/status          | [상담사 상태 조회](#api_agent_status)        |                                         |
-| /api/agent/status/{status} | [상담사 상태 변경](#api_agent_status_status) |  |
-| /api/agent/availability    | [상담사 가용성 조회](#api_agent_availability) |  |
+| api                        | 이름                                      | 설명               |
+|----------------------------|-----------------------------------------|------------------|
+| /api/agent/status          | [상담사 상태 조회](#api_agent_status)          |                  |
+| /api/agent/status/{status} | [상담사 상태 변경](#api_agent_status_status)   |                  |
+| /api/agent/availability    | [상담사 가용성 조회](#api_agent_availability)  |                  |
+| /api/agent/login           | [상담사 로그인](#api_agent_login)             | 상담사가 채팅 시스템에 로그인 |
 
- 
+
 ## 고객용 API
 
 | api                        | 이름                                             | 설명                                      |
@@ -282,15 +283,63 @@ curl 'http://localhost:28070/api/customer/chat-end' \
 * Method : GET
 * Parameters : NONE
 * Request
-```
-curl 'http://localhost:28070/api/agent/availability' 
-```
+  ```
+  curl 'http://localhost:28070/api/agent/availability' 
+  ```
 
 * Response
-```json
-{
-  "available" : true,
-  "agentCount" : 2,
-  "waitingAgentCount" : 1
-}
-```
+  ```json
+  {
+    "available" : true, /* 상담사 연결 가능이면 true */
+    "agentCount" : 2, /* 전체 상담사 수 */
+    "waitingAgentCount" : 1 /* 현재 대기 상태인 상담사 수 */
+  }
+  ```
+  * Data
+  ```text
+    available 상담사 연결 가능이면 true
+    agentCount 전체 상담사 수
+    waitingAgentCount 현재 대기 상태인 상담사 수
+   ```
+
+<a id="api_agent_login"></a>
+### ■ /api/agent/login 상담사 로그인
+* Method : POST
+* Request
+  * Data
+  ```text
+    id : 사용자 ID
+    pw : 패스워드
+    status : NONE, WAITING, WORKING
+   ```
+  * curl
+  ```bash
+  curl -v 'http://localhost:28070/api/agent/login' \
+  -H 'Accept: */*' \
+  -H 'Content-Type: application/json' \
+  -d '{
+        "id":"agent01",
+        "pw":"1234",
+        "status":"NONE"
+  }'
+  ```
+* Response
+  * header
+    ```text
+    HttpStatus : 200 OK
+    HttpStatus : 409 중복로그인상태
+    ```
+  * body
+    ```json
+    {
+      "userId" : "agent01",
+      "userName" : "상담원-01",
+      "role" : "AGENT",
+      "email" : "agent01@aicc.com",
+      "token" : "ew0KI . . . Cn0=",
+      "roomId" : null,
+      "companyId" : "apt001",
+      "status" : 0
+    }
+    ```
+ 

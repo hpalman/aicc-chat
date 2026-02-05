@@ -29,7 +29,7 @@ public class WebSocketEventListener {
     private final WebSocketSessionService webSocketSessionService;
     private final MessageBroker messageBroker;
     private final CustomerAuthService customerAuthService;
-static private boolean skip = true; 
+static private boolean skip = true;
 
     /*
     ㅁ WebSocket/STOMP 이벤트 종류
@@ -42,14 +42,10 @@ static private boolean skip = true;
     SessionUnsubscribeEvent 클라이언트가 구독을 해제할 때 발생         채팅방 탈퇴 추적, 알림 해제
    */
 	private WebSocketSessionAttribute getSimpSessionAttributes(StompHeaderAccessor accessor) {
-		return WebSocketAttributes.getSimpSessionAttributes(accessor);		
+		return WebSocketAttributes.getSimpSessionAttributes(accessor);
     }
 
-    // 연결 시도
-    @EventListener
-    // STOMP 연결 이벤트 로깅
-    public void onConnect(SessionConnectEvent event
-        /*
+	/*
         SessionConnectEvent는 Spring WebSocket + STOMP 환경에서
         클라이언트가 WebSocket 연결을 시작할 때 발생하는 이벤트입니다.
         이 이벤트를 통해 세션 ID, 사용자 정보, STOMP 헤더, 메시지 정보 등을 확인할 수 있습니다.
@@ -64,9 +60,14 @@ static private boolean skip = true;
         nativeHeaders   클라이언트가 STOMP CONNECT 시 보낸 커스텀 헤더
         command         STOMP 명령 (예: CONNECT)
         message         전체 메시지 객체
-        */
-    ) { if ( skip ) return;
-        log.info("▶ WebSocket 연결 이벤트 시작.");
+        ▼▲ ▶
+        ㅁ 연결 시도 : STOMP 연결 이벤트 로깅
+	 */
+    @EventListener
+    public void onConnect(SessionConnectEvent event
+    ) {
+        log.info("▼ onConnect S. {}", event.getMessage());
+if ( skip ) return;
         log.info("ㅁㅁㅁ ▶ WebSocket onConnect: {}", event.getMessage().getHeaders());
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
@@ -151,12 +152,11 @@ static private boolean skip = true;
          */
     }
 
-    // 연결 완료
+    // 연결 완료 : 세션 연결 완료 시 로깅 및 Redis 세션 등록
     @EventListener
-    // 세션 연결 완료 시 로깅 및 Redis 세션 등록
-    public void onConnected(SessionConnectedEvent event) { if ( skip ) return;
-        log.info("▶ WebSocket 연결 완료 이벤트 시작. event.getMessage().getHeaders():{}", event.getMessage().getHeaders());
-
+    public void onConnected(SessionConnectedEvent event) {
+        log.info("▶ onConnected S. {}", event.getMessage());
+if ( skip ) return;
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         WebSocketSessionAttribute sessionAttribute = getSimpSessionAttributes(accessor);
 
@@ -165,7 +165,7 @@ static private boolean skip = true;
             log.info("▶▶ Redis에 세션 정보 저장 시작. webSocketSessionService.registerSession call. sessionAttribute:{}", sessionAttribute);
             webSocketSessionService.registerSession(sessionAttribute.getSessionId(), sessionAttribute.getUserId(), sessionAttribute.getUserRole());
             log.info("◀◀ Redis에 세션 저장 저장 완료.");
-            
+
             // 고객인 경우 sessionId 업데이트
             if ("CUSTOMER".equals(sessionAttribute.getUserRole()) && sessionAttribute.getUserId() != null) {
                 customerAuthService.updateSessionId(sessionAttribute.getUserId(), sessionAttribute.getSessionId());
@@ -178,18 +178,14 @@ static private boolean skip = true;
         log.info("◀ WebSocket 연결 완료 이벤트 종료.");
    	}
 
-    // 구독
-    @EventListener
-    // 특정 방 토픽 구독 시 멤버 등록
-    public void onSubscribe(SessionSubscribeEvent event
-	/*
+    /*
 	    Spring Boot 3.4.1 (Spring Messaging 6.x 기반)에서 SessionSubscribeEvent는 클라이언트가
 	    특정 STOMP destination(예: /topic/chatroom/123)을 구독할 때 발생하는 이벤트입니다.
 	    이 이벤트를 통해 세션 ID, 사용자 정보, 구독 대상(destination), STOMP 헤더 등을 확인할 수 있습니다.
-	
+
 	    🔍 SessionSubscribeEvent에서 확인 가능한 정보
 	    StompHeaderAccessor를 사용하면 다음을 추출할 수 있습니다:
-	
+
 	    항목            설명
 	    --------------- -----------------------------------------------------------
 	    sessionId       WebSocket 세션 고유 ID
@@ -198,9 +194,13 @@ static private boolean skip = true;
 	    command         STOMP 명령 (SUBSCRIBE)
 	    nativeHeaders   클라이언트가 SUBSCRIBE 시 보낸 커스텀 헤더
 	    messageHeaders  전체 메시지 헤더 맵
-	  */
-    ) { if ( skip ) return;
-        log.info("▶ WebSocket 토픽 구독 이벤트 시작.");
+	    ㅁ 구독:특정 방 토픽 구독 시 멤버 등록
+     */
+    @EventListener
+    public void onSubscribe(SessionSubscribeEvent event
+    ) {
+        log.info("▶ onSubscribe S. {}", event.getMessage());
+if ( skip ) return;
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
         WebSocketSessionAttribute sessionAttribute = getSimpSessionAttributes(accessor);
@@ -223,26 +223,22 @@ static private boolean skip = true;
     // 구독 해제
     @EventListener
     // 토픽 구독 해제 이벤트 로깅
-    public void onUnsubscribe(SessionUnsubscribeEvent event) { if ( skip ) return;
-        log.info("▶ WebSocket 토픽 구독 해제 처리 이벤트 시작.");
-
+    public void onUnsubscribe(SessionUnsubscribeEvent event) {
+        log.info("▶ onUnsubscribe S. {}",event.getMessage());
+if ( skip ) return;
     	StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
         WebSocketSessionAttribute sessionAttribute = getSimpSessionAttributes(accessor);
-        
+
         log.info("◀ WebSocket 토픽 구독 해제 처리 이벤트 종료. sessionAttribute:{}", sessionAttribute);
 	}
 
-    // 연결 해제
-    @EventListener
-    // 연결 종료 시 세션 기반 멤버 정리 및 Redis 세션 제거
-    public void onDisconnect(SessionDisconnectEvent event
-		/*
+    /*
 		SessionDisconnectEvent는 Spring WebSocket + STOMP 환경에서 클라이언트(WebSocket 세션)가 끊길 때 발생하는 이벤트입니다.
 		이 이벤트를 활용하면 세션 종료 시점에 사용자 상태를 갱신하거나 로그아웃 처리, 알림 전송 등을 할 수 있습니다.
-		
+
 		SessionDisconnectEvent에서 확인 가능한 정보
 		StompHeaderAccessor를 사용하면 다음을 추출할 수 있습니다:
-		
+
 		항목            설명
 		--------------- ------------------------------------
 		sessionId       WebSocket 세션 고유 ID
@@ -250,10 +246,14 @@ static private boolean skip = true;
 		closeStatus     연결 종료 상태 코드 (예: 정상 종료, 에러 종료)
 		message         전체 STOMP 메시지 객체
 		nativeHeaders   연결 종료 시점에 포함된 헤더 (일반적으로 CONNECT 시 전달된 값과 동일)
-		*/
-    ) { if ( skip ) return;
-        log.info("▶ WebSocket 연결 해제 이벤트 시작.");
 
+		ㅁ 연결 해제 - 연결 종료 시 세션 기반 멤버 정리 및 Redis 세션 제거
+     */
+    @EventListener
+    public void onDisconnect(SessionDisconnectEvent event
+    ) {
+        log.info("▶ onDisconnect S. {}", event.getMessage());
+if ( skip ) return;
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
 
         WebSocketSessionAttribute sessionAttribute = getSimpSessionAttributes(accessor);
@@ -267,7 +267,7 @@ static private boolean skip = true;
         String userName  = sessionAttribute.getUserName();
         String userRole  = sessionAttribute.getUserRole();
         String roomId    = sessionAttribute.getRoomId();
-        
+
         // 1. Redis에서 세션 정보 제거
         if (sessionId != null) {
             log.info("▶▶ Redis에서 세션:{} 제거(webSocketSessionService.unregisterSession) 시작. sessionAttribute:{}", sessionId, sessionAttribute);
@@ -284,21 +284,21 @@ static private boolean skip = true;
             log.info("  - roomId: {}", roomId);
             log.info("  - userId: {}", userId);
             log.info("  - userName: {}", userName);
-            
+
             try {
                 // Redis에서 고객 정보 제거
                 customerAuthService.logout(userId);
                 log.info("✅ Redis에서 고객 정보 제거 완료");
-                
+
                 // 채팅방 정보 조회
                 log.info("▶▶ 채팅방 정보:{} 조회", roomId);
                 ChatRoom room = roomRepository.findRoomById(roomId); // REDIS
                 log.info("◀◀ 채팅방 정보 조회 완료! room:{}", room);
-                
+
                 if (room != null && room.getAssignedAgent() != null) {
                     // 상담원이 배정된 경우에만 알림 전송
                     // log.info("  - assignedAgent: {}", room.getAssignedAgent());
-                    
+
                     log.info("▶▶ 고객 연결 해제 알림 전송 시작");
                     ChatMessage disconnectNotice = ChatMessage.builder()
                             .roomId(roomId)

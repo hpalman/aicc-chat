@@ -62,4 +62,26 @@ public class UtilString {
         URI uri = URI.create(fullUrl);
         return uri.getPath();  // "/api/v1/users/123"
     }
+
+    /**
+     * NULL이 아니고 문자열길이가 0보다 크면 true 반환
+     * @param s
+     * @return
+     * @usage UtilString.isNotEmpty
+     */
+    public static boolean isNotEmpty(String s) {
+        return !isEmpty(s);
+    }
+
+    /**
+     * NULL이거나 빈문자열이면 true 반환
+     * @param s
+     * @return
+     * @usage UtilString.isEmpty
+     */
+    public static boolean isEmpty(String s) {
+        if ( s == null || s.length() == 0)
+            return true;
+        return false;
+    }
 }

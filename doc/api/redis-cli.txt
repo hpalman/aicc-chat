@@ -17,3 +17,11 @@ redis-cli PUBLISH chat.topic '{"roomId":"room-9d15bd53","sender":"고객-358d","
 
 redis-cli -p 16379 PUBLISH chat.topic '{"roomId":"room-76df670b","sender":"고객-2100","senderRole":"CUSTOMER","message":"고객-2100님이 입장하셨습니다.","type":"JOIN","companyId":"apt001"}'
 화면에 보이는 것 > 고객-2100님이 입장하셨습니다.
+
+
+# Redis chat.topic을 경유해서 웹소켓 구독 /topic/customerwaiting 로 데이터 전송
+- 고객의 상담원 연결 요청
+redis-cli PUBLISH chat.topic '{ "roomId":"고객룸id","sender":"고객id","senderRole":"SYSTEM","message":"홍길동 고객님의 상담원 연결 요청입니다.","type":"HANDOFF","companyId":"apt001", "targetTopic":"/topic/customerwaiting" }'
+
+- 고객의 상담원 연결 요청 취소
+redis-cli PUBLISH chat.topic '{ "roomId":"고객룸id","sender":"고객id","senderRole":"SYSTEM","message":"홍길동 고객님의 상담원 연결 요청 취소입니다.","type":"CANCEL_HANDOFF","companyId":"apt001", "targetTopic":"/topic/customerwaiting" }'

@@ -82,17 +82,19 @@
 <script>
     let stompClient = null;
     let currentRoomId = null;
+    let recentRoom = {}; // 어떤 이유로 다시 로그인 했을 때 바로 전 고객의 채팅방(이어서 채팅)
     let nickname = null;
     let authToken = null;
     let currentUserId = null; // 사용자 ID 저장
     let availabilityCheckInterval = null; // 가용성 체크 인터벌
+
 
     // 초기 로딩 시 로그인 상태 확인
     window.onload = function() {
         const token = sessionStorage.getItem("AUTH_TOKEN");
         console.log('토큰 확인: [' + token + ']');
 
-        if (token) {
+        if (false && token) {
             fetch('/api/agent/me', {
                 headers: { 'Authorization': 'Bearer ' + token }
             })
@@ -141,7 +143,13 @@
                 "companyId":"apt001"
             }
         */
-        fetch(`/api/customer/apt001/login?id=${id}&pw=${pw}`, { method: 'POST' })
+        fetch(`/api/customer/apt001/login`, {
+               method: 'POST',
+               headers: {
+                   'Content-Type': 'application/json'
+               },
+               body: JSON.stringify({ "id":id, "pw":pw })
+            })
             .then(res => {
                 // HTTP 상태 코드 체크
                 if (!res.ok) {
@@ -180,20 +188,50 @@
             });
     }
 
+    // API 호출 함수
+    async function getChatLastInfo(token) {
+        try {
+          const response = await fetch(`/api/customer/chat-lastinfo`, {
+              method: 'GET',
+              headers: {
+                  'Authorization': 'Bearer ' + token
+              },
+          });
+
+          // 응답 상태 확인
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          // JSON 데이터 반환
+          const data = await response.json();
+          return data;
+
+        } catch (error) {
+            // 오류 발생 시 예외 던지기
+            throw error;
+        }
+    }
+
     function onLoginSuccess(user) {
         nickname = user.userName;
         currentUserId = user.userId; // 사용자 ID 저장
         authToken = user.token;
-// 연결 전 토큰 저장
-//localStorage.setItem('authToken', authToken);
-//localStorage.setItem('user.userName', user.userName);
-//localStorage.setItem('user.userId', user.userId);
 
         console.log('ㅁ onLoginSuccess> nickname >[' + nickname + ']');
         console.log('ㅁ onLoginSuccess> authToken >[' + authToken + ']');
         document.getElementById("nickname").value = `${user.userName} (${user.userId})`;
         document.getElementById("login-form").style.display = "none";
         document.getElementById("connect-form").style.display = "block";
+
+        recentRoomId = null;
+        getChatLastInfo(authToken).then(data => {
+            console.log("✅ 정상 응답:", JSON.stringify(data) );
+            recentRoom = data; // 최근 사용자ID의 채팅방ID
+        }) .catch(error => {
+            console.error("❌ 오류 발생:", error.message);
+            debugger;
+        });
     }
 
     /**
@@ -288,50 +326,57 @@
             return;
         }
 
+        let body = { roomName: roomName }
+        if ( recentRoom?.roomId !== undefined ) {
+            body.roomId   = recentRoom.roomId;
+            if ( recentRoom?.name !== undefined) {
+                body.roomName = recentRoom?.name;
+            }
+        }
+        // { roomName: roomName }
         // 1. 방 생성 및 봇 초기화 API 호출
         // 허:2026-01-27) 별도의 http(s) api로 채팅방생성시 장점(명확한 RESTful, 권권한/인증,비즈니스로직분리,멀터서버환경)
         fetch(`/api/customer/chat-start`, {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + authToken,
             	       'Content-Type': 'application/json' },
-            body: JSON.stringify({ roomName: roomName})
-        })
-            .then(res => {
-                if (!res.ok) {
-					if (res.status === 409) {
-					    alert("동일 유저가 이미 채팅방에 있습니다. 다시 로그인해주세요.");
-					    throw new Error('Unauthorized');
-					} else if (res.status === 401) {
-                        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                        sessionStorage.removeItem("AUTH_TOKEN");
-                        window.location.reload();
-                        throw new Error('Unauthorized');
-                    } else if (res.status === 500) {
-                        throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-                    } else if (res.status === 404) {
-                        throw new Error('상담 서비스를 찾을 수 없습니다.');
-                    } else {
-                        throw new Error(`상담 연결 실패 (상태 코드: ${res.status})`);
-                    }
-                }
+            body: JSON.stringify( body ) /* { roomName: roomName} */
+        }).then(res => {
+            if (res.ok) {
                 return res.json();
-            })
-            .then(room => {
-                if (!room || !room.roomId) {
-                    throw new Error('방 정보를 받지 못했습니다.');
-                }
-                console.log("상담방 생성 완료:", room);
-                currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
+            }
 
-                updateHandoffButtons(room.status);
-                connect();
-            })
-            .catch(err => {
-                console.error('상담방 생성 오류:', err);
-                if (err.message !== 'Unauthorized') {
-                    alert(err.message || "상담 연결에 실패했습니다. 다시 시도해주세요.");
-                }
-            });
+            if (res.status === 409) {
+                alert("동일 유저가 이미 채팅방에 있습니다. 다시 로그인해주세요.");
+                throw new Error('Unauthorized');
+            } else if (res.status === 401) {
+                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                sessionStorage.removeItem("AUTH_TOKEN");
+                window.location.reload();
+                throw new Error('Unauthorized');
+            } else if (res.status === 500) {
+                throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            } else if (res.status === 404) {
+                throw new Error('상담 서비스를 찾을 수 없습니다.');
+            } else {
+                throw new Error(`상담 연결 실패 (상태 코드: ${res.status})`);
+            }
+
+        }).then(room => {
+            if (!room || !room.roomId) {
+                throw new Error('방 정보를 받지 못했습니다.');
+            }
+            console.log("상담방 생성 완료:", room);
+            currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
+
+            updateHandoffButtons(room.status);
+            connect();
+        }).catch(err => {
+            console.error('상담방 생성 오류:', err);
+            if (err.message !== 'Unauthorized') {
+                alert(err.message || "상담 연결에 실패했습니다. 다시 시도해주세요.");
+            }
+        });
     }
 
     function updateHandoffButtons(status) {

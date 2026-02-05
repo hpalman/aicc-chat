@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,13 +68,13 @@ String userId = account.getUserId();
                 .companyId(account.getCompanyId() != null ? account.getCompanyId() : companyId)
                 .status(0)
                 .build();
-
-        String customerKey = Constants.USER_CUSTOMER_KEY + ":" + userId; // chat:user-customer:{userId}
-        Boolean exists = redisTemplate.hasKey(customerKey);
-        if ( exists ) { // 이미 존재함
-            userInfo.setStatus(-1); // 이미 로그인됨
-            return userInfo;
-        }
+        // @TODO : 로그인 시 채팅과 관련된 정보로 중복로그인 체크 X로 변경. 2026.02.05
+        // String customerKey = Constants.USER_CUSTOMER_KEY + ":" + userId; // chat:user-customer:{userId}
+        // Boolean exists = redisTemplate.hasKey(customerKey);
+        // if ( exists ) { // 이미 존재함
+        //     userInfo.setStatus(-1); // 이미 로그인됨
+        //     return userInfo;
+        // }
 
         // 토큰정보
         userInfo.setToken(tokenService.generateToken(userInfo));
@@ -266,6 +268,5 @@ String roomId = userCustomer.getRoomId();
         String newRoomId = "room-" + UUID.randomUUID().toString().substring(0, 8);// 550e8400-e29b-41d4-a716-446655440000에서 앞 자리
         return newRoomId;
     }
-
 }
 

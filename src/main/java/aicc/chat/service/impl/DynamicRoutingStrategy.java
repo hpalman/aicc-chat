@@ -2,6 +2,7 @@ package aicc.chat.service.impl;
 
 import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
+import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.RoomRepository;
@@ -20,10 +21,10 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     private final AgentRoutingStrategy agentRoutingStrategy;
     private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
 
-    public static final String MODE_BOT = "BOT";
-    public static final String MODE_WAITING = "WAITING";
-    public static final String MODE_AGENT = "AGENT";
-    public static final String MODE_CLOSED = "CLOSED";
+    public static final String MODE_BOT     = "BOT";    // 봇이 응대
+    public static final String MODE_WAITING = "WAITING";// 상담사 연결을 기다림
+    public static final String MODE_AGENT   = "AGENT";  // 상담사와 채팅중
+    public static final String MODE_CLOSED  = "CLOSED"; // 채팅종료
 
     @Override
     // 방 상태에 따라 상담원/봇 라우팅으로 위임
@@ -35,7 +36,7 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
         roomRepository.updateLastActivity(roomId); // REDIS
 
         // 퇴장 메시지인 경우 방 상태를 CLOSED로 변경
-        if (aicc.chat.domain.MessageType.LEAVE.equals(message.getType())) {
+        if (MessageType.LEAVE.equals(message.getType())) {
             log.info("Room {} is being closed due to LEAVE message", roomId);
             roomRepository.setRoutingMode(roomId, MODE_CLOSED);
             roomUpdateBroadcaster.broadcastRoomList(); // Pub
@@ -46,6 +47,9 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
             routingMode = MODE_BOT;
         }
 
+        if (MessageType.CANCEL_HANDOFF.equals(message.getType())) {
+            routingMode = MODE_BOT;
+        }
         log.debug("Dynamic routing for room: {}, current routingMode: {}", roomId, routingMode);
 
         // 1. 상담원(AGENT 역할)이 보낸 메시지인 경우
