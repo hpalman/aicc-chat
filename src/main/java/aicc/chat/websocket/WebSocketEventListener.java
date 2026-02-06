@@ -306,7 +306,6 @@ if ( skip ) return;
                             .senderRole(UserRole.SYSTEM)
                             .message(userName + " 고객의 연결이 끊어졌습니다.")
                             .type(MessageType.CUSTOMER_DISCONNECTED)
-                            .timestamp(LocalDateTime.now())
                             .build();
                     messageBroker.publish(disconnectNotice);
                     log.info("◀◀ 고객 연결 해제 알림 전송 완료! disconnectNotice:{}", disconnectNotice);

@@ -9,10 +9,12 @@ import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
 import aicc.chat.service.AgentAuthService;
 import aicc.chat.service.ChatAgentService;
+import aicc.chat.service.RoomUpdateBroadcaster;
 import aicc.chat.service.TokenService;
 import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.ChatSessionService;
+import aicc.chat.service.inteface.MessageBroker;
 import aicc.chat.service.inteface.RoomRepository;
 import aicc.chat.util.UtilString;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +44,8 @@ public class ChatAgentController {
     private final RoomRepository roomRepository;
     private final ChatRoutingStrategy routingStrategy;
     private final TokenService tokenService;
-    private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
-    private final aicc.chat.service.inteface.MessageBroker messageBroker;
+    private final RoomUpdateBroadcaster roomUpdateBroadcaster;
+    private final MessageBroker messageBroker;
     private final ChatSessionService chatSessionService;
     private final ChatHistoryService chatHistoryService;
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
@@ -180,121 +182,14 @@ public class ChatAgentController {
         return ResponseEntity.ok(room);
     }
 
-    // 상담원을 방에 배정하고 상태/이력을 갱신
-    private ResponseEntity<?> _assignAgent(
-            String roomId,
-            String bearerToken,
-            boolean force) {
-        if ( !tokenService.isValidBearerToken(bearerToken) ) {
-            log.warn("token == null || !token.startsWith(\"Bearer\")) ");
-            return ResponseEntity.status(401).build();
-        }
-
-        //String actualToken = token.substring(7);
-        UserInfo userInfo = tokenService.parseToken(bearerToken);
-        if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
-            log.warn("(userInfo == null || userInfo.getRole() != UserRole.AGENT");
-            return ResponseEntity.status(403).body("상담원만 배정 가능합니다.");
-        }
-
-        boolean success = roomRepository.assignAgent(roomId, userInfo.getUserName());
-        if (success) {
-            LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-
-            ChatMessage notice = ChatMessage.builder()
-                    .roomId(roomId)
-                    .sender("System")
-                    .senderRole(UserRole.SYSTEM)
-                    .message(userInfo.getUserName() + " 상담원과 연결되었습니다.")
-                    .type(MessageType.TALK)
-                    .timestamp(now) // 서버 타임스탬프 설정
-                    .build();
-
-            try {
-                messageBroker.publish(notice);
-                roomUpdateBroadcaster.broadcastRoomList();
-
-                // PostgreSQL에 상담원 배정 정보 저장
-                chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
-                chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
-
-                // 시스템 메시지도 이력에 저장
-                ChatHistory chatHistory = ChatHistory.builder()
-                        .roomId(roomId)
-                        .senderId("SYSTEM")
-                        .senderName("System")
-                        .senderRole("SYSTEM")
-                        .message(notice.getMessage())
-                        .messageType("TALK")
-                        .createdAt(now) // 서버 타임스탬프 사용
-                        .build();
-                chatHistoryService.saveChatHistory(chatHistory); // DB
-
-            } catch (Exception e) {
-                log.error("Failed to post-assign actions", e);
-            }
-            log.warn("ResponseEntity.ok().build()");
-            return ResponseEntity.ok().build();
-        } else {
-            String currentAgent = roomRepository.getAssignedAgent(roomId);
-            if (userInfo.getUserName().equals(currentAgent)) {
-                log.info("Room {} already assigned to the same agent: {}", roomId, currentAgent);
-                return ResponseEntity.ok().build(); // 이미 본인에게 배정된 경우 성공 처리
-            }
-            if (force) {
-                log.info("Force assigning agent {} to room {} (current: {})", userInfo.getUserName(), roomId, currentAgent);
-                // 강제 배정: 기존 배정 상담원 교체
-                roomRepository.setAssignedAgent(roomId, userInfo.getUserName());
-                roomRepository.setRoutingMode(roomId, "AGENT");
-                roomRepository.updateLastActivity(roomId);
-
-                LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-                ChatMessage notice = ChatMessage.builder()
-                        .roomId(roomId)
-                        .sender("System")
-                        .senderRole(UserRole.SYSTEM)
-                        .message(userInfo.getUserName() + " 상담원이 상담에 개입했습니다.")
-                        .type(MessageType.INTERVENE)
-                        .timestamp(now)
-                        .build();
-
-                try {
-                    messageBroker.publish(notice);
-                    roomUpdateBroadcaster.broadcastRoomList();
-
-                    chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
-                    chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
-
-                    ChatHistory chatHistory = ChatHistory.builder()
-                            .roomId(roomId)
-                            .senderId("SYSTEM")
-                            .senderName("System")
-                            .senderRole("SYSTEM")
-                            .message(notice.getMessage())
-                            .messageType("INTERVENE")
-                            .createdAt(now)
-                            .build();
-                    chatHistoryService.saveChatHistory(chatHistory); // DB
-                } catch (Exception e) {
-                    log.error("Failed to post-force-assign actions", e);
-                }
-
-                return ResponseEntity.ok().build();
-            }
-
-            return ResponseEntity.status(409).body("이미 다른 상담원(" + currentAgent + ")이 배정되었습니다.");
-        }
-    }
-
     @PostMapping("/rooms/{roomId}/assign")
     // 상담원을 방에 배정하고 상태/이력을 갱신
     public ResponseEntity<?> assignAgent(
             @PathVariable String roomId,
             @RequestHeader(value = "Authorization", required = false) String token,
-            @RequestParam(value = "force", required = false, defaultValue = "false") boolean force) {
-
-        log.info("▼ assignAgent S. roomId={}", roomId);
-        ResponseEntity<?> ret = _assignAgent(roomId, token, force );
+            @RequestParam(/*value = "force",*/ required = false, defaultValue = "false") boolean force) {
+        log.info("▼ assignAgent S. roomId={}, UriPath:{}", roomId, UtilString.getUriPath());
+        ResponseEntity<?> ret = chatAgentService.assignAgent(roomId, token, force );
         log.info("▲ assignAgent E.");
         return ret;
     }
@@ -320,8 +215,6 @@ public class ChatAgentController {
             return ResponseEntity.status(403).body("상담원만 방을 종료할 수 있습니다.");
         }
 
-        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-
         try {
             String currentMode = roomRepository.getRoutingMode(roomId);
 
@@ -340,9 +233,7 @@ public class ChatAgentController {
                         .senderRole(UserRole.BOT)
                         .message("상담원과의 상담이 종료되었습니다. 다시 챗봇과 대화하실 수 있습니다.")
                         .type(MessageType.TALK)
-                        .timestamp(now) // 서버 타임스탬프 설정
                         .build();
-
                 messageBroker.publish(notice);
 
                 // 방 상태를 BOT으로 변경 (고객이 다시 봇과 대화 가능)
@@ -353,20 +244,21 @@ public class ChatAgentController {
                 // 상담원 멤버 정보 제거 (Redis 멤버 목록 정리)
                 roomRepository.removeMember(roomId, userInfo.getUserId());
 
-                // PostgreSQL에 상태 업데이트
-                chatSessionService.updateSessionStatus(roomId, "BOT"); // DB
-
-                // 종료 메시지도 이력에 저장
-                ChatHistory chatHistory = ChatHistory.builder()
-                        .roomId(roomId)
-                        .senderId("SYSTEM")
-                        .senderName("System")
-                        .senderRole("SYSTEM")
-                        .message(notice.getMessage())
-                        .messageType("TALK")
-                        .createdAt(now) // 서버 타임스탬프 사용
-                        .build();
-                chatHistoryService.saveChatHistory(chatHistory); // DB
+                // // @TODO: DB저장 임시 막음
+                // // PostgreSQL에 상태 업데이트
+                // chatSessionService.updateSessionStatus(roomId, "BOT"); // DB
+                //
+                // // 종료 메시지도 이력에 저장
+                // ChatHistory chatHistory = ChatHistory.builder()
+                //         .roomId(roomId)
+                //         .senderId("SYSTEM")
+                //         .senderName("System")
+                //         .senderRole("SYSTEM")
+                //         .message(notice.getMessage())
+                //         .messageType("TALK")
+                //         .createdAt(now) // 서버 타임스탬프 사용
+                //         .build();
+                // chatHistoryService.saveChatHistory(chatHistory); // DB
             }
 
             roomUpdateBroadcaster.broadcastRoomList();
@@ -377,72 +269,19 @@ public class ChatAgentController {
         }
     }
 
+    /**
+     * 상담사 메시지 수신 컨트롤러
+     * @param message
+     * @param headerAccessor
+     */
     @MessageMapping("/agent/chat")
     // 상담원 채팅 메시지를 받아 이력 저장 후 라우팅
     public void onAgentMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        // 방이 있는지 체크 필요
-
-        log.info("▶ onAgentMessage S");
-        Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
-        String userId = null;
-
-        // 서버에서 메시지 수신 시간 설정
         message.setTimestamp(LocalDateTime.now());
-
-        if (sessionAttributes != null) {
-            String userName = (String) sessionAttributes.get("userName");
-            String companyId = (String) sessionAttributes.get("companyId");
-            userId = (String) sessionAttributes.get("userId");
-
-            // 상담원 전용 로직: 클라이언트가 보낸 roomId 유지 (여러 방 관리 가능)
-            // 이름과 역할만 세션 정보로 강제
-            message.setSenderRole(UserRole.AGENT);
-            if (userName != null) {
-                message.setSender(userName);
-            }
-            if (companyId != null) {
-                message.setCompanyId(companyId);
-            }
-        }
-
-        String roomId = message.getRoomId();
-        LocalDateTime localDateTime = message.getTimestamp();
-        log.debug("Agent message received for room: {} at {}", roomId, localDateTime);
-
-
-        ChatRoom chatRoom = roomRepository.findRoomById(roomId);
-        if ( "CLOSED".equals(chatRoom.getStatus()) ) {
-        //if ( !roomRepository.existRoomsMember(roomId) ) {
-            log.warn("ㅁㅁㅁㅁㅁㅁㅁㅁ 방이 닫혔어요! ㅁㅁㅁㅁㅁㅁㅁㅁㅁ ");
-            return;
-        }
-
-        // PostgreSQL에 채팅 이력 저장
-        try {
-            ChatHistory chatHistory = ChatHistory.builder()
-                    .roomId(roomId)
-                    .senderId(userId != null ? userId : message.getSender())
-                    .senderName(message.getSender())
-                    .senderRole(message.getSenderRole().name())
-                    .message(message.getMessage())
-                    .messageType(message.getType().name())
-                    .companyId(message.getCompanyId())
-                    .createdAt(localDateTime) // 서버 타임스탬프 사용
-                    .build();
-            chatHistoryService.saveChatHistory(chatHistory); // DB
-
-            // 세션의 마지막 활동 시간 업데이트
-            chatSessionService.updateLastActivity(roomId); // 마지막 활동 시간 갱신 - DB
-        } catch (Exception e) {
-            log.error("Failed to save chat history to DB: roomId={}", roomId, e);
-            // DB 저장 실패해도 채팅은 계속 진행
-        }
-
-        roomRepository.updateLastActivity(roomId); // REDIS VALUE
-        routingStrategy.handleMessage(roomId, message);
-        log.info("▲ onAgentMessage E.");
+        log.info("▼ onAgentMessage S. 상담사 메시지 처리. S");
+        chatAgentService.agentMessage(message, headerAccessor);
+        log.info("▲ onAgentMessage E. 상담사 메시지 처리. E");
     }
-
 
     @PostMapping("/status/{status}")
     public ResponseEntity<?> setAgentStatus(

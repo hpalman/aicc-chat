@@ -7,6 +7,7 @@ import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.UserAccount;
 import aicc.chat.mapper.UserAccountMapper;
+import aicc.chat.service.inteface.MessageBroker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,8 +28,8 @@ public class AgentAuthService {
     private final TokenService tokenService;
     private final UserAccountMapper userAccountMapper;
     private final StringRedisTemplate redisTemplate;
-    private final aicc.chat.service.inteface.MessageBroker messageBroker;
-    private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
+    private final MessageBroker messageBroker;
+    private final RoomUpdateBroadcaster roomUpdateBroadcaster;
 
     public UserInfo login(String id, String pw, String status) {
         // 상담원 로그인 후 토큰을 생성해 반환
@@ -88,7 +89,6 @@ public class AgentAuthService {
             .senderRole(UserRole.SYSTEM)
             .message("AGENT_STATUS") // AGENT 상태가 변경되면 웹소켓으로 전달
             .type(MessageType.SYSTEM)
-            .timestamp(LocalDateTime.now())
             .build());
 
         /// roomUpdateBroadcaster.broadcastAgentLogin();

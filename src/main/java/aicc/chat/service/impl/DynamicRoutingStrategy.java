@@ -4,6 +4,7 @@ import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
+import aicc.chat.service.RoomUpdateBroadcaster;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,8 +19,8 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
 
     private final RoomRepository roomRepository;
     private final MiChatRoutingStrategy miChatRoutingStrategy;
-    private final AgentRoutingStrategy agentRoutingStrategy;
-    private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
+    private final AgentRoutingStrategy  agentRoutingStrategy;
+    private final RoomUpdateBroadcaster roomUpdateBroadcaster;
 
     public static final String MODE_BOT     = "BOT";    // 봇이 응대
     public static final String MODE_WAITING = "WAITING";// 상담사 연결을 기다림
@@ -29,11 +30,25 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     @Override
     // 방 상태에 따라 상담원/봇 라우팅으로 위임
     public void handleMessage(String roomId, ChatMessage message) {
-    log.info("▼ handleMessage S. roomId:{}, message:{}", roomId, message);
+        log.info("▼ handleMessage S. roomId:{}, message:{}", roomId, message);
+
+
+// private UserRole      senderRole; // CUSTOMER, AGENT, BOT, SYSTEM
+switch ( message.getSenderRole()) {
+case CUSTOMER:
+    break;
+case AGENT:
+    break;
+case BOT:
+case SYSTEM:
+    break;
+}
+
+
         //log.info("※※※※※ ▶ DynamicRoutingStrategy handleMessage 시작 ▶▶▶▶▶▶▶▶▶▶");
     	//log.info("※※※※※ ▶ roomId:{}, message:{}", roomId, message);
         // 활동 시간 업데이트
-        roomRepository.updateLastActivity(roomId); // REDIS
+        roomRepository.updateLastActivity(roomId); // REDIS. "chat:room-info:{roomId} lastActivity 업데이트
 
         // 퇴장 메시지인 경우 방 상태를 CLOSED로 변경
         if (MessageType.LEAVE.equals(message.getType())) {

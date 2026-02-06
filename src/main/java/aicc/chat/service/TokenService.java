@@ -54,9 +54,12 @@ public class TokenService {
      */
     public UserInfo parseToken(String bearerToken) {
         String actualToken = bearerToken.substring(7);
-        log.info("▼ parseToken S. bearerToken:{}, actualToken:{}", UtilString.emitToken(bearerToken), UtilString.emitToken(actualToken));
+        if ( log.isDebugEnabled() )
+            log.debug("▼ parseToken S. bearerToken:{}, actualToken:{}",
+                    UtilString.emitToken(bearerToken), UtilString.emitToken(actualToken));
         UserInfo userInfo = _parseToken(actualToken);
-        log.info("▲ parseToken E. userInfo:{}", userInfo);
+        if ( log.isDebugEnabled() )
+            log.debug("▲ parseToken E. userInfo:{}", userInfo);
         return userInfo;
     }
 

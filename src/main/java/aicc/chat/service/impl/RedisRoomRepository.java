@@ -174,7 +174,7 @@ redisTemplate.opsForHash().putAll(roomInfoKey, roomInfo);
         // 접두사 제거 후 room-... 부분만 추출
         return keys.stream()
         		.map(k -> k.replace(Constants.ROOM_INFO_KEY_PREFIX, "")) // "chat:room-info:"
-        		.collect(Collectors.toSet());        
+        		.collect(Collectors.toSet());
     }
 
     @Override
@@ -243,20 +243,27 @@ redisTemplate.opsForHash().putAll(roomInfoKey, roomInfo);
     }
 
     @Override
-    public boolean assignAgent(String roomId, String agentName) {
-        log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName );
+    public boolean assignAgent(String roomId, String agentId /* agentName */) {
+        log.info("▶▶▶ roomId:{},agentId:{}", roomId, agentId );
+
+        if (roomId == null || agentId == null)
+            return false;
+
+        String roomKey = Constants.ROOM_INFO_KEY_PREFIX + roomId; // chat:room-info:{roomId}
 
         // [assignAgent] 이미 배정된 경우 실패, 최초 배정만 성공
-        if (roomId == null || agentName == null) return false;
         // Hash의 putIfAbsent로 최초 배정만 허용(원자적)
-        String roomKey = Constants.ROOM_INFO_KEY_PREFIX + roomId;
-        Boolean success = redisTemplate.opsForHash().putIfAbsent(roomKey, "assignedAgent", agentName);
-        if (Boolean.TRUE.equals(success)) {
+        if ( redisTemplate.opsForHash().putIfAbsent(roomKey, "assignedAgent", agentId) ) { // chat:room-info:{roomId} > agentId
             // 배정 성공 시 모드도 AGENT로 변경
-            setRoutingMode(roomId, "AGENT");
-            updateLastActivity(roomId);
+            // setRoutingMode(roomId, "AGENT");
+            redisTemplate.opsForHash().put(roomKey, "routingMode", "AGENT"); // chat:room-info:{roomId} routingMode
+
+            // updateLastActivity(roomId);
+            redisTemplate.opsForHash().put(roomKey, "lastActivity", String.valueOf(System.currentTimeMillis())); // "chat:room-info:{roomId}"
+
             return true;
         }
+
         return false;
     }
 

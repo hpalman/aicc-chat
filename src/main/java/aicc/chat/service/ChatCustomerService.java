@@ -57,7 +57,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChatCustomerService {
+public class ChatCustomerService  extends ChatService {
 
     @Value("${app.auth.login-api-url}")
     private String loginApiUrl;
@@ -112,14 +112,12 @@ public class ChatCustomerService {
         roomRepository.setRoutingMode(roomId, "CLOSED"); // REDIS.  "chat:room-info:{roomId} { routingMode CLOSED }
 
         // 고객과 상담원에게 종료 메시지 전송
-        LocalDateTime now = LocalDateTime.now();
         ChatMessage endMessage = ChatMessage.builder()
                 .roomId(roomId)
                 .sender("System")
                 .senderRole(UserRole.SYSTEM)
                 .message("고객이 상담을 종료했습니다.")
                 .type(MessageType.LEAVE)
-                .timestamp(now)
                 .companyId(companyId)
                 .build();
         messageBroker.publish(endMessage);
@@ -132,7 +130,6 @@ public class ChatCustomerService {
                     .senderRole(UserRole.SYSTEM)
                     .message(userName + " 고객이 상담을 종료했습니다.")
                     .type(MessageType.CUSTOMER_LEFT)
-                    .timestamp(now)
                     .companyId(companyId)
                     .build();
             messageBroker.publish(agentNotice);
@@ -240,20 +237,68 @@ public class ChatCustomerService {
         return ResponseEntity.ok(room);
     }
 
-
     // 고객 메시지를 받아 이력 저장 후 라우팅
     public void customerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
-        log.info("▼ customerMessage S. message>{},headerAccessor>{}", message,headerAccessor);
+        message.setTimestamp(LocalDateTime.now());
 
+        log.info("▼ customerMessage S. message>{},headerAccessor>{}", message,headerAccessor);
         //WebSocketSessionAttribute attr = WebSocketAttributes.getSimpSessionAttributes((StompHeaderAccessor)headerAccessor);
         //log.info("attr:{}", attr);
 
         // {userName=홍길철, userId=cust01, roomId=room-823880d7, companyId=apt001, userEmail=cust01@example.com, userRole=CUSTOMER}
         Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+        String _userName  = getKV(sessionAttributes, "userName" );
+        String _userId    = getKV(sessionAttributes, "userId"   );
+        String _roomId    = getKV(sessionAttributes, "roomId"   );
+        String _companyId = getKV(sessionAttributes, "companyId");
+        String _userEmail = getKV(sessionAttributes, "userEmail");
+        String _userRole  = getKV(sessionAttributes, "userRole" );
+/*
+        public class ChatMessage {
+            private String        roomId;
+            private String        sender;
+            private UserRole      senderRole; // CUSTOMER, AGENT, BOT, SYSTEM
+            private String        message;
+            private MessageType   type;
+            private String        companyId;
+            private LocalDateTime timestamp; // 메시지 발행 시간 (서버에서 설정)
+
+            private String        targetTopic; // 2026.02.05 허) 발행 토픽명
+*/
+        // simpSessionAttributes={userName=홍길수, userId=cust02, roomId=room-cd2483d7, companyId=apt001, userEmail=cust02@example.com, userRole=CUSTOMER},
+        /*switch ( message.getType()) {
+            case HANDOFF: // 상담사 연결 요청
+                message.setUserName  (_userName );//= getKV(sessionAttributes, "userName" );
+                message.setUserId    (_userId   );//= getKV(sessionAttributes, "userId"   );
+                message.setRoomId    (_roomId   );//= getKV(sessionAttributes, "roomId"   );
+                message.setCompanyId (_companyId);//= getKV(sessionAttributes, "companyId");
+                message.setUserEmail (_userEmail);//= getKV(sessionAttributes, "userEmail");
+                message.setUserRole  (_userRole );//= getKV(sessionAttributes, "userRole" );
+                message.setRoomId(_roomId);
+                message.setRoomId(_roomId);
+                message.setRoomId(_roomId);
+                message.setRoomId(_roomId);
+                message.setRoomId(_roomId);
+
+            case CANCEL_HANDOFF: // 상담사 연결 요청 취소
+                String userEmail = (String) sessionAttributes.get("userEmail");
+                System.out.println(userEmail);
+
+                break;
+            default:
+        } */
+        /*
+        02-06 09:31:42.349 [ clientInboundChannel-41] [INFO ] aicc.chat.service.ChatCustomerService           :customerMessage           :246 ▼ customerMessage S.
+        message>ChatMessage
+        (roomId=room-f2746d60, sender=홍길철, senderRole=null, message=상담원 연결을 요청합니다., type=HANDOFF, companyId=null, timestamp=null, targetTopic=null),
+        headerAccessor>StompHeaderAccessor [headers={simpMessageType=MESSAGE, stompCommand=SEND, nativeHeaders={destination=[/app/customer/chat], content-length=[113]},
+        simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-f2746d60, companyId=apt001, userEmail=cust01@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@226102b9, lookupDestination=/customer/chat, simpSessionId=yefybvdd, simpDestination=/app/customer/chat}]
+       */
+
         String userId = null;
 
         // 서버에서 메시지 수신 시간 설정
-        message.setTimestamp(LocalDateTime.now());
+       // message.setTimestamp(LocalDateTime.now());
 
         if (sessionAttributes != null) {
             String roomId    = (String) sessionAttributes.get("roomId");
@@ -290,9 +335,7 @@ public class ChatCustomerService {
                             .senderRole(UserRole.SYSTEM)
                             .message(message.getSender() + " 고객이 상담을 종료했습니다.")
                             .type(MessageType.CUSTOMER_LEFT)
-                            .timestamp(LocalDateTime.now())
                             .build();
-
                     messageBroker.publish(leaveNotice);
 
                     log.info("✅ 고객 퇴장 알림 전송 완료!");
@@ -326,9 +369,8 @@ public class ChatCustomerService {
         //     // DB 저장 실패해도 채팅은 계속 진행
         // }
 
-        roomRepository.updateLastActivity(message.getRoomId()); // REDIS. chat:room-info:{roomId}의 lastActivity 값 설정
         log.info("   >>> customerMessage>handleMessage S");
-        routingStrategy.handleMessage(message.getRoomId(), message); // Pub
+        routingStrategy.handleMessage(message.getRoomId(), message); // DynamicRoutingStrategy
         log.info("   <<< customerMessage>handleMessage E");
         log.info("▲ customerMessage E.");
     }

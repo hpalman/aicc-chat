@@ -64,7 +64,7 @@
                 <div id="room-id" class="room-info"></div>
             </div>
             <div>
-                <button class="btn btn-sm btn-warning me-1" id="handoffBtn" onclick="requestHandoff()">상담원 연결</button>
+                <button class="btn btn-sm btn-warning me-1" id="handoffBtn" onclick="requestHandoff()">상담사 연결</button>
                 <button class="btn btn-sm btn-outline-secondary me-1" id="cancelHandoffBtn" onclick="cancelHandoff()" style="display:none;">연결 취소</button>
                 <button class="btn btn-sm btn-outline-danger" onclick="disconnect()">상담 종료</button>
             </div>
@@ -603,8 +603,8 @@
         if (stompClient && currentRoomId) {
             const chatMessage = {
                 roomId: currentRoomId,
-                sender: nickname,
-                message: "상담원 연결을 요청합니다.",
+                /* sender: nickname,
+                message: "상담원 연결을 요청합니다.", */
                 type: 'HANDOFF'
             };
             stompClient.send("/app/customer/chat", {}, JSON.stringify(chatMessage));

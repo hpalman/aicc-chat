@@ -8,6 +8,10 @@ import aicc.chat.domain.UserInfo;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.UserAccount;
 import aicc.chat.mapper.UserAccountMapper;
+import aicc.chat.service.inteface.ChatHistoryService;
+import aicc.chat.service.inteface.ChatRoutingStrategy;
+import aicc.chat.service.inteface.ChatSessionService;
+import aicc.chat.service.inteface.MessageBroker;
 import aicc.chat.service.inteface.RoomRepository;
 import aicc.chat.util.UtilString;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,18 +37,30 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ChatAgentService {
+public class ChatAgentService extends ChatService {
 
     @Value("${app.auth.agent-login-api-url}")
     private String agentLoginApiUrl;
 
     private final TokenService tokenService;
-    private final UserAccountMapper userAccountMapper;
+//    private final UserAccountMapper userAccountMapper;
     private final StringRedisTemplate redisTemplate;
-    private final aicc.chat.service.inteface.MessageBroker messageBroker;
-    private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
+    private final MessageBroker messageBroker;
+    private final RoomUpdateBroadcaster roomUpdateBroadcaster;
 
     private final RoomRepository roomRepository;
+
+
+//    private final AgentAuthService agentAuthService;
+
+//    private final RoomRepository roomRepository;
+    private final ChatRoutingStrategy routingStrategy;
+//    private final TokenService tokenService;
+//    private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
+//    private final aicc.chat.service.inteface.MessageBroker messageBroker;
+    private final ChatSessionService chatSessionService;
+    private final ChatHistoryService chatHistoryService;
+//    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     /**
      * 상담원 가용성 확인: agentStatus가 WAITING인 상담원만 조회하여 가용성 확인
@@ -163,7 +180,6 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
             .senderRole(UserRole.SYSTEM)
             .message("AGENT_STATUS") // AGENT_UNAVAILABLE
             .type(MessageType.SYSTEM)
-            .timestamp(LocalDateTime.now())
             .build();
         messageBroker.publish(logoutMessage);
 
@@ -203,7 +219,6 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
                 .senderRole(UserRole.SYSTEM)
                 .message("AGENT_STATUS") // AGENT_UNAVAILABLE
                 .type(MessageType.SYSTEM)
-                .timestamp(LocalDateTime.now())
                 .build();
             messageBroker.publish(logoutMessage);
         }
@@ -234,5 +249,199 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
         return Map.of("code", 0, "agentId", agentId, "status",_stat);
     }
 
+    /** 상담사 메시지 수신후 처리 서비스
+     *
+     * @param message
+     * @param headerAccessor
+     */
+    public void agentMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
+        log.info("▼ agentMessage S. message>{},headerAccessor>{}", message,headerAccessor);
+
+        // ChatMessage(
+        //    roomId=room-e7cb51e4, sender=상담원-01, senderRole=AGENT, message=d,
+        //    type=TALK, companyId=null, timestamp=2026-02-06T13:25:22.559366900, targetTopic=null)
+        //
+        // simpSessionAttributes={
+        //    companyId=apt001, userEmail=agent01@aicc.com, userName=상담원-01,
+        //    userRole=AGENT, userId=agent01}, simpHeartbeat=[J@15e26d11,
+        //    lookupDestination=/agent/chat, simpSessionId=faftlzig, simpDestination=/app/agent/chat}
+
+        // 상담사 정보
+        Map<String, Object> sessionAttributes = headerAccessor.getSessionAttributes();
+        String _userName  = getKV(sessionAttributes, "userName" );
+        String _userId    = getKV(sessionAttributes, "userId"   );
+     // String _roomId    = getKV(sessionAttributes, "roomId"   );
+        String _companyId = getKV(sessionAttributes, "companyId");
+     // String _userEmail = getKV(sessionAttributes, "userEmail");
+        String _userRole  = getKV(sessionAttributes, "userRole" );
+message.setSenderId   (_userId  );
+message.setSender     (_userName);
+message.setSenderRole (UserRole.valueOf(_userRole) );
+message.setCompanyId  (_companyId);
+
+        // String userId = null;
+        //
+        // // 서버에서 메시지 수신 시간 설정
+        // // message.setTimestamp(LocalDateTime.now());
+        // if (sessionAttributes != null) {
+        //     String userName = (String) sessionAttributes.get("userName");
+        //     String companyId = (String) sessionAttributes.get("companyId");
+        //     userId = (String) sessionAttributes.get("userId");
+        //
+        //     // 상담원 전용 로직: 클라이언트가 보낸 roomId 유지 (여러 방 관리 가능)
+        //     // 이름과 역할만 세션 정보로 강제
+        //     message.setSenderRole(UserRole.AGENT);
+        //     if (userName != null) {
+        //         message.setSender(userName);
+        //     }
+        //     if (companyId != null) {
+        //         message.setCompanyId(companyId);
+        //     }
+        // }
+
+        //String roomId = message.getRoomId();
+        ////LocalDateTime localDateTime = message.getTimestamp();
+        ////log.debug("Agent message received for room: {} at {}", roomId, localDateTime);
+        //
+        //
+        //ChatRoom chatRoom = roomRepository.findRoomById(roomId);
+        //if ( "CLOSED".equals(chatRoom.getStatus()) ) {
+        ////if ( !roomRepository.existRoomsMember(roomId) ) {
+        //    log.warn("ㅁㅁㅁㅁㅁㅁㅁㅁ 방이 닫혔어요! ㅁㅁㅁㅁㅁㅁㅁㅁㅁ ");
+        //    return;
+        //}
+        // // @TODO: DB저장 임시 막음
+        // // PostgreSQL에 채팅 이력 저장
+        // try {
+        //     ChatHistory chatHistory = ChatHistory.builder()
+        //             .roomId(roomId)
+        //             .senderId(userId != null ? userId : message.getSender())
+        //             .senderName(message.getSender())
+        //             .senderRole(message.getSenderRole().name())
+        //             .message(message.getMessage())
+        //             .messageType(message.getType().name())
+        //             .companyId(message.getCompanyId())
+        //             .createdAt(localDateTime) // 서버 타임스탬프 사용
+        //             .build();
+        //     chatHistoryService.saveChatHistory(chatHistory); // DB
+        //
+        //     // 세션의 마지막 활동 시간 업데이트
+        //     chatSessionService.updateLastActivity(roomId); // 마지막 활동 시간 갱신 - DB
+        // } catch (Exception e) {
+        //     log.error("Failed to save chat history to DB: roomId={}", roomId, e);
+        //     // DB 저장 실패해도 채팅은 계속 진행
+        // }
+
+        //roomRepository.updateLastActivity(roomId); // REDIS VALUE
+        routingStrategy.handleMessage(message.getRoomId(), message); // DynamicRoutingStrategy
+        log.info("▲ agentMessage E.");
+    }
+
+    /**
+     * 상담사가 고객채팅방에 개입하고자 할 때 상담사에게 고객방에 할당
+     * @param roomId
+     * @param bearerToken
+     * @param force
+     * @return
+     */
+    public ResponseEntity<?> assignAgent(
+            String roomId,
+            String bearerToken,
+            boolean force) {
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
+            return ResponseEntity.status(401).body("유효하지 않은 토큰입니다.");
+        }
+
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
+            return ResponseEntity.status(403).body("상담원만 배정 가능합니다.");
+        }
+
+        // assignAgent할당, routingMode:AGENT 설정, lastActivity 설정
+        boolean success = roomRepository.assignAgent(roomId, userInfo.getUserId());
+        if (success) {
+            ChatMessage notice = ChatMessage.builder()
+                    .roomId(roomId)
+                    .sender("System")
+                    .senderRole(UserRole.SYSTEM)
+                    .message(userInfo.getUserName() + " 상담원과 연결되었습니다.")
+                    .type(MessageType.TALK)
+                    .build();
+            messageBroker.publish(notice);
+
+            roomUpdateBroadcaster.broadcastRoomList(); // "/topic/rooms" 발행. @TODO: publish로 변경 필요함
+
+            try {
+                // @TODO : DB저장 임시 막음
+                // // PostgreSQL에 상담원 배정 정보 저장
+                // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
+                // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
+                //
+                // // 시스템 메시지도 이력에 저장
+                // ChatHistory chatHistory = ChatHistory.builder()
+                //         .roomId(roomId)
+                //         .senderId("SYSTEM")
+                //         .senderName("System")
+                //         .senderRole("SYSTEM")
+                //         .message(notice.getMessage())
+                //         .messageType("TALK")
+                //         .createdAt(now) // 서버 타임스탬프 사용
+                //         .build();
+                // chatHistoryService.saveChatHistory(chatHistory); // DB
+
+            } catch (Exception e) {
+                log.error("Failed to post-assign actions", e);
+            }
+            log.warn("ResponseEntity.ok().build()");
+            return ResponseEntity.ok().build();
+        } else {
+            String currentAgent = roomRepository.getAssignedAgent(roomId);
+            if (userInfo.getUserName().equals(currentAgent)) {
+                log.info("Room {} already assigned to the same agent: {}", roomId, currentAgent);
+                return ResponseEntity.ok().build(); // 이미 본인에게 배정된 경우 성공 처리
+            }
+            if (force) {
+                log.info("Force assigning agent {} to room {} (current: {})", userInfo.getUserName(), roomId, currentAgent);
+                // 강제 배정: 기존 배정 상담원 교체
+                roomRepository.setAssignedAgent(roomId, userInfo.getUserName());
+                roomRepository.setRoutingMode(roomId, "AGENT");
+                roomRepository.updateLastActivity(roomId);
+
+
+                try {
+                    ChatMessage notice = ChatMessage.builder()
+                            .roomId(roomId)
+                            .sender("System")
+                            .senderRole(UserRole.SYSTEM)
+                            .message(userInfo.getUserName() + " 상담원이 상담에 개입했습니다.")
+                            .type(MessageType.INTERVENE)
+                            .build();
+                    messageBroker.publish(notice);
+
+                    roomUpdateBroadcaster.broadcastRoomList();
+
+                    // @TODO : DB저장 임시 막음
+                    // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
+                    // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
+                    // ChatHistory chatHistory = ChatHistory.builder()
+                    //         .roomId(roomId)
+                    //         .senderId("SYSTEM")
+                    //         .senderName("System")
+                    //         .senderRole("SYSTEM")
+                    //         .message(notice.getMessage())
+                    //         .messageType("INTERVENE")
+                    //         .createdAt(now)
+                    //         .build();
+                    // chatHistoryService.saveChatHistory(chatHistory); // DB
+                } catch (Exception e) {
+                    log.error("Failed to post-force-assign actions", e);
+                }
+
+                return ResponseEntity.ok().build();
+            }
+
+            return ResponseEntity.status(409).body("이미 다른 상담원(" + currentAgent + ")이 배정되었습니다.");
+        }
+    }
 }
 

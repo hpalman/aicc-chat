@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @ToString
 public class ChatMessage {
     private String        roomId;
+    private String        senderId; // 발송자 ID
     private String        sender;
     private UserRole      senderRole; // CUSTOMER, AGENT, BOT, SYSTEM
     private String        message;

@@ -106,27 +106,22 @@ public class RoomCleanupService {
      */
     private void notifyRoomTimeout(ChatRoom room) {
         log.info("▼ notifyRoomTimeout. room:{}", room);
-        try {
-            LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
 
-            // 고객에게 전송할 타임아웃 알림 메시지 생성
-            ChatMessage timeoutMessage = ChatMessage.builder()
-                    .roomId(room.getRoomId())
-                    .sender("System")
-                    .senderRole(UserRole.SYSTEM)
-                    .message("장시간 대화가 없어 상담이 자동 종료되었습니다.")
-                    .type(MessageType.LEAVE)
-                    .companyId(null) // ChatRoom에는 companyId가 없으므로 null 처리
-                    .timestamp(now) // 서버 타임스탬프 설정
-                    .build();
+        // 고객에게 전송할 타임아웃 알림 메시지 생성
+        ChatMessage timeoutMessage = ChatMessage.builder()
+                .roomId(room.getRoomId())
+                .sender("System")
+                .senderRole(UserRole.SYSTEM)
+                .message("장시간 대화가 없어 상담이 자동 종료되었습니다.")
+                .type(MessageType.LEAVE)
+                .companyId(null) // ChatRoom에는 companyId가 없으므로 null 처리
+                .build();
 
-            // WebSocket을 통해 고객에게 메시지 전송
-            messageBroker.publish(timeoutMessage);
+        // WebSocket을 통해 고객에게 메시지 전송
+        messageBroker.publish(timeoutMessage);
 
-            log.info("▶ Timeout notification sent to room: {}", room.getRoomId());
-        } catch (Exception e) {
-            log.error("Failed to send timeout notification for room: {}", room.getRoomId(), e);
-        }
+        log.info("▶ Timeout notification sent to room: {}", room.getRoomId());
+
         log.info("▲ notifyRoomTimeout E.");
     }
 

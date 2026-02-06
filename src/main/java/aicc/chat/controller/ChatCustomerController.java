@@ -20,6 +20,7 @@ import aicc.chat.util.UtilString;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -156,15 +157,16 @@ public class ChatCustomerController {
     StompHeaderAccessor [headers={simpMessageType=MESSAGE, stompCommand=SEND, nativeHeaders={destination=[/app/customer/chat], content-length=[107]}, simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-6c736bd7, companyId=apt001, org.springframework.messaging.simp.SimpAttributes.COMPLETED=true, userEmail=cust01@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@11a9323d, lookupDestination=/customer/chat, simpSessionId=mlgk5gek, simpDestination=/app/customer/chat}]
 */
     /**
-     * 고객 메시지를 받아 이력 저장 후 라우팅
+     * 고객 메시지 수신
      * @param message
      * @param headerAccessor
      */
     @MessageMapping("/customer/chat")
     public void onCustomerMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         log.info("▼ onCustomerMessage S. 고객 메시지 처리. S");
+        message.setTimestamp(LocalDateTime.now());
         chatCustomerService.customerMessage(message, headerAccessor);
-        log.info("▼ onCustomerMessage E. 고객 메시지 처리. E");
+        log.info("▲ onCustomerMessage E. 고객 메시지 처리. E");
     }
 
 }

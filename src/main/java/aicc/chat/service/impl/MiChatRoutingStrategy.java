@@ -7,6 +7,7 @@ import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
+import aicc.chat.service.RoomUpdateBroadcaster;
 import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
 import aicc.chat.service.inteface.ChatSessionService;
@@ -27,7 +28,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     private final MessageBroker messageBroker;
     private final ChatBot chatBot;
     private final RoomRepository roomRepository;
-    private final aicc.chat.service.RoomUpdateBroadcaster roomUpdateBroadcaster;
+    private final RoomUpdateBroadcaster roomUpdateBroadcaster;
     private final ChatHistoryService chatHistoryService;
     private final ChatSessionService chatSessionService;
 
@@ -39,6 +40,19 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         message.setRoomId(roomId);
         messageBroker.publish(message);
 
+        switch ( message.getType() ) {
+            case HANDOFF: // 상담원 연결 요청
+            {
+
+            }
+            case CANCEL_HANDOFF: // 상담원 연결 요청 취소(CANCEL_HANDOFF)인 경우
+            {
+
+            }
+            case TALK:
+                default:
+                    break;
+            }
         // 2. 상담원 연결 요청(HANDOFF)인 경우
         if (MessageType.HANDOFF.equals(message.getType())) {
             // @TODO: 대기중인 상담원에게 자동 연결 처리 필요
@@ -87,15 +101,12 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 // 스트림 완료 시 누적된 전체 메시지를 발송
                 String responseText = fullResponse.toString();
                 if (!responseText.isEmpty()) {
-                    LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-
                     ChatMessage botMessage = ChatMessage.builder()
                             .roomId(roomId)
                             .sender("Bot")
                             .senderRole(UserRole.BOT)
                             .message(responseText)
                             .type(MessageType.TALK)
-                            .timestamp(now) // 서버 타임스탬프 설정
                             .build();
                     messageBroker.publish(botMessage);
                     // @TODO: 잠시 DB 저장로직 막음
@@ -129,15 +140,12 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     public void onRoomCreated(ChatRoom room) {
         log.info("▼ onRoomCreated S. room:{}",room);
 
-        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-
         ChatMessage welcome = ChatMessage.builder()
                 .roomId(room.getRoomId())
                 .sender("Bot")
                 .senderRole(UserRole.BOT)
                 .message("안녕하세요! 무엇을 도와드릴까요? '상담원 연결'을 입력하시면 상담원과 연결해 드립니다.")
                 .type(MessageType.TALK)
-                .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(welcome);
 
@@ -167,8 +175,6 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         roomRepository.setRoutingMode(roomId, "WAITING"); // chat:room-info:{roomId} mode
         roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
 
-        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-
         // 고객 화면에 "상담원 연결 중..." 알림 (서버 사이드 발송)
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
@@ -176,7 +182,6 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .senderRole(UserRole.BOT)
                 .message("상담원 연결을 요청하였습니다. 상담원이 연결될 때까지 잠시만 기다려 주세요.")
                 .type(MessageType.TALK)
-                .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(notice);
 
@@ -208,35 +213,32 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         roomRepository.setRoutingMode(roomId, "BOT");
         roomUpdateBroadcaster.broadcastRoomList();
 
-        LocalDateTime now = LocalDateTime.now(); // 서버 타임스탬프
-
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
                 .sender("System")
                 .senderRole(UserRole.BOT)
                 .message("상담원 연결 요청을 취소하였습니다. 다시 챗봇이 도와드리겠습니다.")
                 .type(MessageType.TALK)
-                .timestamp(now) // 서버 타임스탬프 설정
                 .build();
         messageBroker.publish(notice);
 
-        // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
-        try {
-            chatSessionService.updateSessionStatus(roomId, "BOT"); // DB
-
-            ChatHistory chatHistory = ChatHistory.builder()
-                    .roomId(roomId)
-                    .senderId("SYSTEM")
-                    .senderName("System")
-                    .senderRole("SYSTEM")
-                    .message(notice.getMessage())
-                    .messageType("TALK")
-                    .createdAt(now) // 서버 타임스탬프 사용
-                    .build();
-            chatHistoryService.saveChatHistory(chatHistory); // DB
-        } catch (Exception e) {
-            log.error("Failed to save cancel handoff message to DB: roomId={}", roomId, e);
-        }
+        // // @TODO: DB저장 임시 막음
+        // // PostgreSQL에 세션 상태 업데이트 및 시스템 메시지 저장
+        // try {
+        //     chatSessionService.updateSessionStatus(roomId, "BOT"); // DB
+        //
+        //     ChatHistory chatHistory = ChatHistory.builder()
+        //             .roomId(roomId)
+        //             .senderId("SYSTEM")
+        //             .senderName("System")
+        //             .senderRole("SYSTEM")
+        //             .message(notice.getMessage())
+        //             .messageType("TALK")
+        //             .build();
+        //     chatHistoryService.saveChatHistory(chatHistory); // DB
+        // } catch (Exception e) {
+        //     log.error("Failed to save cancel handoff message to DB: roomId={}", roomId, e);
+        // }
     }
 }
 
