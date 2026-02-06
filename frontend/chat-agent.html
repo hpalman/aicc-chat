@@ -52,7 +52,7 @@
 <body>
 
 <div id="login-form" class="container mt-5" style="max-width: 400px;">
-    <h3 class="text-center mb-4">상담원 로그인</h3>
+    <h3 class="text-center mb-4">상담사 로그인</h3>
     <div class="mb-3">
         <label class="form-label">아이디</label>
         <input type="text" id="loginId" class="form-control" value="agent01">
@@ -78,7 +78,7 @@
         </div>
 
         <div class="mb-3">
-            <small class="text-muted">접속 상담원:</small>
+            <small class="text-muted">접속 상담사:</small>
             <strong id="displayAgentName"></strong>
         </div>
         <div id="room-list">
@@ -116,7 +116,7 @@
     let currentRoomId = null;
     let nickname = null;
     let authToken = null;
-    let currentUserId = null; // 상담원 ID 저장
+    let currentUserId = null; // 상담사 ID 저장
     let roomMessages = {}; // roomId -> Array of messages
     let subscriptions = {}; // roomId -> subscription object
     let unreadRooms = {}; // roomId -> boolean (true if needs reply)
@@ -139,7 +139,7 @@
         const id = document.getElementById("loginId").value;
         const pw = document.getElementById("loginPw").value;
 
-        // 상담원 전용 로그인 API 호출
+        // 상담사 전용 로그인 API 호출
         fetch(`/api/agent/login`, {
                 method: 'POST',
                 headers: {
@@ -179,7 +179,7 @@
         .then(user => {
             authToken = token;
             nickname = user.userName;
-            currentUserId = user.userId; // 상담원 ID 저장
+            currentUserId = user.userId; // 상담사 ID 저장
             document.getElementById("displayAgentName").innerText = `${nickname} (${currentUserId})`;
             document.getElementById("login-form").style.display = "none";
             document.getElementById("admin-main").style.display = "flex";
@@ -196,7 +196,7 @@
         // 하트비트 중단
         stopHeartbeat();
 
-        // 서버에 로그아웃 알림 (고객에게 상담원 로그아웃 브로드캐스트)
+        // 서버에 로그아웃 알림 (고객에게 상담사 로그아웃 브로드캐스트)
         fetch('/api/agent/logout', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + authToken }
@@ -247,7 +247,7 @@
             sendHeartbeat();
         }, 5 * 60 * 1000); // 5분
 
-        console.log('상담원 하트비트 시작 (5분 간격)');
+        console.log('상담사 하트비트 시작 (5분 간격)');
     }
 
     /**
@@ -276,7 +276,7 @@
         if (heartbeatInterval) {
             clearInterval(heartbeatInterval);
             heartbeatInterval = null;
-            console.log('상담원 하트비트 중단');
+            console.log('상담사 하트비트 중단');
         }
     }
 
@@ -559,9 +559,9 @@
             return;
         }
 
-        // 이미 다른 상담원이 상담 중인 경우 (강제 개입 선택 가능)
+        // 이미 다른 상담사이 상담 중인 경우 (강제 개입 선택 가능)
         if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== nickname) {
-            const takeover = confirm(`${room.assignedAgent} 상담원이 이미 상담 중입니다.\n지금 이 상담에 개입하시겠습니까?`);
+            const takeover = confirm(`${room.assignedAgent} 상담사가 이미 상담 중입니다.\n지금 이 상담에 개입하시겠습니까?`);
             if (!takeover) {
                 return;
             }
@@ -584,7 +584,7 @@
             return;
         }
 
-        // 상담원 배정이 필요한 상태 (WAITING 또는 BOT)인 경우 배정 API 호출
+        // 상담사 배정이 필요한 상태 (WAITING 또는 BOT)인 경우 배정 API 호출
         if (room.status === 'WAITING' || room.status === 'BOT') {
             if (!confirm(room.status === 'WAITING' ? "상담을 수락하시겠습니까?" : "챗봇 상담에 개입하시겠습니까?")) {
                 return;
@@ -612,7 +612,7 @@
             })
             .catch(err => {
                 console.error(err);
-                alert("상담원 배정에 실패했습니다.");
+                alert("상담사 배정에 실패했습니다.");
             });
         } else {
             // 이미 배정된 내 상담방이면 탭 열기
@@ -635,7 +635,7 @@
         } else if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== nickname) {
             messageInput.disabled = true;
             sendBtn.disabled = true;
-            messageInput.placeholder = `${room.assignedAgent} 상담원이 상담 중입니다...`;
+            messageInput.placeholder = `${room.assignedAgent} 상담사가 상담 중입니다...`;
         } else {
             messageInput.disabled = false;
             sendBtn.disabled = false;
@@ -795,14 +795,14 @@
     function setAgentStatus(stat) {
     	switch ( stat ) {
     	    case "WAITING": // 대기중(자동배분가능)
-                subscriptionCustomerwaiting = stompClient.subscribe('/topic/customerwaiting', function (message) { // [상담원 연결] 시 자동 연결 푸시 구독
+                subscriptionCustomerwaiting = stompClient.subscribe('/topic/customerwaiting', function (message) { // [상담사 연결] 시 자동 연결 푸시 구독
                     const mesg = JSON.parse(message.body);
                     console.log("mesg", mesg);
                 });
     	        break;
     	    case "WORKING": // 업무중(자동배분금지)
     	        if ( subscriptionCustomerwaiting != null ) {
-                    subscriptionCustomerwaiting.unsubscribe(); // [상담원 연결] 시 자동 연결 푸시 구독 해제
+                    subscriptionCustomerwaiting.unsubscribe(); // [상담사 연결] 시 자동 연결 푸시 구독 해제
     	        }
     	        subscriptionCustomerwaiting = null;
     	       break;

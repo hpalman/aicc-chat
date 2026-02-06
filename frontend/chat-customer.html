@@ -252,7 +252,7 @@
             return;
         }
 
-        // 서버에 로그아웃 알림 (고객에게 상담원 로그아웃 브로드캐스트)
+        // 서버에 로그아웃 알림 (고객에게 상담사 로그아웃 브로드캐스트)
         fetch('/api/customer/logout', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + authToken }
@@ -385,24 +385,24 @@
 
         if (status === 'WAITING') {
             handoffBtn.disabled = true;
-            handoffBtn.innerText = "상담원 연결 중";
+            handoffBtn.innerText = "상담사 연결 중";
             cancelBtn.style.display = "inline-block";
         } else if (status === 'AGENT') {
             handoffBtn.disabled = true;
-            handoffBtn.innerText = "상담원 연결됨";
+            handoffBtn.innerText = "상담사 연결됨";
             cancelBtn.style.display = "none";
         } else if (status === 'CLOSED') {
             handoffBtn.disabled = true;
             handoffBtn.innerText = "상담 종료됨";
             cancelBtn.style.display = "none";
         } else {
-            // BOT or other - 상담원 가용성 확인
+            // BOT or other - 상담사 가용성 확인
             checkAgentAvailability();
         }
     }
 
     /**
-     * 상담원 가용성 확인 및 버튼 상태 업데이트
+     * 상담사 가용성 확인 및 버튼 상태 업데이트
      */
     function checkAgentAvailability() {
         const handoffBtn = document.getElementById("handoffBtn");
@@ -411,27 +411,27 @@
         fetch('/api/agent/availability')
             .then(res => res.json())
             .then(data => {
-                console.log('✅ 상담원 가용성 체크 결과:', data);
+                console.log('✅ 상담사 가용성 체크 결과:', data);
                 if (data.available) {
-                    // 상담원 가용 - 버튼 활성화
+                    // 상담사 가용 - 버튼 활성화
                     handoffBtn.disabled = false;
-                    handoffBtn.innerText = "상담원 연결";
-                    handoffBtn.title = "상담원과 연결할 수 있습니다";
-                    console.log('✅ 상담원 연결 버튼 활성화 (온라인 상담원:', data.onlineAgentCount + '명)');
+                    handoffBtn.innerText = "상담사 연결";
+                    handoffBtn.title = "상담사와 연결할 수 있습니다";
+                    console.log('✅ 상담사 연결 버튼 활성화 (온라인 상담사:', data.onlineAgentCount + '명)');
                 } else {
-                    // 상담원 불가 - 버튼 비활성화
+                    // 상담사 불가 - 버튼 비활성화
                     handoffBtn.disabled = true;
-                    handoffBtn.innerText = "상담원 대기 중";
-                    handoffBtn.title = "모든 상담원이 상담 중입니다. 잠시 후 다시 시도해주세요.";
-                    console.log('⏳ 상담원 대기 중 (온라인 상담원:', data.onlineAgentCount + '명)');
+                    handoffBtn.innerText = "상담사 대기 중";
+                    handoffBtn.title = "모든 상담사가 상담 중입니다. 잠시 후 다시 시도해주세요.";
+                    console.log('⏳ 상담사 대기 중 (온라인 상담사:', data.onlineAgentCount + '명)');
                 }
                 cancelBtn.style.display = "none";
             })
             .catch(err => {
-                console.error('❌ 상담원 가용성 확인 실패:', err);
+                console.error('❌ 상담사 가용성 확인 실패:', err);
                 // 오류 시 기본적으로 버튼 활성화 (기존 동작 유지)
                 handoffBtn.disabled = false;
-                handoffBtn.innerText = "상담원 연결";
+                handoffBtn.innerText = "상담사 연결";
                 cancelBtn.style.display = "none";
             });
     }
@@ -463,10 +463,10 @@
                     showMessage(payload);
                 });
 
-                // ✅ 추가: 상담원 가용성 실시간 알림 구독
+                // ✅ 추가: 상담사 가용성 실시간 알림 구독
                 stompClient.subscribe('/topic/agent-availability', function (message) {
                     const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
-                    console.log('🔔 상담원 가용성 변경 알림 수신:', payload);
+                    console.log('🔔 상담사 가용성 변경 알림 수신:', payload);
                     // 즉시 가용성 체크
                     checkAgentAvailability();
                 });
@@ -479,7 +479,7 @@
                 ////     message: nickname + "님이 입장하셨습니다."
                 //// }));
                 ////
-                //// // 4. 상담원 가용성 주기적 체크 시작 (30초마다)
+                //// // 4. 상담사 가용성 주기적 체크 시작 (30초마다)
                 //// startAvailabilityCheck();
 
             }, function(error) {
@@ -574,7 +574,7 @@
     }
 
     /**
-     * 상담원 가용성 주기적 체크 시작
+     * 상담사 가용성 주기적 체크 시작
      */
     function startAvailabilityCheck() {
         // 즉시 한 번 체크
@@ -585,17 +585,17 @@
             checkAgentAvailability();
         }, 30000);
 
-        console.log('상담원 가용성 주기적 체크 시작 (30초 간격)');
+        console.log('상담사 가용성 주기적 체크 시작 (30초 간격)');
     }
 
     /**
-     * 상담원 가용성 주기적 체크 중단
+     * 상담사 가용성 주기적 체크 중단
      */
     function stopAvailabilityCheck() {
         if (availabilityCheckInterval) {
             clearInterval(availabilityCheckInterval);
             availabilityCheckInterval = null;
-            console.log('상담원 가용성 주기적 체크 중단');
+            console.log('상담사 가용성 주기적 체크 중단');
         }
     }
 
@@ -604,7 +604,7 @@
             const chatMessage = {
                 roomId: currentRoomId,
                 /* sender: nickname,
-                message: "상담원 연결을 요청합니다.", */
+                message: "상담사 연결을 요청합니다.", */
                 type: 'HANDOFF'
             };
             stompClient.send("/app/customer/chat", {}, JSON.stringify(chatMessage));
@@ -617,7 +617,7 @@
             const chatMessage = {
                 roomId: currentRoomId,
                 sender: nickname,
-                message: "상담원 연결 요청을 취소합니다.",
+                message: "상담사 연결 요청을 취소합니다.",
                 type: 'CANCEL_HANDOFF'
             };
             stompClient.send("/app/customer/chat", {}, JSON.stringify(chatMessage));
@@ -755,16 +755,16 @@
                              <div class="content">${message.message}</div>
                              <div class="timestamp">${timestamp}</div>`;
 
-            // 시스템 메시지로 상담원 연결 확인
-            if (message.sender === 'System' && message.message.includes("상담원과 연결되었습니다.")) {
+            // 시스템 메시지로 상담사 연결 확인
+            if (message.sender === 'System' && message.message.includes("상담사가 연결되었습니다.")) {
                 updateHandoffButtons('AGENT');
             }
-            // 상담원 연결 취소 확인
-            if (message.sender === 'System' && message.message.includes("상담원 연결 요청을 취소하였습니다.")) {
+            // 상담사 연결 취소 확인
+            if (message.sender === 'System' && message.message.includes("상담사 연결 요청을 취소하였습니다.")) {
                 updateHandoffButtons('BOT');
             }
-            // 상담원 상담 종료 → BOT 모드 복귀 확인
-            if (message.sender === 'System' && message.message.includes("상담원과의 상담이 종료되었습니다")) {
+            // 상담사 상담 종료 → BOT 모드 복귀 확인
+            if (message.sender === 'System' && message.message.includes("상담사와의 상담이 종료되었습니다")) {
                 updateHandoffButtons('BOT');
             }
         }
