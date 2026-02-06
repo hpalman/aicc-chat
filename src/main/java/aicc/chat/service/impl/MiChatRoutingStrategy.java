@@ -7,6 +7,7 @@ import aicc.chat.domain.ChatRoom;
 import aicc.chat.domain.MessageType;
 import aicc.chat.domain.UserRole;
 import aicc.chat.domain.persistence.ChatHistory;
+import aicc.chat.service.AgentAssignmentService;
 import aicc.chat.service.RoomUpdateBroadcaster;
 import aicc.chat.service.inteface.ChatHistoryService;
 import aicc.chat.service.inteface.ChatRoutingStrategy;
@@ -31,6 +32,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
     private final RoomUpdateBroadcaster roomUpdateBroadcaster;
     private final ChatHistoryService chatHistoryService;
     private final ChatSessionService chatSessionService;
+    private final AgentAssignmentService agentAssignmentService;
 
     @Override
     // 고객 메시지를 MiChat으로 전달하고 응답을 브로드캐스트
@@ -40,24 +42,23 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         message.setRoomId(roomId);
         messageBroker.publish(message);
 
-        switch ( message.getType() ) {
-            case HANDOFF: // 상담원 연결 요청
-            {
-
-            }
-            case CANCEL_HANDOFF: // 상담원 연결 요청 취소(CANCEL_HANDOFF)인 경우
-            {
-
-            }
-            case TALK:
-                default:
-                    break;
-            }
         // 2. 상담원 연결 요청(HANDOFF)인 경우
         if (MessageType.HANDOFF.equals(message.getType())) {
-            // @TODO: 대기중인 상담원에게 자동 연결 처리 필요
-
-            switchToAgentMode(roomId);
+            log.info("▶ HANDOFF request received for room: {}", roomId);
+            
+            // 1. 대기 중인 상담원 자동 배정 시도
+            boolean autoAssigned = agentAssignmentService.autoAssignWaitingAgent(roomId);
+            
+            if (autoAssigned) {
+                // 자동 배정 성공: AGENT 모드로 전환
+                log.info("▶ Auto-assignment successful, switching to AGENT mode");
+                roomRepository.setRoutingMode(roomId, "AGENT");
+                roomUpdateBroadcaster.broadcastRoomList();
+            } else {
+                // 자동 배정 실패: WAITING 모드로 전환 (기존 로직)
+                log.info("▶ Auto-assignment failed, switching to WAITING mode");
+                switchToAgentMode(roomId);
+            }
             return;
         }
 

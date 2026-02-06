@@ -100,7 +100,7 @@
         <div class="chat-box" id="chat-box">
             <!-- Messages -->
         </div>
-        <div class="chat-input">
+        <div class="chat-input" id="chat-input-area" style="display: none;">
             <div class="input-group">
                 <textarea id="message" class="form-control" placeholder="메시지 입력..." rows="1" disabled onkeydown="handleKey(event)"></textarea>
                 <button class="btn btn-primary" id="sendBtn" onclick="sendMessage()" disabled>전송</button>
@@ -124,6 +124,7 @@
     let openTabs = {}; // roomId -> room object (열려있는 탭 관리)
     let tabOrder = []; // roomId 배열 (탭 순서 관리)
     let heartbeatInterval = null; // 하트비트 인터벌
+    let previousAssignedRooms = new Set(); // 이전에 배정된 방 추적
 
     // 페이지 로드 시 로그인 상태 확인
     window.onload = function() {
@@ -225,6 +226,9 @@
             stompClient.subscribe('/topic/rooms', function (message) {
                 const rooms = JSON.parse(message.body);
                 updateRoomListUI(rooms);
+                
+                // 자동 배정된 방이 있는지 확인하여 자동으로 탭 열기
+                checkAndOpenAutoAssignedRoom(rooms);
             });
 
             // 초기 목록 로드
@@ -285,6 +289,29 @@
             .then(res => res.json())
             .then(rooms => updateRoomListUI(rooms));
     }
+    
+    /**
+     * 자동 배정된 방이 있는지 확인하고 자동으로 탭 열기
+     */
+    function checkAndOpenAutoAssignedRoom(rooms) {
+        const currentAssignedRooms = new Set();
+        
+        rooms.forEach(room => {
+            // 나에게 배정된 방 추적
+            if (room.status === 'AGENT' && room.assignedAgent === currentUserId /* nickname */) {
+                currentAssignedRooms.add(room.roomId);
+                
+                // 새로 배정된 방인지 확인 (이전에 없었던 방)
+                if (!previousAssignedRooms.has(room.roomId) && !openTabs[room.roomId]) {
+                    console.log('✅ 새로 자동 배정된 방 감지, 자동으로 열기:', room.roomId, room);
+                    openTab(room);
+                }
+            }
+        });
+        
+        // 현재 배정된 방 목록 업데이트
+        previousAssignedRooms = currentAssignedRooms;
+    }
 
     function updateRoomListUI(rooms) {
         roomsData = rooms;
@@ -314,7 +341,7 @@
             const div = document.createElement("div");
             const isBot = room.status === 'BOT';
             const isWaiting = room.status === 'WAITING';
-            const isMyRoom = room.status === 'AGENT' && room.assignedAgent === nickname;
+            const isMyRoom = room.status === 'AGENT' && room.assignedAgent === currentUserId /* nickName */;
             const hasUnread = unreadRooms[room.roomId];
             const isOpen = openTabs[room.roomId] ? true : false;
 
@@ -348,7 +375,7 @@
         else if (room.status === 'WAITING') statusBadge = '<span class="badge bg-warning text-dark">연결대기</span>';
         else if (room.status === 'CLOSED') statusBadge = '<span class="badge bg-danger">상담종료</span>';
         else if (room.status === 'AGENT') {
-            const isMyRoom = room.assignedAgent === nickname;
+            const isMyRoom = room.assignedAgent === currentUserId /* nickname */;
             statusBadge = isMyRoom ? '<span class="badge bg-primary">상담중(나)</span>' : `<span class="badge bg-secondary">상담중(${room.assignedAgent})</span>`;
         }
 
@@ -420,6 +447,9 @@
             subscribeToRoom(room.roomId);
         }
 
+        // 입력창 표시
+        document.getElementById("chat-input-area").style.display = "block";
+
         switchTab(room.roomId);
         updateTabsUI();
     }
@@ -452,7 +482,7 @@
 		return;
 
         const room = openTabs[roomId];
-        const isMyRoom = room.status === 'AGENT' && room.assignedAgent === nickname;
+        const isMyRoom = room.status === 'AGENT' && room.assignedAgent === currentUserId /* nickname */;
 
         // 내 상담방이면 종료 확인
         if (isMyRoom && room.status !== 'CLOSED') {
@@ -493,6 +523,8 @@
                 document.getElementById("chat-header").innerHTML = '<span class="fw-bold fs-5">상담을 선택해주세요</span>';
                 document.getElementById("message").disabled = true;
                 document.getElementById("sendBtn").disabled = true;
+                // 모든 탭이 닫혔으므로 입력창 숨기기
+                document.getElementById("chat-input-area").style.display = "none";
             }
         }
 
@@ -560,7 +592,7 @@
         }
 
         // 이미 다른 상담사이 상담 중인 경우 (강제 개입 선택 가능)
-        if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== nickname) {
+        if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== currentUserId /* nickname */) {
             const takeover = confirm(`${room.assignedAgent} 상담사가 이미 상담 중입니다.\n지금 이 상담에 개입하시겠습니까?`);
             if (!takeover) {
                 return;
@@ -573,7 +605,7 @@
             .then(res => {
                 if (!res.ok) throw new Error("Force assignment failed");
                 room.status = 'AGENT';
-                room.assignedAgent = nickname;
+                room.assignedAgent = currentUserId /* nickname */;
                 openTab(room);
             })
             .catch(err => {
@@ -607,7 +639,7 @@
                 if (!res) return;
                 // 배정 성공 후 탭 열기
                 room.status = 'AGENT';
-                room.assignedAgent = nickname;
+                room.assignedAgent = currentUserId /* nickname */;
                 openTab(room);
             })
             .catch(err => {
@@ -632,7 +664,7 @@
             messageInput.disabled = true;
             sendBtn.disabled = true;
             messageInput.placeholder = "종료된 상담입니다.";
-        } else if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== nickname) {
+        } else if (room.status === 'AGENT' && room.assignedAgent && room.assignedAgent !== currentUserId /* nickname */) {
             messageInput.disabled = true;
             sendBtn.disabled = true;
             messageInput.placeholder = `${room.assignedAgent} 상담사가 상담 중입니다...`;
@@ -650,7 +682,8 @@
         if(content && stompClient && currentRoomId) {
             stompClient.send("/app/agent/chat", {}, JSON.stringify({
                 roomId: currentRoomId,
-                sender: nickname,
+                senderId: currentUserId /* nickname */,
+				sender: nickName,
                 senderRole: 'AGENT',
                 message: content,
                 type: 'TALK'

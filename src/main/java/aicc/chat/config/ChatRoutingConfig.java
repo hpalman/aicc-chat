@@ -1,6 +1,7 @@
 package aicc.chat.config;
 
 import aicc.bot.ChatBot;
+import aicc.chat.service.AgentAssignmentService;
 import aicc.chat.service.RoomUpdateBroadcaster;
 import aicc.chat.service.impl.AgentRoutingStrategy;
 import aicc.chat.service.impl.DynamicRoutingStrategy;
@@ -32,11 +33,12 @@ public class ChatRoutingConfig {
             RoomRepository roomRepository,
             RoomUpdateBroadcaster roomUpdateBroadcaster,
             ChatHistoryService chatHistoryService,
-            ChatSessionService chatSessionService) {
+            ChatSessionService chatSessionService,
+            AgentAssignmentService agentAssignmentService) {
         log.info("▼ dynamicRoutingStrategy");
         MiChatRoutingStrategy miChat = new MiChatRoutingStrategy(
                 messageBroker, chatBot, roomRepository, roomUpdateBroadcaster,
-                chatHistoryService, chatSessionService);
+                chatHistoryService, chatSessionService, agentAssignmentService);
         AgentRoutingStrategy agent = new AgentRoutingStrategy(messageBroker);
 
         return new DynamicRoutingStrategy(roomRepository, miChat, agent, roomUpdateBroadcaster);
@@ -53,11 +55,12 @@ public class ChatRoutingConfig {
             RoomRepository roomRepository,
             RoomUpdateBroadcaster roomUpdateBroadcaster,
             ChatHistoryService chatHistoryService,
-            ChatSessionService chatSessionService) {
+            ChatSessionService chatSessionService,
+            AgentAssignmentService agentAssignmentService) {
         log.info("▼ miChatRoutingStrategy");
         return new MiChatRoutingStrategy(
                 messageBroker, chatBot, roomRepository, roomUpdateBroadcaster,
-                chatHistoryService, chatSessionService);
+                chatHistoryService, chatSessionService, agentAssignmentService);
     }
 
     /**
