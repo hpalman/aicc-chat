@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 /**
- * 상담원 자동 배정 서비스
+ * 상담사 자동 배정 서비스
  * 순환 참조를 방지하기 위해 별도 서비스로 분리
  */
 @Slf4j
@@ -29,8 +29,8 @@ public class AgentAssignmentService {
     private final RoomUpdateBroadcaster roomUpdateBroadcaster;
 
     /**
-     * 대기 중인 상담원 중 첫 번째 상담원 조회
-     * @return 상담원 ID, 없으면 null
+     * 대기 중인 상담사 중 첫 번째 상담사 조회
+     * @return 상담사 ID, 없으면 null
      */
     public String findWaitingAgent() {
         Set<String> onlineAgentKeys = redisTemplate.keys(Constants.USER_AGENT_KEY + ":*");
@@ -56,31 +56,31 @@ public class AgentAssignmentService {
     }
 
     /**
-     * 대기 중인 상담원을 자동으로 배정
+     * 대기 중인 상담사를 자동으로 배정
      * @param roomId 채팅방 ID
      * @return 배정 성공 여부
      */
     public boolean autoAssignWaitingAgent(String roomId) {
         log.info("▼ autoAssignWaitingAgent S. roomId:{}", roomId);
         
-        // 1. 대기 중인 상담원 조회
+        // 1. 대기 중인 상담사 조회
         String agentId = findWaitingAgent();
         if (agentId == null) {
             log.info("▶ No WAITING agent available for auto-assignment");
             return false;
         }
         
-        // 2. 상담원 userName 조회
+        // 2. 상담사 userName 조회
         String agentKey = Constants.USER_AGENT_KEY + ":" + agentId;
         Object userNameObj = redisTemplate.opsForHash().get(agentKey, "userName");
         String agentName = userNameObj != null ? userNameObj.toString() : agentId;
         
         log.info("▶ Auto-assigning WAITING agent: {} ({}) to room: {}", agentName, agentId, roomId);
         
-        // 3. 상담원 배정 시도
+        // 3. 상담사 배정 시도
         boolean success = roomRepository.assignAgent(roomId, agentId);
         if (success) {
-            // 4. 상담원 상태를 WORKING으로 변경
+            // 4. 상담사 상태를 WORKING으로 변경
             setAgentStatus(agentId, "WORKING");
             
             // 5. 고객에게 연결 알림 메시지 발송
@@ -88,13 +88,13 @@ public class AgentAssignmentService {
                     .roomId(roomId)
                     .sender("System")
                     .senderRole(UserRole.SYSTEM)
-                    .message(agentName + " 상담원과 연결되었습니다.")
+                    .message(agentName + " 상담사와 연결되었습니다.")
                     .type(MessageType.TALK)
                     .timestamp(LocalDateTime.now())
                     .build();
             messageBroker.publish(customerNotice);
             
-            // 6. 상담원에게 자동 배정 알림 메시지 발송
+            // 6. 상담사에게 자동 배정 알림 메시지 발송
             ChatMessage agentNotice = ChatMessage.builder()
                     .roomId(roomId)
                     .sender("System")
@@ -117,8 +117,8 @@ public class AgentAssignmentService {
     }
 
     /**
-     * 상담원 상태 변경
-     * @param agentId 상담원 ID
+     * 상담사 상태 변경
+     * @param agentId 상담사 ID
      * @param status 상태 (WAITING, WORKING)
      */
     private void setAgentStatus(String agentId, String status) {
@@ -137,7 +137,7 @@ public class AgentAssignmentService {
             redisTemplate.opsForHash().put(agentKey, "agentStatus", status);
             log.info("▶ Agent {} status changed: {} -> {}", agentId, currentStatus, status);
             
-            // 상담원 상태 변경 알림 브로드캐스트
+            // 상담사 상태 변경 알림 브로드캐스트
             ChatMessage statusMessage = ChatMessage.builder()
                 .roomId("SYSTEM_BROADCAST")
                 .sender("System")

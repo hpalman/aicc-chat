@@ -11,7 +11,7 @@ import aicc.chat.domain.persistence.UserAccount;
 @Mapper
 public interface UserAccountMapper {
     /**
-     * 상담원 로그인용 사용자 조회 (활성 계정)
+     * 상담사 로그인용 사용자 조회 (활성 계정)
      */
     UserAccount selectAgentByLogin(
             @Param("userId") String userId,

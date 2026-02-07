@@ -26,7 +26,7 @@ public interface ChatSessionService {
     List<ChatSession> getChatSessionsByCustomerId(String customerId);
     
     /**
-     * 상담원 이름으로 세션 목록 조회
+     * 상담사 이름으로 세션 목록 조회
      */
     List<ChatSession> getChatSessionsByAgent(String assignedAgent);
     
@@ -46,7 +46,7 @@ public interface ChatSessionService {
     void updateSessionStatus(String roomId, String status);
     
     /**
-     * 상담원 배정
+     * 상담사 배정
      */
     void assignAgent(String roomId, String assignedAgent);
     

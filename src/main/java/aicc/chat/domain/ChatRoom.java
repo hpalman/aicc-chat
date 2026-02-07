@@ -21,7 +21,7 @@ public class ChatRoom {
     private String      roomName;
     private Set<String> members;
     private String      status; // BOT, WAITING, AGENT, CLOSED
-    private String      assignedAgent; // 현재 상담중인 상담원명
+    private String      assignedAgent; // 현재 상담중인 상담사명
     private long        createdAt; // 방 생성 시간
     private long        lastActivityAt; // 마지막 활동 시간
 

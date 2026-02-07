@@ -2,11 +2,11 @@ package aicc.chat.consts;
 
 public class Constants {
 	/**
-	 * Redis Hash 구조로 온라인 상담원 정보 저장
+	 * Redis Hash 구조로 온라인 상담사 정보 저장
 	 * Key: chat:agents:{userId}
 	 * Hash Fields:
-	 *   - userName: 상담원 이름
-	 *   - userId: 상담원 ID
+	 *   - userName: 상담사 이름
+	 *   - userId: 상담사 ID
 	 *   - loginTime: 로그인 시간 (ISO-8601)
 	 *   - lastHeartbeat: 마지막 하트비트 시간 (ISO-8601)
 	 *   - sessionId: WebSocket 세션 ID (optional)

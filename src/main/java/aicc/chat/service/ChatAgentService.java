@@ -63,11 +63,11 @@ public class ChatAgentService extends ChatService {
 //    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     /**
-     * 상담원 가용성 확인: agentStatus가 WAITING인 상담원만 조회하여 가용성 확인
+     * 상담사 가용성 확인: agentStatus가 WAITING인 상담사만 조회하여 가용성 확인
      * @return
      */
     public Map<String, Object> checkAgentAvailability() {
-        // 1. Redis의 chat:user-agent:{agentId} 키들을 조회하여 agentStatus가 WAITING인 상담원만 필터링
+        // 1. Redis의 chat:user-agent:{agentId} 키들을 조회하여 agentStatus가 WAITING인 상담사만 필터링
         Set<String> onlineAgentKeys = redisTemplate.keys(Constants.USER_AGENT_KEY + ":*"); // "chat:user-agent:*"
         Map<String, String> waitingAgents = new java.util.HashMap<>(); // agentId -> userName
 
@@ -95,7 +95,7 @@ int waitingAgentCount = 0; // WAITING Agent 수
                 }
             }
         }
-Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailableAgent,; // 상담원연결 신청 가능 여부
+Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailableAgent,; // 상담사연결 신청 가능 여부
 
         return Map.of(
             "available"        , hasAvailableAgent,
@@ -107,7 +107,7 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
 
         //log.info("▶ WAITING agents: {} (count: {})", waitingAgents, waitingAgents.size());
         //
-        //// WAITING 상태인 상담원이 없으면 즉시 불가 반환
+        //// WAITING 상태인 상담사가 없으면 즉시 불가 반환
         //if (waitingAgents.isEmpty()) {
         //    log.info("▶ checkAgentAvailability E. No WAITING agents available");
         //    return Map.of(
@@ -119,7 +119,7 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
         //    );
         //}
         //
-        //// 2. 상담원이 배정된 방 개수 세기
+        //// 2. 상담사가 배정된 방 개수 세기
         //List<ChatRoom> allRooms = roomRepository.findAllRooms();
         //Map<String, Long> agentRoomCount = allRooms.stream()
         //    .filter(room -> "AGENT".equals(room.getStatus()) && room.getAssignedAgent() != null)
@@ -128,7 +128,7 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
         //        java.util.stream.Collectors.counting()
         //    ));
         //
-        //// 3. WAITING 상태인 상담원 중 3개 미만의 상담을 하고 있는 상담원이 있는지 확인
+        //// 3. WAITING 상태인 상담사 중 3개 미만의 상담을 하고 있는 상담사가 있는지 확인
         //boolean hasAvailableAgent = waitingAgents.values().stream()
         //    .anyMatch(agentName -> {
         //        // 현재 상담 개수 확인
@@ -153,7 +153,7 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
 
 
     /**
-     * 상담원 로그아웃 처리
+     * 상담사 로그아웃 처리
      * 고객에게 알림
      * @param bearerToken
      * @return
@@ -168,7 +168,7 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
             return HttpStatus.UNAUTHORIZED;
         }
 
-        // Redis에서 온라인 상담원 제거 (Hash 구조 전체 삭제)
+        // Redis에서 온라인 상담사 제거 (Hash 구조 전체 삭제)
         String agentKey = Constants.USER_AGENT_KEY + ":" + userInfo.getUserId(); // chat:user-agent:{userId}
         redisTemplate.delete(agentKey);
         log.info("▶ Agent {} ({}) removed from online list in Redis", userInfo.getUserId(), userInfo.getUserName());
@@ -258,11 +258,11 @@ Boolean hasAvailableAgent = waitingAgentCount > 0 ? true : false; // hasAvailabl
         log.info("▼ agentMessage S. message>{},headerAccessor>{}", message,headerAccessor);
 
         // ChatMessage(
-        //    roomId=room-e7cb51e4, sender=상담원-01, senderRole=AGENT, message=d,
+        //    roomId=room-e7cb51e4, sender=상담사-01, senderRole=AGENT, message=d,
         //    type=TALK, companyId=null, timestamp=2026-02-06T13:25:22.559366900, targetTopic=null)
         //
         // simpSessionAttributes={
-        //    companyId=apt001, userEmail=agent01@aicc.com, userName=상담원-01,
+        //    companyId=apt001, userEmail=agent01@aicc.com, userName=상담사-01,
         //    userRole=AGENT, userId=agent01}, simpHeartbeat=[J@15e26d11,
         //    lookupDestination=/agent/chat, simpSessionId=faftlzig, simpDestination=/app/agent/chat}
 
@@ -288,7 +288,7 @@ message.setCompanyId  (_companyId);
         //     String companyId = (String) sessionAttributes.get("companyId");
         //     userId = (String) sessionAttributes.get("userId");
         //
-        //     // 상담원 전용 로직: 클라이언트가 보낸 roomId 유지 (여러 방 관리 가능)
+        //     // 상담사 전용 로직: 클라이언트가 보낸 roomId 유지 (여러 방 관리 가능)
         //     // 이름과 역할만 세션 정보로 강제
         //     message.setSenderRole(UserRole.AGENT);
         //     if (userName != null) {
@@ -354,7 +354,7 @@ message.setCompanyId  (_companyId);
 
         UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
-            return ResponseEntity.status(403).body("상담원만 배정 가능합니다.");
+            return ResponseEntity.status(403).body("상담사만 배정 가능합니다.");
         }
 
         // assignAgent할당, routingMode:AGENT 설정, lastActivity 설정
@@ -364,7 +364,7 @@ message.setCompanyId  (_companyId);
                     .roomId(roomId)
                     .sender("System")
                     .senderRole(UserRole.SYSTEM)
-                    .message(userInfo.getUserName() + " 상담원과 연결되었습니다.")
+                    .message(userInfo.getUserName() + " 상담사와 연결되었습니다.")
                     .type(MessageType.TALK)
                     .build();
             messageBroker.publish(notice);
@@ -373,7 +373,7 @@ message.setCompanyId  (_companyId);
 
             try {
                 // @TODO : DB저장 임시 막음
-                // // PostgreSQL에 상담원 배정 정보 저장
+                // // PostgreSQL에 상담사 배정 정보 저장
                 // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
                 // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
                 //
@@ -394,7 +394,10 @@ message.setCompanyId  (_companyId);
             }
             log.warn("ResponseEntity.ok().build()");
             return ResponseEntity.ok().build();
-        } else {
+        }
+
+        
+        else {
             String currentAgent = roomRepository.getAssignedAgent(roomId);
             if (userInfo.getUserName().equals(currentAgent)) {
                 log.info("Room {} already assigned to the same agent: {}", roomId, currentAgent);
@@ -402,7 +405,7 @@ message.setCompanyId  (_companyId);
             }
             if (force) {
                 log.info("Force assigning agent {} to room {} (current: {})", userInfo.getUserName(), roomId, currentAgent);
-                // 강제 배정: 기존 배정 상담원 교체
+                // 강제 배정: 기존 배정 상담사 교체
                 roomRepository.setAssignedAgent(roomId, userInfo.getUserName());
                 roomRepository.setRoutingMode(roomId, "AGENT");
                 roomRepository.updateLastActivity(roomId);
@@ -413,7 +416,7 @@ message.setCompanyId  (_companyId);
                             .roomId(roomId)
                             .sender("System")
                             .senderRole(UserRole.SYSTEM)
-                            .message(userInfo.getUserName() + " 상담원이 상담에 개입했습니다.")
+                            .message(userInfo.getUserName() + " 상담사가 상담에 개입했습니다.")
                             .type(MessageType.INTERVENE)
                             .build();
                     messageBroker.publish(notice);
@@ -440,7 +443,7 @@ message.setCompanyId  (_companyId);
                 return ResponseEntity.ok().build();
             }
 
-            return ResponseEntity.status(409).body("이미 다른 상담원(" + currentAgent + ")이 배정되었습니다.");
+            return ResponseEntity.status(409).body("이미 다른 상담사(" + currentAgent + ")이 배정되었습니다.");
         }
     }
 }

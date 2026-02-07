@@ -144,7 +144,7 @@ public class TokenService {
 
             log.info("▶ [TokenService] Final extracted - loginId: {}, userName: {}", loginId, userName);
 
-            // 권한에 따라 역할 구분 (상담원 권한 키워드 체크)
+            // 권한에 따라 역할 구분 (상담사 권한 키워드 체크)
             UserRole role = UserRole.CUSTOMER;
             if (authorities != null) {
                 String upperAuth = authorities.toUpperCase();

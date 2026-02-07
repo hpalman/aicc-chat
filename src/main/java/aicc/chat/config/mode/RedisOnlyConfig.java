@@ -3,6 +3,7 @@ package aicc.chat.config.mode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 import aicc.chat.domain.ChatMessage;
 import aicc.chat.domain.ChatRoom;
@@ -25,6 +26,7 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.lang.NonNull;
+import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.nio.charset.StandardCharsets;
@@ -85,7 +87,7 @@ public class RedisOnlyConfig {
 
                     String channelName = channel.getValue();
 
-                    log.info("▷ {} > msg:{}", channel.getValue(), message);
+                    log.info("▷ channel:{} > msg:{}", channel.getValue(), message);
 
                     // Redis Pub/Sub으로 발행
                     redisTemplate.convertAndSend(channelName, message);
@@ -122,7 +124,7 @@ public class RedisOnlyConfig {
     @SuppressWarnings({ "null" })
     @Bean
     // Redis 구독을 처리할 리스너 컨테이너 구성
-    public RedisMessageListenerContainer redisContainer(
+	/* public */RedisMessageListenerContainer redisContainer(
             @NonNull MessageListenerAdapter listenerAdapter,
             @Autowired(required = false) MessageListenerAdapter schedulerListenerAdapter) {
 
@@ -143,6 +145,23 @@ public class RedisOnlyConfig {
         return container;
     }
 
+    /*
+    {
+        "msgCode" : "CHAT",
+        "targetTopic" : null,
+        "message" : {
+          "roomId" : "SYSTEM_BROADCAST",
+          "senderId" : null,
+          "sender" : "System",
+          "senderRole" : "SYSTEM",
+          "message" : "AGENT_STATUS",
+          "type" : "SYSTEM",
+          "companyId" : null,
+          "timestamp" : "2026-02-06T17:53:46.5374245",
+          "targetTopic" : null
+        }
+      }
+    */
     // redis-cli PUBLISH chat.topic '{"roomId":"SYSTEM_BROADCAST","sender":"System","senderRole":"SYSTEM","message":"공지사항입니다.","type":"TALK","companyId":"apt001"}'
     @Bean
     // Redis 메시지를 STOMP 토픽으로 중계하는 리스너 어댑터
@@ -151,10 +170,12 @@ public class RedisOnlyConfig {
     MessageListenerAdapter listenerAdapter() {
         log.info("▶ listenerAdapter.");
         return new MessageListenerAdapter((MessageListener) (_message, pattern) -> {
-            try {
-                PubMessage  pubMessage;
-                ChatMessage chatMessage;
+            String      destination;
+            PubMessage  pubMessage;
+            ChatMessage chatMessage;
+            String      msgCode = null;
 
+            try {
                 // body와 channel 추출
                 String body    = new String(_message.getBody()   , StandardCharsets.UTF_8);
                 String channel = new String(_message.getChannel(), StandardCharsets.UTF_8);
@@ -162,21 +183,20 @@ public class RedisOnlyConfig {
                 // JSON 파싱
                 JsonNode node = objectMapper.readTree(body);
 
-                String msgName = null;
-                // msgName 필드 확인 후 클래스 매핑
-                if ( node.has("msgName") ) {
-                    msgName = node.get("msgName").asText();
+                // msgCode 필드 확인 후 클래스 매핑
+                if ( node.has("msgCode") ) {
+                	msgCode = node.get("msgCode").asText();
                 }
-                log.info("msgName:{}", msgName);
-                if ( "TOPIC_ROOMS".equals(msgName) ) {
-                    pubMessage = objectMapper.treeToValue(node, PubMessage.class);
-                    //chatMessage = pubMessage.getChatMessage();
-                    List<ChatRoom> rooms = pubMessage.getRooms();
 
-                    messagingTemplate.convertAndSend("/topic/rooms", rooms);
+                log.info("msgCode:{}", msgCode);
+                if ( "TOPIC_ROOMS".equals(msgCode) ) {
+                    pubMessage = objectMapper.treeToValue(node, PubMessage.class);
+                    List<ChatRoom> rooms = pubMessage.getRooms();
+                    convertAndSend("/topic/rooms", rooms);
                     return;
                 }
-                else if ( "CHAT".equals(msgName) ) {
+                
+                if ( "CHAT".equals(msgCode) ) {
                     pubMessage = objectMapper.treeToValue(node, PubMessage.class);
                     chatMessage = pubMessage.getChatMessage();
                 } else {
@@ -185,38 +205,20 @@ public class RedisOnlyConfig {
                 if ( chatMessage == null ) {
                     log.warn("뭐여?");
                 }
-                /*
-                {
-                    "msgName" : "CHAT",
-                    "targetTopic" : null,
-                    "message" : {
-                      "roomId" : "SYSTEM_BROADCAST",
-                      "senderId" : null,
-                      "sender" : "System",
-                      "senderRole" : "SYSTEM",
-                      "message" : "AGENT_STATUS",
-                      "type" : "SYSTEM",
-                      "companyId" : null,
-                      "timestamp" : "2026-02-06T17:53:46.5374245",
-                      "targetTopic" : null
-                    }
-                  }
-                */
-
                 // message
                 //   - ChatMessage class
                 //   - Map class
                 //   - SchedulerControlMessage class
 
                 // ChatMessage chatMessage = objectMapper.readValue(body, ChatMessage.class);
-//String channel = new String( message.getChannel() );
-//log.info("channel:{}", channel); // chat.topic
+				//String channel = new String( message.getChannel() );
+				//log.info("channel:{}", channel); // chat.topic
 
                 String targetTopic = chatMessage.getTargetTopic();
                 if ( null != targetTopic ) {
                     // redis-cli PUBLISH chat.topic '{"roomId":"SYSTEM_BROADCAST","sender":"System","senderRole":"SYSTEM","message":"공지사항입니다.","type":"TALK","companyId":"apt001", "targetTopic":"/topic/customerwaiting" }'
-                    messagingTemplate.convertAndSend(targetTopic, chatMessage);
-                } else if ("SYSTEM_BROADCAST".equals(chatMessage.getRoomId())) { // 시스템 브로드캐스트 메시지 처리 (상담원 로그인/로그아웃 알림)
+                    convertAndSend(targetTopic, chatMessage);
+                } else if ("SYSTEM_BROADCAST".equals(chatMessage.getRoomId())) { // 시스템 브로드캐스트 메시지 처리 (상담사 로그인/로그아웃 알림)
                     log.info("System broadcast message received: {}", chatMessage.getMessage());
 
                     // 상담원 가용 여부 결정
@@ -227,10 +229,10 @@ public class RedisOnlyConfig {
                         "message", chatMessage.getMessage(),
                         "timestamp", System.currentTimeMillis()
                     );
-                    messagingTemplate.convertAndSend("/topic/agent-availability", map);
+                    convertAndSend("/topic/agent-availability", map);
                 } else {
                     // 일반 채팅 메시지는 해당 방으로 전송
-                    messagingTemplate.convertAndSend("/topic/room/" + chatMessage.getRoomId(), chatMessage);
+                    convertAndSend("/topic/room/" + chatMessage.getRoomId(), chatMessage);
                 }
 
                 // messagingTemplate.convertAndSend("/topic/rooms", rooms);
@@ -240,6 +242,22 @@ public class RedisOnlyConfig {
         });
     }
 
+    private void convertAndSend(@NonNull String destination, @NonNull Object payload) {
+    	String json = null;
+		try {
+			objectMapper.disable(SerializationFeature.INDENT_OUTPUT);			
+			json = objectMapper.writeValueAsString(payload);
+		} catch (JsonProcessingException e ) {
+			log.error("json error.", e);
+		}    	
+		try {
+			messagingTemplate.convertAndSend(destination, payload);
+	        log.info("★★★★★ messagingTemplate.convertAndSend \ndestination:{}\nMessage:{}", destination, json != null ? json : payload);
+		} catch (MessagingException e ) {
+			log.error("convertAndSend error.", e);
+		}    	
+    }
+    
     @Bean
     // 스케줄러 제어 메시지를 처리하는 리스너 어댑터
     @ConditionalOnProperty(name = "app.chat.cleanup.enabled", havingValue = "true", matchIfMissing = true)

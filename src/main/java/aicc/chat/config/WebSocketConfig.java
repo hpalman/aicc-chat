@@ -91,7 +91,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                         attributes.put("userRole", userInfo.getRole()    );
                         if (userInfo.getEmail() != null) attributes.put("userEmail", userInfo.getEmail());
 
-                        // 1. 토큰에 roomId가 있으면 사용 (주로 상담원 등 고정된 경우)
+                        // 1. 토큰에 roomId가 있으면 사용 (주로 상담사 등 고정된 경우)
                         // 2. 파라미터로 roomId가 전달되면 사용 (주로 고객이 상담 시작 시 생성한 경우)
                         String finalRoomId = (userInfo.getRoomId() != null) ? userInfo.getRoomId() : roomId;
                         if (finalRoomId != null) {

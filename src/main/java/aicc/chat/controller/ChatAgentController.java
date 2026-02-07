@@ -51,7 +51,7 @@ public class ChatAgentController {
     private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     @PostMapping("/login")
-    // 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
+    // 상담사 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환
     public ResponseEntity<UserInfo> login(
             @RequestBody Map<String,String> body/*
             @RequestParam String id,
@@ -60,7 +60,7 @@ public class ChatAgentController {
         String pw = body.get("pw");
         String status = body.get("status");
 
-        log.info("▼ login S. 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
+        log.info("▼ login S. 상담사 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 시작./api/agent > /login S");
         ResponseEntity<UserInfo> ret;
         UserInfo userInfo = agentAuthService.login(id, pw, status);
         if (userInfo == null) {
@@ -73,12 +73,12 @@ public class ChatAgentController {
                 ret = ResponseEntity.ok(userInfo);
             }
         }
-        log.info("▲ login E. 상담원 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 완료./api/agent > /login E");
+        log.info("▲ login E. 상담사 로그인 요청을 인증 서비스로 전달하고 토큰/프로필 반환:login 완료./api/agent > /login E");
         return ret;
     }
 
     @GetMapping("/me")
-    // Authorization 헤더의 토큰을 검증해 현재 상담원 정보 반환
+    // Authorization 헤더의 토큰을 검증해 현재 상담사 정보 반환
     public ResponseEntity<UserInfo> getCurrentAgent(@RequestHeader(value = "Authorization", required = false) String bearerToken) {
         log.info("▼ getCurrentAgent E. Uri:{} S.", UtilString.getUriPath());
 
@@ -135,7 +135,7 @@ public class ChatAgentController {
     }
 
     @GetMapping("/rooms")
-    // 상담원에게 전체 상담방 목록을 반환
+    // 상담사에게 전체 상담방 목록을 반환
     public ResponseEntity<List<ChatRoom>> findAllRooms() {
         log.info("▼ Agent request findAllRooms./api/agent > /rooms S");
         ResponseEntity<List<ChatRoom>> ret
@@ -145,7 +145,7 @@ public class ChatAgentController {
     }
 
     /**
-     * 상담원 가용성 확인: 로그인한 상담사가 있고 3개 미만의 상담을 하고 있는지 확인
+     * 상담사 가용성 확인: 로그인한 상담사가 있고 3개 미만의 상담을 하고 있는지 확인
      * @return
      */
     @GetMapping("/availability")
@@ -183,12 +183,12 @@ public class ChatAgentController {
     }
 
     @PostMapping("/rooms/{roomId}/assign")
-    // 상담원을 방에 배정하고 상태/이력을 갱신
+    // 상담사를 방에 배정하고 상태/이력을 갱신
     public ResponseEntity<?> assignAgent(
             @PathVariable String roomId,
             @RequestHeader(value = "Authorization", required = false) String token,
             @RequestParam(/*value = "force",*/ required = false, defaultValue = "false") boolean force) {
-        log.info("▼ assignAgent S. roomId={}, UriPath:{}", roomId, UtilString.getUriPath());
+        log.info("▼ assignAgent S. roomId={},force:{}, UriPath:{}", roomId, force, UtilString.getUriPath());
         ResponseEntity<?> ret = chatAgentService.assignAgent(roomId, token, force );
         log.info("▲ assignAgent E.");
         return ret;
@@ -211,8 +211,8 @@ public class ChatAgentController {
 
         UserInfo userInfo = tokenService.parseToken(bearerToken);
         if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
-            log.warn("상담원만 방을 종료할 수 있습니다.");
-            return ResponseEntity.status(403).body("상담원만 방을 종료할 수 있습니다.");
+            log.warn("상담사만 방을 종료할 수 있습니다.");
+            return ResponseEntity.status(403).body("상담사만 방을 종료할 수 있습니다.");
         }
 
         try {
@@ -223,7 +223,7 @@ public class ChatAgentController {
                 log.info("Permanently deleting closed room: {}", roomId);
                 roomRepository.deleteRoom(roomId);
             } else {
-                // 상담원이 상담 종료 시 BOT 모드로 복귀 (CLOSED가 아닌 BOT으로 변경)
+                // 상담사가 상담 종료 시 BOT 모드로 복귀 (CLOSED가 아닌 BOT으로 변경)
                 log.info("Agent ending consultation, switching room {} back to BOT mode", roomId);
 
                 // 상담 종료 알림 메시지 발송
@@ -231,7 +231,7 @@ public class ChatAgentController {
                         .roomId(roomId)
                         .sender("System")
                         .senderRole(UserRole.BOT)
-                        .message("상담원과의 상담이 종료되었습니다. 다시 챗봇과 대화하실 수 있습니다.")
+                        .message("상담사와의 상담이 종료되었습니다. 다시 챗봇과 대화하실 수 있습니다.")
                         .type(MessageType.TALK)
                         .build();
                 messageBroker.publish(notice);
@@ -239,9 +239,9 @@ public class ChatAgentController {
                 // 방 상태를 BOT으로 변경 (고객이 다시 봇과 대화 가능)
                 roomRepository.setRoutingMode(roomId, "BOT");
 
-                // 상담원 배정 해제 (assignedAgent 키 삭제)
+                // 상담사 배정 해제 (assignedAgent 키 삭제)
                 roomRepository.setAssignedAgent(roomId, null); // null로 설정하여 키 삭제
-                // 상담원 멤버 정보 제거 (Redis 멤버 목록 정리)
+                // 상담사 멤버 정보 제거 (Redis 멤버 목록 정리)
                 roomRepository.removeMember(roomId, userInfo.getUserId());
 
                 // // @TODO: DB저장 임시 막음
@@ -275,7 +275,7 @@ public class ChatAgentController {
      * @param headerAccessor
      */
     @MessageMapping("/agent/chat")
-    // 상담원 채팅 메시지를 받아 이력 저장 후 라우팅
+    // 상담사 채팅 메시지를 받아 이력 저장 후 라우팅
     public void onAgentMessage(ChatMessage message, SimpMessageHeaderAccessor headerAccessor) {
         message.setTimestamp(LocalDateTime.now());
         log.info("▼ onAgentMessage S. 상담사 메시지 처리. S");

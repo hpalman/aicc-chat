@@ -45,7 +45,7 @@ public class ChatSession {
     private String customerName;
     
     /**
-     * 배정된 상담원 이름
+     * 배정된 상담사 이름
      */
     private String assignedAgent;
     

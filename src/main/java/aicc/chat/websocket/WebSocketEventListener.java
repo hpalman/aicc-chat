@@ -278,7 +278,7 @@ if ( skip ) return;
             log.error("❌ Redis 세션 제거 실패 - simpSessionId가 null입니다.");
         }
 
-        // 2. 고객이 연결 해제된 경우 상담원에게 알림 및 Redis에서 제거
+        // 2. 고객이 연결 해제된 경우 상담사에게 알림 및 Redis에서 제거
         if ("CUSTOMER".equals(userRole) && roomId != null && userId != null) {
             log.info("▶▶ 고객 연결 해제 처리 시작...");
             log.info("  - roomId: {}", roomId);
@@ -296,7 +296,7 @@ if ( skip ) return;
                 log.info("◀◀ 채팅방 정보 조회 완료! room:{}", room);
 
                 if (room != null && room.getAssignedAgent() != null) {
-                    // 상담원이 배정된 경우에만 알림 전송
+                    // 상담사가 배정된 경우에만 알림 전송
                     // log.info("  - assignedAgent: {}", room.getAssignedAgent());
 
                     log.info("▶▶ 고객 연결 해제 알림 전송 시작");
@@ -310,7 +310,7 @@ if ( skip ) return;
                     messageBroker.publish(disconnectNotice);
                     log.info("◀◀ 고객 연결 해제 알림 전송 완료! disconnectNotice:{}", disconnectNotice);
                 } else {
-                    log.info("  ℹ️ 상담원이 배정되지 않은 방이거나 BOT 상담 중 - 알림 전송 생략");
+                    log.info("  ℹ️ 상담사가 배정되지 않은 방이거나 BOT 상담 중 - 알림 전송 생략");
                 }
             } catch (Exception e) {
                 log.error("❌ 고객 연결 해제 처리 실패", e);
@@ -324,7 +324,7 @@ if ( skip ) return;
     	closeStatus=CloseStatus[code=1000, reason=null],
     	msghdr:{
     	    simpMessageType=DISCONNECT, stompCommand=DISCONNECT,
-    	    simpSessionAttributes={companyId=apt001, userEmail=agent02@aicc.com, userName=상담원-02, userRole=AGENT, userId=agent02},
+    	    simpSessionAttributes={companyId=apt001, userEmail=agent02@aicc.com, userName=상담사-02, userRole=AGENT, userId=agent02},
     	    simpSessionId=aroiqtew
    	    }
          */

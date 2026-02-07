@@ -5,7 +5,7 @@ package aicc.chat.domain;
  */
 public enum UserRole {
     CUSTOMER, // 일반 고객
-    AGENT,    // 상담원
+    AGENT,    // 상담사
     BOT,      // 챗봇
     SYSTEM    // 시스템 (알림 등)
 }

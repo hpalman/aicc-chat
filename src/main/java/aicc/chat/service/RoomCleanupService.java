@@ -94,7 +94,7 @@ public class RoomCleanupService {
         }
 
         if (changed) {
-            // 4. 상담원에게 채팅방 목록 업데이트 브로드캐스트
+            // 4. 상담사에게 채팅방 목록 업데이트 브로드캐스트
             roomUpdateBroadcaster.broadcastRoomList();
         }
         log.info("▲ cleanupIdleRooms E.");

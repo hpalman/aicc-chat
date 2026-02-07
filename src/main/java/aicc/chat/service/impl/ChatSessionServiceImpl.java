@@ -64,14 +64,14 @@ public class ChatSessionServiceImpl implements ChatSessionService {
 
     @Override
     @Transactional(readOnly = true)
-    // 상담원 이름으로 상담 세션 목록 조회
+    // 상담사 이름으로 상담 세션 목록 조회
     public List<ChatSession> getChatSessionsByAgent(String assignedAgent) {
         log.info("▼ getChatSessionsByAgent. assignedAgent:{}",assignedAgent);
         try {
             return chatSessionMapper.selectChatSessionsByAgent(assignedAgent);
         } catch (Exception e) {
             log.error("Failed to get chat sessions by agent: {}", assignedAgent, e);
-            throw new RuntimeException("상담원별 상담 세션 조회 실패", e);
+            throw new RuntimeException("상담사별 상담 세션 조회 실패", e);
         }
     }
 
@@ -118,7 +118,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
 
     @Override
     @Transactional
-    // 상담원 배정 정보 업데이트
+    // 상담사 배정 정보 업데이트
     public void assignAgent(String roomId, String assignedAgent) {
         log.info("▼ assignAgent. roomId:{}, assignedAgent:{}", roomId, assignedAgent);
         try {
@@ -126,7 +126,7 @@ public class ChatSessionServiceImpl implements ChatSessionService {
             log.info("Agent assigned to session: roomId={}, agent={}", roomId, assignedAgent);
         } catch (Exception e) {
             log.error("Failed to assign agent: roomId={}, agent={}", roomId, assignedAgent, e);
-            throw new RuntimeException("상담원 배정 실패", e);
+            throw new RuntimeException("상담사 배정 실패", e);
         }
     }
 

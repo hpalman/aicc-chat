@@ -20,19 +20,19 @@ import lombok.ToString;
 @Builder
 @ToString
 public class PubMessage {
-    private String        msgName;
+    private String        msgCode;
     private String        targetTopic; // 2026.02.05 허) 발행 토픽명
     private ChatMessage   chatMessage; // 어떤 것도 담자 잉!
     private List<ChatRoom> rooms;
 
-    public PubMessage(String msgName, ChatMessage chatMessage) {
+    public PubMessage(String msgCode, ChatMessage chatMessage) {
         super();
-        this.msgName     = msgName;
+        this.msgCode     = msgCode;
         this.chatMessage = chatMessage;
     }
-    public PubMessage(String msgName, String targetTopic, List<ChatRoom> rooms) {
+    public PubMessage(String msgCode, String targetTopic, List<ChatRoom> rooms) {
         super();
-        this.msgName     = msgName;
+        this.msgCode     = msgCode;
         this.targetTopic = targetTopic;
         this.rooms       = rooms;
     }

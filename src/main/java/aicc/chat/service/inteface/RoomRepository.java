@@ -24,11 +24,11 @@ public interface RoomRepository {
     void setRoutingMode(String roomId, String routingMode);
     // 방 라우팅 모드 조회
     String getRoutingMode(String roomId);
-    // 방에 배정된 상담원 설정
+    // 방에 배정된 상담사 설정
     void setAssignedAgent(String roomId, String agentName);
-    // 방에 배정된 상담원 조회
+    // 방에 배정된 상담사 조회
     String getAssignedAgent(String roomId);
-    // 원자적으로 상담원 배정 시도
+    // 원자적으로 상담사 배정 시도
     boolean assignAgent(String roomId, String agentName); // 원자적 배정 추가
 
     // 방의 마지막 활동 시간 갱신

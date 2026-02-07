@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 사용자 계정 도메인 모델
- * 고객/상담원 계정 정보를 저장
+ * 고객/상담사 계정 정보를 저장
  */
 @Data
 @Builder

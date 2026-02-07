@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 방의 상태(모드)에 따라 봇 또는 상담원 전략으로 동적 위임하는 전략 구현체
+ * 방의 상태(모드)에 따라 봇 또는 상담사 전략으로 동적 위임하는 전략 구현체
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -28,7 +28,7 @@ public class DynamicRoutingStrategy implements ChatRoutingStrategy {
     public static final String MODE_CLOSED  = "CLOSED"; // 채팅종료
 
     @Override
-    // 방 상태에 따라 상담원/봇 라우팅으로 위임
+    // 방 상태에 따라 상담사/봇 라우팅으로 위임
     public void handleMessage(String roomId, ChatMessage message) {
         log.info("▼ handleMessage S. roomId:{}, message:{}", roomId, message);
 
@@ -67,9 +67,9 @@ case SYSTEM:
         }
         log.debug("Dynamic routing for room: {}, current routingMode: {}", roomId, routingMode);
 
-        // 1. 상담원(AGENT 역할)이 보낸 메시지인 경우
+        // 1. 상담사(AGENT 역할)이 보낸 메시지인 경우
         if (UserRole.AGENT.equals(message.getSenderRole())) {
-            // 상담원 메시지는 전파만 담당하는 agentRoutingStrategy로 처리 (이미 배정된 상태여야 함)
+            // 상담사 메시지는 전파만 담당하는 agentRoutingStrategy로 처리 (이미 배정된 상태여야 함)
             agentRoutingStrategy.handleMessage(roomId, message);
             return;
         }
@@ -78,7 +78,7 @@ case SYSTEM:
         if (MODE_AGENT.equalsIgnoreCase(routingMode)) {
             agentRoutingStrategy.handleMessage(roomId, message);
         } else if (MODE_WAITING.equalsIgnoreCase(routingMode)) {
-            // 대기 중일 때는 상담원 브로커에도 전달하고 (상담원 화면용), 봇은 응답하지 않음
+            // 대기 중일 때는 상담사 브로커에도 전달하고 (상담사 화면용), 봇은 응답하지 않음
             agentRoutingStrategy.handleMessage(roomId, message);
         } else {
             miChatRoutingStrategy.handleMessage(roomId, message);
@@ -94,7 +94,7 @@ case SYSTEM:
     @Override
     public void onRoomCreated(ChatRoom room) {
         // 방 생성 시 초기 모드는 BOT
-        log.info("▼ onRoomCreated S. room:{} MODE_BOT", room);
+        log.info("▼ onRoomCreated S. room:{}", room);
         roomRepository.setRoutingMode(room.getRoomId(), MODE_BOT); // chat:room-info:{roomId} routingMode:MODE_BOT
 
         miChatRoutingStrategy.onRoomCreated(room); // room에 환영 메시지 발송

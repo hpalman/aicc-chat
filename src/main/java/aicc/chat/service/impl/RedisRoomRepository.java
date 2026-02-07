@@ -200,35 +200,45 @@ redisTemplate.opsForHash().putAll(roomInfoKey, roomInfo);
         return chatRooms;
     }
 
+    /**
+     * [setRoutingMode] 방의 라우팅 상태 저장. 방 상태(BOT/WAITING/AGENT/CLOSED 등) 저장
+     */
     @Override
     public void setRoutingMode(String roomId, String routingMode) {
-        log.info("▼ setRoutingMode. roomId:{}, routingMode:{}", roomId, routingMode);
+        log.info("▼ setRoutingMode S. roomId:{}, routingMode:{}", roomId, routingMode);
 
-        // [setRoutingMode] 방의 라우팅 상태 저장. 방 상태(BOT/WAITING/AGENT/CLOSED 등) 저장
-        if (roomId != null && routingMode != null) {
-            redisTemplate.opsForHash().put(Constants.ROOM_INFO_KEY_PREFIX + roomId, "routingMode", routingMode); // chat:room-info:{roomId} mode
-        }
+   	 	// chat:room-info:{roomId} mode
+    	redisTemplate.opsForHash().put(Constants.ROOM_INFO_KEY_PREFIX + roomId, "routingMode", routingMode);
+        log.info("▲ setRoutingMode E.");
     }
 
+    /**
+     * [getRoutingMode] 방의 라우팅 상태 조회 
+     */
     @Override
     public String getRoutingMode(String roomId) {
-        log.info("▶▶▶ roomId:{}", roomId);
+        if ( log.isDebugEnabled()) log.debug("▼ roomId:{}", roomId);
 
-        // [getRoutingMode] 방의 라우팅 상태 조회
-        return roomId != null ? (String) redisTemplate.opsForHash().get(Constants.ROOM_INFO_KEY_PREFIX + roomId, "routingMode") : null;
+   	 	// chat:room-info:{roomId} mode
+        String value = (String) 
+    		redisTemplate.opsForHash().get(Constants.ROOM_INFO_KEY_PREFIX + roomId, "routingMode");
+
+        if ( log.isDebugEnabled()) log.debug("▲ roomId:{}, value:{}", roomId, value);
+        
+        return value;
     }
 
     @Override
     public void setAssignedAgent(String roomId, String agentName) {
         log.info("▶▶▶ roomId:{},agentName:{}", roomId, agentName);
-        // [setAssignedAgent] 방에 배정된 상담원 저장 또는 삭제
+        // [setAssignedAgent] 방에 배정된 상담사 저장 또는 삭제
         if (roomId != null) {
             String roomKey = Constants.ROOM_INFO_KEY_PREFIX + roomId;
             if (agentName != null) {
-                // 상담원 배정
+                // 상담사 배정
                 redisTemplate.opsForHash().put(roomKey, "assignedAgent", agentName);
             } else {
-                // agentName이 null이면 필드 삭제 (상담원 배정 해제)
+                // agentName이 null이면 필드 삭제 (상담사 배정 해제)
                 redisTemplate.opsForHash().delete(roomKey, "assignedAgent");
             }
         }
@@ -238,7 +248,7 @@ redisTemplate.opsForHash().putAll(roomInfoKey, roomInfo);
     public String getAssignedAgent(String roomId) {
         log.info("▶▶▶ roomId:{}", roomId );
 
-        // [getAssignedAgent] 방에 배정된 상담원 조회
+        // [getAssignedAgent] 방에 배정된 상담사 조회
         return roomId != null ? (String) redisTemplate.opsForHash().get(Constants.ROOM_INFO_KEY_PREFIX + roomId, "assignedAgent") : null;
     }
 

@@ -46,9 +46,9 @@ public interface ChatSessionMapper {
     List<ChatSession> selectChatSessionsByCustomerId(@Param("customerId") String customerId);
     
     /**
-     * 상담원 이름으로 상담 세션 목록 조회
+     * 상담사 이름으로 상담 세션 목록 조회
      * 
-     * @param assignedAgent 상담원 이름
+     * @param assignedAgent 상담사 이름
      * @return 상담 세션 리스트
      */
     List<ChatSession> selectChatSessionsByAgent(@Param("assignedAgent") String assignedAgent);
@@ -107,10 +107,10 @@ public interface ChatSessionMapper {
     );
     
     /**
-     * 상담원 배정
+     * 상담사 배정
      * 
      * @param roomId 채팅방 ID
-     * @param assignedAgent 배정된 상담원 이름
+     * @param assignedAgent 배정된 상담사 이름
      * @return 수정된 레코드 수
      */
     int updateAssignedAgent(

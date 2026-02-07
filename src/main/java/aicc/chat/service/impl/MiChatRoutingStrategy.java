@@ -42,13 +42,13 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
         message.setRoomId(roomId);
         messageBroker.publish(message);
 
-        // 2. 상담원 연결 요청(HANDOFF)인 경우
+        // 2. 상담사 연결 요청(HANDOFF)인 경우
         if (MessageType.HANDOFF.equals(message.getType())) {
             log.info("▶ HANDOFF request received for room: {}", roomId);
-            
-            // 1. 대기 중인 상담원 자동 배정 시도
-            boolean autoAssigned = agentAssignmentService.autoAssignWaitingAgent(roomId);
-            
+
+            boolean autoAssigned = false;            
+            // 1. 대기 중인 상담사 자동 배정 시도
+            // autoAssigned = agentAssignmentService.autoAssignWaitingAgent(roomId);
             if (autoAssigned) {
                 // 자동 배정 성공: AGENT 모드로 전환
                 log.info("▶ Auto-assignment successful, switching to AGENT mode");
@@ -62,7 +62,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
             return;
         }
 
-        // 2-1. 상담원 연결 요청 취소(CANCEL_HANDOFF)인 경우
+        // 2-1. 상담사 연결 요청 취소(CANCEL_HANDOFF)인 경우
         if (MessageType.CANCEL_HANDOFF.equals(message.getType())) {
             cancelAgentMode(roomId);
             return;
@@ -145,7 +145,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .roomId(room.getRoomId())
                 .sender("Bot")
                 .senderRole(UserRole.BOT)
-                .message("안녕하세요! 무엇을 도와드릴까요? '상담원 연결'을 입력하시면 상담원과 연결해 드립니다.")
+                .message("안녕하세요! 무엇을 도와드릴까요? [상담사 연결]을 입력하시면 상담사와 연결해 드립니다.")
                 .type(MessageType.TALK)
                 .build();
         messageBroker.publish(welcome);
@@ -172,16 +172,16 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
     private void switchToAgentMode(String roomId) {
         log.info("▼ switchToAgentMode S. roomId:{} WAITING", roomId);
-        // 상담원 연결 요청 처리: WAITING 전환 및 알림 발송
+        // 상담사 연결 요청 처리: WAITING 전환 및 알림 발송
         roomRepository.setRoutingMode(roomId, "WAITING"); // chat:room-info:{roomId} mode
-        roomUpdateBroadcaster.broadcastRoomList(); // 상담원 대기 상태 알림
+        roomUpdateBroadcaster.broadcastRoomList(); // 상담사 대기 상태 알림
 
-        // 고객 화면에 "상담원 연결 중..." 알림 (서버 사이드 발송)
+        // 고객 화면에 "상담사 연결 중..." 알림 (서버 사이드 발송)
         ChatMessage notice = ChatMessage.builder()
                 .roomId(roomId)
                 .sender("System")
                 .senderRole(UserRole.BOT)
-                .message("상담원 연결을 요청하였습니다. 상담원이 연결될 때까지 잠시만 기다려 주세요.")
+                .message("상담사 연결을 요청하였습니다. 상담사가 연결될 때까지 잠시만 기다려 주세요.")
                 .type(MessageType.TALK)
                 .build();
         messageBroker.publish(notice);
@@ -209,7 +209,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
 
     private void cancelAgentMode(String roomId) {
         log.info("▼ cancelAgentMode, roomId:{}", roomId);
-        // 상담원 연결 요청 취소 처리: BOT 복귀 및 알림 발송
+        // 상담사 연결 요청 취소 처리: BOT 복귀 및 알림 발송
         log.info("Canceling agent request for room {}, switching back to BOT 모드", roomId);
         roomRepository.setRoutingMode(roomId, "BOT");
         roomUpdateBroadcaster.broadcastRoomList();
@@ -218,7 +218,7 @@ public class MiChatRoutingStrategy implements ChatRoutingStrategy {
                 .roomId(roomId)
                 .sender("System")
                 .senderRole(UserRole.BOT)
-                .message("상담원 연결 요청을 취소하였습니다. 다시 챗봇이 도와드리겠습니다.")
+                .message("상담사 연결 요청을 취소하였습니다. 다시 챗봇이 도와드리겠습니다.")
                 .type(MessageType.TALK)
                 .build();
         messageBroker.publish(notice);

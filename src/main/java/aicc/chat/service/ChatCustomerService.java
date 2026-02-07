@@ -111,7 +111,7 @@ public class ChatCustomerService  extends ChatService {
         // 채팅방 상태를 CLOSED로 변경
         roomRepository.setRoutingMode(roomId, "CLOSED"); // REDIS.  "chat:room-info:{roomId} { routingMode CLOSED }
 
-        // 고객과 상담원에게 종료 메시지 전송
+        // 고객과 상담사에게 종료 메시지 전송
         ChatMessage endMessage = ChatMessage.builder()
                 .roomId(roomId)
                 .sender("System")
@@ -122,7 +122,7 @@ public class ChatCustomerService  extends ChatService {
                 .build();
         messageBroker.publish(endMessage);
 
-        // 상담원이 배정된 경우 상담원에게도 알림
+        // 상담사가 배정된 경우 상담사에게도 알림
         if (room.getAssignedAgent() != null) {
             ChatMessage agentNotice = ChatMessage.builder()
                     .roomId(roomId)
@@ -156,7 +156,7 @@ public class ChatCustomerService  extends ChatService {
         customerAuthService.logout(userId); // REDIS. chat:user-customer:{userId}
         log.info("▶ Redis customer keys deleted: userId={}", userId);
 
-        // 상담원에게 채팅방 목록 업데이트 브로드캐스트
+        // 상담사에게 채팅방 목록 업데이트 브로드캐스트
         roomUpdateBroadcaster.broadcastRoomList(); // WebSocket MSG. /topic/rooms의 모든 목록을 전파
 
         log.info("▶ Customer chat ended successfully: roomId={}, userId={}", roomId, userId);
@@ -290,7 +290,7 @@ public class ChatCustomerService  extends ChatService {
         /*
         02-06 09:31:42.349 [ clientInboundChannel-41] [INFO ] aicc.chat.service.ChatCustomerService           :customerMessage           :246 ▼ customerMessage S.
         message>ChatMessage
-        (roomId=room-f2746d60, sender=홍길철, senderRole=null, message=상담원 연결을 요청합니다., type=HANDOFF, companyId=null, timestamp=null, targetTopic=null),
+        (roomId=room-f2746d60, sender=홍길철, senderRole=null, message=상담사 연결을 요청합니다., type=HANDOFF, companyId=null, timestamp=null, targetTopic=null),
         headerAccessor>StompHeaderAccessor [headers={simpMessageType=MESSAGE, stompCommand=SEND, nativeHeaders={destination=[/app/customer/chat], content-length=[113]},
         simpSessionAttributes={userName=홍길철, userId=cust01, roomId=room-f2746d60, companyId=apt001, userEmail=cust01@example.com, userRole=CUSTOMER}, simpHeartbeat=[J@226102b9, lookupDestination=/customer/chat, simpSessionId=yefybvdd, simpDestination=/app/customer/chat}]
        */
@@ -318,7 +318,7 @@ public class ChatCustomerService  extends ChatService {
 
         log.debug("▶ Customer message received for room: {} at {}", message.getRoomId(), message.getTimestamp());
 
-        // 고객이 LEAVE 메시지를 보낸 경우 상담원에게 알림
+        // 고객이 LEAVE 메시지를 보낸 경우 상담사에게 알림
         if (MessageType.LEAVE.equals(message.getType())) {
             log.info("🔔 고객 퇴장 메시지 감지 - roomId: {}, userId: {}", message.getRoomId(), userId);
 
@@ -326,7 +326,7 @@ public class ChatCustomerService  extends ChatService {
                 ChatRoom room = roomRepository.findRoomById(message.getRoomId());
 
                 if (room != null && room.getAssignedAgent() != null) {
-                    // 상담원이 배정된 경우 상담원에게 알림
+                    // 상담사가 배정된 경우 상담사에게 알림
                     log.info("  - assignedAgent: {}", room.getAssignedAgent());
 
                     ChatMessage leaveNotice = ChatMessage.builder()
@@ -340,7 +340,7 @@ public class ChatCustomerService  extends ChatService {
 
                     log.info("✅ 고객 퇴장 알림 전송 완료!");
                 } else {
-                    log.info("  ℹ️ 상담원이 배정되지 않은 방 - 알림 전송 생략");
+                    log.info("  ℹ️ 상담사가 배정되지 않은 방 - 알림 전송 생략");
                 }
             } catch (Exception e) {
                 log.error("❌ 고객 퇴장 알림 전송 실패", e);

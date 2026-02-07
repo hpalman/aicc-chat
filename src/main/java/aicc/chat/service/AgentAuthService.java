@@ -32,7 +32,7 @@ public class AgentAuthService {
     private final RoomUpdateBroadcaster roomUpdateBroadcaster;
 
     public UserInfo login(String id, String pw, String status) {
-        // 상담원 로그인 후 토큰을 생성해 반환
+        // 상담사 로그인 후 토큰을 생성해 반환
         log.info("▼ login S. Attempting agent login via API: {}", agentLoginApiUrl);
 
         UserAccount account = userAccountMapper.selectAgentByLogin(id, pw); // DB
@@ -61,7 +61,7 @@ public class AgentAuthService {
 
         userInfo.setToken(tokenService.generateToken(userInfo));
 
-        // Redis에 온라인 상담원 등록 (Hash 구조, 10분 TTL)
+        // Redis에 온라인 상담사 등록 (Hash 구조, 10분 TTL)
         String agentKey = Constants.USER_AGENT_KEY + ":" + account.getUserId(); // chat:user-agents:{agentId}
         java.util.Map<String, String> agentInfo = new java.util.HashMap<>();
         agentInfo.put("userName"     , account.getUserName());
@@ -82,7 +82,7 @@ public class AgentAuthService {
             // redisTemplate.expire(agentKey, 10, TimeUnit.MINUTES); // 상담사는 TTL 넣지 말자.
         log.info("▶ Agent {} registered as online in Redis with Hash structure", account.getUserId());
 
-        // ✅ 추가: 상담원 로그인 알림 브로드캐스트
+        // ✅ 추가: 상담사 로그인 알림 브로드캐스트
         messageBroker.publish(ChatMessage.builder()
             .roomId("SYSTEM_BROADCAST")
             .sender("System")
@@ -98,7 +98,7 @@ public class AgentAuthService {
     }
 
     /**
-     * 상담원 하트비트 - 온라인 상태 유지
+     * 상담사 하트비트 - 온라인 상태 유지
      */
     public void heartbeat(String userId) {
         String agentKey = Constants.USER_AGENT_KEY + ":" + userId;
