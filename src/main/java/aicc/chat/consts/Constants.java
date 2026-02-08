@@ -33,7 +33,6 @@ public class Constants {
 	 */
 	public static final String ROOM_MEMBERS_KEY_PREFIX = "chat:room-member:";
 
-	public static final String ROOM_INFO_KEY        = "chat:room-info";
 	public static final String ROOM_INFO_KEY_PREFIX = "chat:room-info:"; // room metadata (Hash)
 
 }
