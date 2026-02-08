@@ -113,6 +113,22 @@ public class ChatCustomerController {
     }
 
     /**
+     * 고객의 룸 ID 생성
+     * @param token
+     * @param requestBody 고객이지정한 채팅방이름
+     * @return
+     */
+    @PostMapping("/createRoom")
+    public ResponseEntity<ChatRoom> createRoom(@RequestHeader(value = "Authorization", required = false) String token,
+            @RequestBody ChatRoom requestBody) {
+        log.info("▼ createRoom S. token:{}, chatRoom:{}", UtilString.leftRight(token,15,5), requestBody);
+        ResponseEntity<ChatRoom> ret =
+                chatCustomerService.createRoom(token, requestBody);
+        log.info("▲ createRoom E. ret:{}", ret);
+        return ret;
+    }
+    
+    /**
      * 고객의 상담 종료 처리
      * @param token
      * @return

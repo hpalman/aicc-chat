@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import aicc.chat.domain.ChatMessage;
@@ -166,7 +167,6 @@ public class ChatCustomerService  extends ChatService {
 
     /**
      * - 토큰 유효성 확인
-     * - 고유한 방ID 생성
      * 1. 고객 정보 생성
      * 1. 고객의 챗봇 상담방을 생성
      * 하고 세션/목록을 갱신
@@ -185,25 +185,26 @@ public class ChatCustomerService  extends ChatService {
         }
 
         String userId   = custInfo.getUserId();
+        String roomId   = chatRoom.getRoomId();
         String roomName = chatRoom.getRoomName();
-        // @TODO: 잠시 막음
+
         //if ( roomRepository.existCustomer(userId) ) {
         //    return ResponseEntity.status(409).build();
         //}
 
-        String newRoomId;
-        if ( UtilString.isNotEmpty(chatRoom.getRoomId()) ) {
-            newRoomId = chatRoom.getRoomId();
-        } else {
-            newRoomId = customerAuthService.newRoomId(userId); // ROOM ID 생성
-        }
+        //String newRoomId;
+        //if ( UtilString.isNotEmpty(chatRoom.getRoomId()) ) {
+        //    newRoomId = chatRoom.getRoomId();
+        //} else {
+        //    newRoomId = customerAuthService.newRoomId(userId); // ROOM ID 생성
+        //}
 
-        customerAuthService.setUserCustomers(custInfo, newRoomId); // Constants.USER_CUSTOMER_KEY : "chat:user-customer:{custId}" 해시값 넣음
+        customerAuthService.setUserCustomers(custInfo, roomId); // Constants.USER_CUSTOMER_KEY : "chat:user-customer:{custId}" 해시값 넣음
 
-        ChatRoom room = roomRepository.createRoom(newRoomId, roomName, userId); // REDIS. chat:room-info:{roomId}, chat:rooms -> room-c7db3f46 룸 생성(Redis에 키 및 값들 넣음)
+        ChatRoom room = roomRepository.createRoom(roomId, roomName, userId); // REDIS. chat:room-info:{roomId}, chat:rooms -> room-c7db3f46 룸 생성(Redis에 키 및 값들 넣음)
 
         // chat:room-member
-        roomRepository.addMember(newRoomId, custInfo.getUserId()); // REDIS 고객을 멤버로 추가
+        roomRepository.addMember(roomId, custInfo.getUserId()); // REDIS 고객을 멤버로 추가
 
         // Redis에 고객의 roomId 업데이트
         // customerAuthService.updateRoomId(custInfo.getUserId(), newRoomId); // REDIS
@@ -433,5 +434,38 @@ public class ChatCustomerService  extends ChatService {
         result.putAll(map2);
 
         return ResponseEntity.ok(result);//.build();
+    }
+
+
+    /**
+     * 고객의 룸 ID 생성.
+     * chat-start에서 생성하고 바로 구독들어가면 시간이 너무 빨라서 서버에서 pub한 메시지를 구독을 못한다. 
+     * @param token
+     * @param requestBody
+     * @return
+     */
+    public ResponseEntity<ChatRoom> createRoom(String bearerToken,
+            ChatRoom chatRoom) {
+
+    	log.info("▼ createRoom S. token:{}, chatRoom:{}", UtilString.leftRight(bearerToken,15,5), chatRoom);
+        
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        if (userInfo == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+		String userId = userInfo.getUserId();
+		String roomName = chatRoom.getRoomName();
+
+        String newRoomId = customerAuthService.newRoomId(userId); // ROOM ID 생성
+    	return ResponseEntity.ok(
+    	        ChatRoom.builder()
+    	        .roomId(newRoomId)
+            	.creatorId(userId)
+            	.roomName(roomName).build());
     }
 }

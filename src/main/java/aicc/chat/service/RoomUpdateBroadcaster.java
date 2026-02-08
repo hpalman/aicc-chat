@@ -25,14 +25,13 @@ public class RoomUpdateBroadcaster {
     // @TODO: 여기서 직접 웹소켓 Endpoint로 보내면 이 서버에 연결된 소켓만 받을 수 있으므로 publish로 변경해야 함.
     public void broadcastRoomList() {
         log.info("▼ broadcastRoomList");
+
         // 전체 방 목록을 구독자(상담사)에게 브로드캐스트
         List<ChatRoom> rooms = roomRepository.findAllRooms();
-        if (rooms != null) {
-            //// messagingTemplate.convertAndSend("/topic/rooms", rooms);
-        }
-
         PubMessage pubMessage = new PubMessage("TOPIC_ROOMS", "/topic/rooms", rooms);
         messageBroker.publish(ChannelName.CHAT, pubMessage);
+
+        log.info("▲ broadcastRoomList");
     }
 
     // /topic/agent-availability 채널을 통해 모든 고객에게 알림:

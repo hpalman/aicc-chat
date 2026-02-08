@@ -360,40 +360,41 @@ message.setCompanyId  (_companyId);
         // assignAgent할당, routingMode:AGENT 설정, lastActivity 설정
         boolean success = roomRepository.assignAgent(roomId, userInfo.getUserId());
         if (success) {
-            ChatMessage notice = ChatMessage.builder()
-                    .roomId(roomId)
-                    .sender("System")
-                    .senderRole(UserRole.SYSTEM)
-                    .message(userInfo.getUserName() + " 상담사와 연결되었습니다.")
-                    .type(MessageType.TALK)
-                    .build();
-            messageBroker.publish(notice);
-
-            roomUpdateBroadcaster.broadcastRoomList(); // "/topic/rooms" 발행. @TODO: publish로 변경 필요함
-
-            try {
-                // @TODO : DB저장 임시 막음
-                // // PostgreSQL에 상담사 배정 정보 저장
-                // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
-                // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
-                //
-                // // 시스템 메시지도 이력에 저장
-                // ChatHistory chatHistory = ChatHistory.builder()
-                //         .roomId(roomId)
-                //         .senderId("SYSTEM")
-                //         .senderName("System")
-                //         .senderRole("SYSTEM")
-                //         .message(notice.getMessage())
-                //         .messageType("TALK")
-                //         .createdAt(now) // 서버 타임스탬프 사용
-                //         .build();
-                // chatHistoryService.saveChatHistory(chatHistory); // DB
-
-            } catch (Exception e) {
-                log.error("Failed to post-assign actions", e);
-            }
-            log.warn("ResponseEntity.ok().build()");
-            return ResponseEntity.ok().build();
+            return ResponseEntity.ok("{}");
+            //// ChatMessage notice = ChatMessage.builder()
+            ////         .roomId(roomId)
+            ////         .sender("System")
+            ////         .senderRole(UserRole.SYSTEM)
+            ////         .message(userInfo.getUserName() + " 상담사와 연결되었습니다.")
+            ////         .type(MessageType.TALK)
+            ////         .build();
+            //// messageBroker.publish(notice);
+            //// 
+            //// roomUpdateBroadcaster.broadcastRoomList(); // "/topic/rooms" 발행. @TODO: publish로 변경 필요함
+            //// 
+            //// try {
+            ////     // @TODO : DB저장 임시 막음
+            ////     // // PostgreSQL에 상담사 배정 정보 저장
+            ////     // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
+            ////     // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
+            ////     //
+            ////     // // 시스템 메시지도 이력에 저장
+            ////     // ChatHistory chatHistory = ChatHistory.builder()
+            ////     //         .roomId(roomId)
+            ////     //         .senderId("SYSTEM")
+            ////     //         .senderName("System")
+            ////     //         .senderRole("SYSTEM")
+            ////     //         .message(notice.getMessage())
+            ////     //         .messageType("TALK")
+            ////     //         .createdAt(now) // 서버 타임스탬프 사용
+            ////     //         .build();
+            ////     // chatHistoryService.saveChatHistory(chatHistory); // DB
+            //// 
+            //// } catch (Exception e) {
+            ////     log.error("Failed to post-assign actions", e);
+            //// }
+            //// log.warn("ResponseEntity.ok().build()");
+            //// return ResponseEntity.ok().build();
         }
 
         
@@ -411,40 +412,95 @@ message.setCompanyId  (_companyId);
                 roomRepository.updateLastActivity(roomId);
 
 
-                try {
-                    ChatMessage notice = ChatMessage.builder()
-                            .roomId(roomId)
-                            .sender("System")
-                            .senderRole(UserRole.SYSTEM)
-                            .message(userInfo.getUserName() + " 상담사가 상담에 개입했습니다.")
-                            .type(MessageType.INTERVENE)
-                            .build();
-                    messageBroker.publish(notice);
+                //try {
+                //    ChatMessage notice = ChatMessage.builder()
+                //            .roomId(roomId)
+                //            .sender("System")
+                //            .senderRole(UserRole.SYSTEM)
+                //            .message(userInfo.getUserName() + " 상담사가 상담에 개입했습니다.")
+                //            .type(MessageType.INTERVENE)
+                //            .build();
+                //    messageBroker.publish(notice);
+                //
+                //    roomUpdateBroadcaster.broadcastRoomList();
+                //
+                //    // @TODO : DB저장 임시 막음
+                //    // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
+                //    // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
+                //    // ChatHistory chatHistory = ChatHistory.builder()
+                //    //         .roomId(roomId)
+                //    //         .senderId("SYSTEM")
+                //    //         .senderName("System")
+                //    //         .senderRole("SYSTEM")
+                //    //         .message(notice.getMessage())
+                //    //         .messageType("INTERVENE")
+                //    //         .createdAt(now)
+                //    //         .build();
+                //    // chatHistoryService.saveChatHistory(chatHistory); // DB
+                //} catch (Exception e) {
+                //    log.error("Failed to post-force-assign actions", e);
+                //}
 
-                    roomUpdateBroadcaster.broadcastRoomList();
-
-                    // @TODO : DB저장 임시 막음
-                    // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
-                    // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
-                    // ChatHistory chatHistory = ChatHistory.builder()
-                    //         .roomId(roomId)
-                    //         .senderId("SYSTEM")
-                    //         .senderName("System")
-                    //         .senderRole("SYSTEM")
-                    //         .message(notice.getMessage())
-                    //         .messageType("INTERVENE")
-                    //         .createdAt(now)
-                    //         .build();
-                    // chatHistoryService.saveChatHistory(chatHistory); // DB
-                } catch (Exception e) {
-                    log.error("Failed to post-force-assign actions", e);
-                }
-
-                return ResponseEntity.ok().build();
+                return ResponseEntity.ok("{}");
             }
 
             return ResponseEntity.status(409).body("이미 다른 상담사(" + currentAgent + ")이 배정되었습니다.");
         }
+    }
+    
+    /**
+     * 상담사가 고객채팅방에 개입하고자 할 때 상담사에게 고객방에 할당
+     * @param roomId
+     * @param bearerToken
+     * @param force
+     * @return
+     */
+    public ResponseEntity<?> assignNotify(
+            String roomId,
+            String bearerToken) {
+        if ( !tokenService.isValidBearerToken(bearerToken) ) {
+            return ResponseEntity.status(401).body("유효하지 않은 토큰입니다.");
+        }
+        UserInfo userInfo = tokenService.parseToken(bearerToken);
+        if (userInfo == null || userInfo.getRole() != UserRole.AGENT) {
+            return ResponseEntity.status(403).body("상담사만 배정 가능합니다.");
+        }
+
+        // assignAgent할당, routingMode:AGENT 설정, lastActivity 설정
+        // boolean success = roomRepository.assignAgent(roomId, userInfo.getUserId());
+            ChatMessage notice = ChatMessage.builder()
+                    .roomId(roomId)
+                    .sender("System")
+                    .senderRole(UserRole.SYSTEM)
+                    .message(userInfo.getUserName() + " 상담사와 연결되었습니다.")
+                    .type(MessageType.TALK)
+                    .build();
+            messageBroker.publish(notice);
+            roomUpdateBroadcaster.broadcastRoomList(); // "/topic/rooms" 발행. @TODO: publish로 변경 필요함
+
+        try {
+            // @TODO : DB저장 임시 막음
+            // // PostgreSQL에 상담사 배정 정보 저장
+            // chatSessionService.updateSessionStatus(roomId, "AGENT"); // DB
+            // chatSessionService.assignAgent(roomId, userInfo.getUserName()); // DB
+            //
+            // // 시스템 메시지도 이력에 저장
+            // ChatHistory chatHistory = ChatHistory.builder()
+            //         .roomId(roomId)
+            //         .senderId("SYSTEM")
+            //         .senderName("System")
+            //         .senderRole("SYSTEM")
+            //         .message(notice.getMessage())
+            //         .messageType("TALK")
+            //         .createdAt(now) // 서버 타임스탬프 사용
+            //         .build();
+            // chatHistoryService.saveChatHistory(chatHistory); // DB
+
+        } catch (Exception e) {
+            log.error("Failed to post-assign actions", e);
+        }
+        log.warn("ResponseEntity.ok().build()");
+        return ResponseEntity.ok("{}");
     }
 }
 

@@ -452,6 +452,24 @@
 
         switchTab(room.roomId);
         updateTabsUI();
+
+		// 강제 개입 요청
+		fetch(`/api/agent/rooms/assign-notify`, {
+		    method: 'POST',
+		    headers: { 'Authorization': 'Bearer ' + authToken,
+			           'Content-Type': 'application/json' },
+			body: JSON.stringify( {roomId: room.roomId})
+		})
+		.then(res => {
+			if (res.ok)
+				return res.json();
+		    else 
+				throw new Error("assign-notify failed");
+		})
+		.catch(err => {
+		    console.error(err);
+		    alert("assign-notify failed.");
+		});
     }
 
     // 탭 전환
@@ -641,6 +659,9 @@
                 room.status = 'AGENT';
                 room.assignedAgent = currentUserId /* nickname */;
                 openTab(room);
+				// 여기서 개입했다는 메시지를 알려야 한다. 현재는 알림이 나중에 오고 있다.
+				
+				
             })
             .catch(err => {
                 console.error(err);
@@ -649,6 +670,7 @@
         } else {
             // 이미 배정된 내 상담방이면 탭 열기
             openTab(room);
+			// 여기서 개입했다는 메시지를 알려야 한다.
         }
     }
 

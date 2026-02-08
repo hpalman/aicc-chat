@@ -194,6 +194,24 @@ public class ChatAgentController {
         return ret;
     }
 
+    /**
+     * 상담사를 방에 배정하였다는 알림을 발송
+     * @param roomId
+     * @param token
+     * @param force
+     * @return
+     */
+    @PostMapping("/rooms/assign-notify")
+    public ResponseEntity<?> assignNotify(
+            @RequestHeader(value = "Authorization", required = false) String token,
+            @RequestBody ChatRoom chatRoom
+            ) {
+        log.info("▼ assign-notify S. roomId={},force:{}, UriPath:{}", chatRoom.getRoomId(), UtilString.getUriPath());
+        ResponseEntity<?> ret = chatAgentService.assignNotify(chatRoom.getRoomId(), token );
+        log.info("▲ assign-notify E.");
+        return ret;
+    }
+    
     @DeleteMapping("/rooms/{roomId}")
     // 상담 종료 또는 종료 방 삭제 처리
     public ResponseEntity<?> deleteRoom(

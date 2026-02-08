@@ -50,7 +50,7 @@
             <input type="text" id="roomName" class="form-control" value='배송문의' placeholder="배송 문의합니다.">
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary flex-grow-1" onclick="createRoom()">상담 시작</button>
+            <button class="btn btn-primary flex-grow-1" onclick="chatStart()">상담 시작</button>
             <button class="btn btn-outline-secondary" onclick="logout()">로그아웃</button>
         </div>
     </div>
@@ -318,6 +318,117 @@
         // alert("로그아웃 되었습니다.");
     }
 
+	function _createOnlyRoom(chatRoom) {
+	    return new Promise((resolve, reject) => {
+	        // 1. validation
+	        if (!chatRoom) {
+	          return reject(new Error("chatRoom 객체가 없습니다."));
+	        }
+            
+	        if (!chatRoom.roomName || chatRoom.roomName.trim() === "") {
+	          return reject(new Error("이름은 필수입니다."));
+	        }
+            
+	        // 2. validation 통과 → fetch
+	        fetch(`/api/customer/createRoom`, {
+	            method: "POST",
+		        headers: { 'Authorization': 'Bearer ' + authToken,
+		      	         'Content-Type': 'application/json' },
+		        body: JSON.stringify(chatRoom)
+	        }).then(response => {
+	            if (!response.ok) {
+	                throw new Error("서버 오류");
+	            }
+	            return response.json();
+	        }).then(data => resolve(data))
+	        .catch(err => reject(err));
+	    });
+	}
+		
+	function chatStart() {
+		const roomName = document.getElementById("roomName").value;
+		if (!roomName) {
+		    alert("상담 문의 내용을 입력해주세요.");
+		    return;
+		}
+
+		_createOnlyRoom({ roomName: roomName })
+	    .then(room => {
+			console.log("room 생성 성공:", JSON.stringify(room));
+			
+			if (!room || !room.roomId) {
+			    throw new Error('방 정보를 받지 못했습니다.');
+			}
+			console.log("상담방 생성 완료:", room);
+			currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
+
+			// updateHandoffButtons(chatRoom.status);
+			connect(room)
+			.then(chatRoom => {
+				// { roomName: roomName }
+				// 1. 방 생성 및 봇 초기화 API 호출
+				// 허:2026-01-27) 별도의 http(s) api로 채팅방생성시 장점(명확한 RESTful, 권권한/인증,비즈니스로직분리,멀터서버환경)
+				fetch(`/api/customer/chat-start`, {
+				    method: 'POST',
+				    headers: { 'Authorization': 'Bearer ' + authToken,
+				    	       'Content-Type': 'application/json' },
+				    body: JSON.stringify( { roomId: chatRoom.roomId, roomName: chatRoom.roomName} )
+				}).then(res => {
+				    if (res.ok) {
+				        return res.json();
+			    	}
+					// 401, 
+				    if (res.status === 409) {
+				        alert("동일 유저가 이미 채팅방에 있습니다. 다시 로그인해주세요.");
+				        throw new Error('Unauthorized');
+				    } else if (res.status === 401) {
+				        alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+				        sessionStorage.removeItem("AUTH_TOKEN");
+				        window.location.reload();
+				        throw new Error('Unauthorized');
+				    } else if (res.status === 500) {
+				        throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+				    } else if (res.status === 404) {
+				        throw new Error('상담 서비스를 찾을 수 없습니다.');
+				    } else {
+				        throw new Error(`상담 연결 실패 (상태 코드: ${res.status})`);
+				    }
+				}).then(room => {
+				    if (!room || !room.roomId) {
+				        throw new Error('방 정보를 받지 못했습니다.');
+				    }
+				    console.log("상담방 생성 완료:", room);
+				    currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
+
+				    updateHandoffButtons(room.status);
+				    // connect();
+				}).catch(err => {
+				    console.error('상담방 생성 오류:', err);
+				    if (err.message !== 'Unauthorized') {
+				        alert(err.message || "상담 연결에 실패했습니다. 다시 시도해주세요.");
+				    }
+				});
+						
+			}).catch(err => {
+				console.error("error");
+			});
+		}).catch(err => {
+			console.error("실패:", err.message)
+		});
+		  		
+		//let body = { roomName: roomName }
+		//if ( recentRoom?.roomId !== undefined ) {
+		//    body.roomId   = recentRoom.roomId;
+		//    if ( recentRoom?.name !== undefined) {
+		//        body.roomName = recentRoom?.name;
+		//    }
+		//}
+		//
+		//_createOnlyRoom({ name: "Kim", email: "kim@test.com" })
+		//  .then(result => console.log("성공:", result))
+		//  .catch(err => console.error("실패:", err.message));		
+	}
+	
     function createRoom() {
         const roomName = document.getElementById("roomName").value;
 
@@ -333,50 +444,6 @@
                 body.roomName = recentRoom?.name;
             }
         }
-        // { roomName: roomName }
-        // 1. 방 생성 및 봇 초기화 API 호출
-        // 허:2026-01-27) 별도의 http(s) api로 채팅방생성시 장점(명확한 RESTful, 권권한/인증,비즈니스로직분리,멀터서버환경)
-        fetch(`/api/customer/chat-start`, {
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + authToken,
-            	       'Content-Type': 'application/json' },
-            body: JSON.stringify( body ) /* { roomName: roomName} */
-        }).then(res => {
-            if (res.ok) {
-                return res.json();
-            }
-
-            if (res.status === 409) {
-                alert("동일 유저가 이미 채팅방에 있습니다. 다시 로그인해주세요.");
-                throw new Error('Unauthorized');
-            } else if (res.status === 401) {
-                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
-                sessionStorage.removeItem("AUTH_TOKEN");
-                window.location.reload();
-                throw new Error('Unauthorized');
-            } else if (res.status === 500) {
-                throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-            } else if (res.status === 404) {
-                throw new Error('상담 서비스를 찾을 수 없습니다.');
-            } else {
-                throw new Error(`상담 연결 실패 (상태 코드: ${res.status})`);
-            }
-
-        }).then(room => {
-            if (!room || !room.roomId) {
-                throw new Error('방 정보를 받지 못했습니다.');
-            }
-            console.log("상담방 생성 완료:", room);
-            currentRoomId = room.roomId; // 서버에서 새로 생성된 roomId 저장
-
-            updateHandoffButtons(room.status);
-            connect();
-        }).catch(err => {
-            console.error('상담방 생성 오류:', err);
-            if (err.message !== 'Unauthorized') {
-                alert(err.message || "상담 연결에 실패했습니다. 다시 시도해주세요.");
-            }
-        });
     }
 
     function updateHandoffButtons(status) {
@@ -436,71 +503,77 @@
             });
     }
 
-    function connect() {
-        // 토큰과 roomId를 쿼리 파라미터로 전달
-        console.log('WebSocket 연결 시작 - authToken[' + authToken + '], currentRoomId[' + currentRoomId +']');
+    function connect(room) {
+		return new Promise((resolve, reject) => {
 
-        try {
-            const socket = new SockJS(`/ws-chat?token=${authToken}&roomId=${currentRoomId}`);
-            stompClient = Stomp.over(socket);
+			// 토큰과 roomId를 쿼리 파라미터로 전달
+			console.log('WebSocket 연결 시작 - authToken[' + authToken + '], currentRoomId[' + currentRoomId +']');
+			const socket = new SockJS(`/ws-chat?token=${authToken}&roomId=${currentRoomId}`);
+			stompClient = Stomp.over(socket);
 
-            // 연결 성공 콜백
-            stompClient.connect({}, function (frame) {
-                console.log('WebSocket 연결 성공: ' + frame);
+			try {
+			    // 연결 성공 콜백
+			    stompClient.connect({}, function (frame) {
+			        console.log('WebSocket 연결 성공: ' + frame);
 
-                // UI 전환
-                document.getElementById("connect-form").style.display = "none";
-                document.getElementById("chat-page").style.display = "block";
+			        // UI 전환
+			        document.getElementById("connect-form").style.display = "none";
+			        document.getElementById("chat-page").style.display = "block";
 
-                // 방 제목과 roomId 표시
-                document.getElementById("room-title").innerText = document.getElementById("roomName").value || "상담 중";
-                document.getElementById("room-id").innerText = `방 ID: ${currentRoomId}`;
-                document.getElementById("user-info").innerText = `(${nickname} / ${currentUserId})`;
+			        // 방 제목과 roomId 표시
+			        document.getElementById("room-title").innerText = document.getElementById("roomName").value || "상담 중";
+			        document.getElementById("room-id").innerText = `방 ID: ${currentRoomId}`;
+			        document.getElementById("user-info").innerText = `(${nickname} / ${currentUserId})`;
 
-                // 2. 구독 (Subscribe) - 서버에서 받은 고유 roomId 사용
-                stompClient.subscribe('/topic/room/' + currentRoomId, function (message) {
-                    const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
-                    showMessage(payload);
-                });
+			        // 2. 구독 (Subscribe) - 서버에서 받은 고유 roomId 사용
+			        stompClient.subscribe('/topic/room/' + currentRoomId, function (message) {
+			            const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
+			            showMessage(payload);
+			        });
 
-                // ✅ 추가: 상담사 가용성 실시간 알림 구독
-                stompClient.subscribe('/topic/agent-availability', function (message) {
-                    const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
-                    console.log('🔔 상담사 가용성 변경 알림 수신:', payload);
-                    // 즉시 가용성 체크
-                    checkAgentAvailability();
-                });
+			        // ✅ 추가: 상담사 가용성 실시간 알림 구독
+			        stompClient.subscribe('/topic/agent-availability', function (message) {
+			            const payload = typeof message.body === 'string' ? JSON.parse(message.body) : message.body;
+			            console.log('🔔 상담사 가용성 변경 알림 수신:', payload);
+			            // 즉시 가용성 체크
+			            checkAgentAvailability();
+			        });
 
-                //// // 3. 입장 메시지 전송 - 허:2026.01.27) UI에서 보낼 것이 아니고, 서버에서 CLIENT로 보내는 것으로 변경해야 해서 주석처리
-                //// stompClient.send("/app/customer/chat", {}, JSON.stringify({
-                ////     roomId: currentRoomId,
-                ////     sender: nickname,
-                ////     type: 'JOIN',
-                ////     message: nickname + "님이 입장하셨습니다."
-                //// }));
-                ////
-                //// // 4. 상담사 가용성 주기적 체크 시작 (30초마다)
-                //// startAvailabilityCheck();
+			        //// // 3. 입장 메시지 전송 - 허:2026.01.27) UI에서 보낼 것이 아니고, 서버에서 CLIENT로 보내는 것으로 변경해야 해서 주석처리
+			        //// stompClient.send("/app/customer/chat", {}, JSON.stringify({
+			        ////     roomId: currentRoomId,
+			        ////     sender: nickname,
+			        ////     type: 'JOIN',
+			        ////     message: nickname + "님이 입장하셨습니다."
+			        //// }));
+			        ////
+			        //// // 4. 상담사 가용성 주기적 체크 시작 (30초마다)
+			        //// startAvailabilityCheck();
+					return resolve(room);
+					
+			    }, function(error) {
+			        // 연결 실패 콜백
+			        console.error('WebSocket 연결 실패:', error);
+			        alert('채팅 서버 연결에 실패했습니다.\n\n' + (error.headers?.message || '네트워크 상태를 확인해주세요.'));
 
-            }, function(error) {
-                // 연결 실패 콜백
-                console.error('WebSocket 연결 실패:', error);
-                alert('채팅 서버 연결에 실패했습니다.\n\n' + (error.headers?.message || '네트워크 상태를 확인해주세요.'));
+			        // 연결 폼으로 되돌리기
+			        document.getElementById("chat-page").style.display = "none";
+			        document.getElementById("connect-form").style.display = "block";
+			        currentRoomId = null;
+					return reject(new Error("에러"));
+			    });
+			} catch (err) {
+			    console.error('WebSocket 초기화 오류:', err);
+			    alert('채팅 연결 초기화에 실패했습니다.\n다시 시도해주세요.');
 
-                // 연결 폼으로 되돌리기
-                document.getElementById("chat-page").style.display = "none";
-                document.getElementById("connect-form").style.display = "block";
-                currentRoomId = null;
-            });
-        } catch (err) {
-            console.error('WebSocket 초기화 오류:', err);
-            alert('채팅 연결 초기화에 실패했습니다.\n다시 시도해주세요.');
-
-            // 연결 폼으로 되돌리기
-            document.getElementById("chat-page").style.display = "none";
-            document.getElementById("connect-form").style.display = "block";
-            currentRoomId = null;
-        }
+			    // 연결 폼으로 되돌리기
+			    document.getElementById("chat-page").style.display = "none";
+			    document.getElementById("connect-form").style.display = "block";
+			    currentRoomId = null;
+				return reject(new Error("에러"));
+			}
+			
+		});
     }
 
     function disconnect() {
